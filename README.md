@@ -2,10 +2,10 @@ NgLib General C# Library
 ==========================
 
 Nglib C# library repository. Nglib is a library developed in C # .Net Standard 2.0 that contains useful components that can be useful in other applications.
-Open-source(MIT) General and Common .Net Helpers, Extensions, Codes, ADO.net Utils, etc. 
+Open-source(MIT) General and Common .Net Helpers, Extensions, Codes, ADO.net Utils, Dev components, etc. 
 
 For the moment, the description and comments are in French.
-You can see french datasheet [Wiki](https://github.com/general-libraries/General/wiki)
+You can see french datasheet [Wiki](https://github.com/Nuegy/Nglib/wiki)
 
 
 
@@ -27,7 +27,7 @@ Install-Package Nglib
 ```
 
 # Documentation and links
-[Wiki](https://github.com/general-libraries/General/wiki)
+[Wiki](https://github.com/Nuegy/Nglib/wiki)
 
 [Nuget Nglib](https://www.nuget.org/packages/Nglib)
 
