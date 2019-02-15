@@ -1,0 +1,10 @@
+/dev/TestResults
+/dev/packages
+/dev/.vs
+/dev/Nglib/obj
+/dev/Nglib/Nglib.csproj.user
+/dev/Nglib/bin
+/dev/Nglib.Extras/obj
+/dev/Nglib.Extras/bin
+/dev/Nglib.Tests/obj
+/dev/Nglib.Tests/bin
