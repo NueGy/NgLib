@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Nglib</RootNamespace>
+    <Version>1.0.4-beta</Version>
+    <Product>Nglib</Product>
+    <Authors>Nuegy SARL</Authors>
+    <Description>C# .Net Standard Framework tools, Dev components</Description>
+    <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
+    <PackageTags>Nglib</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard2.0\Nglib.Extras.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nglib\Nglib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DOCUMENT\" />
+  </ItemGroup>
+
+</Project>

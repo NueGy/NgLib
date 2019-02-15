@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Nglib</RootNamespace>
+    <Authors>Nuegy SARL</Authors>
+    <Company></Company>
+    <Description>C# .Net Standard Framework tools, Dev components, No dependencies</Description>
+    <Copyright></Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl></PackageProjectUrl>
+    <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
+    <PackageTags>Nglib</PackageTags>
+    <Version>1.0.4-beta</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>false</Optimize>
+    <DocumentationFile>bin\Debug\netstandard2.0\Nglib.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DATA\CONNECTOR\SEARCH\**" />
+    <Compile Remove="DATA\CONNECTOR\SEARCH\**" />
+    <Compile Remove="DATA\DATES\**" />
+    <Compile Remove="DATA\NUMBERS\**" />
+    <Compile Remove="DATA\TEXT\**" />
+    <EmbeddedResource Remove="DATA\CONNECTOR\SEARCH\**" />
+    <EmbeddedResource Remove="DATA\CONNECTOR\SEARCH\**" />
+    <EmbeddedResource Remove="DATA\DATES\**" />
+    <EmbeddedResource Remove="DATA\NUMBERS\**" />
+    <EmbeddedResource Remove="DATA\TEXT\**" />
+    <None Remove="DATA\CONNECTOR\SEARCH\**" />
+    <None Remove="DATA\CONNECTOR\SEARCH\**" />
+    <None Remove="DATA\DATES\**" />
+    <None Remove="DATA\NUMBERS\**" />
+    <None Remove="DATA\TEXT\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="DATA\CONNECTOR\ConnectorFactory.cs" />
+    <Compile Remove="DATA\CONNECTOR\ConnectorObjectParser.cs" />
+    <Compile Remove="DATA\CONNECTOR\MsSQLConnector.cs" />
+    <Compile Remove="DATA\CONNECTOR\MYSQLConnector.cs" />
+    <Compile Remove="DATA\CONNECTOR\PostgreSQLConnector.cs" />
+    <Compile Remove="DATA\CONNECTOR\SqLiteConnector.cs" />
+    <Compile Remove="DATA\DATAPO\DataPOAttributes.cs" />
+    <Compile Remove="DATA\DATAPO\DataPODynamizer.cs" />
+    <Compile Remove="DATA\DATAPO\DataPoSerializer.cs" />
+    <Compile Remove="DATA\ChaineTools.cs" />
+    <Compile Remove="DATA\Cryptage.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="COMPUTING\" />
+    <Folder Include="DOCUMENT\IMAGING\" />
+    <Folder Include="DOCUMENT\GENERATOR\" />
+    <Folder Include="DOCUMENT\OCR\" />
+    <Folder Include="FILES\DIRECTORY\" />
+    <Folder Include="FILES\ELEMENT\" />
+    <Folder Include="FILES\TRANSFERT\" />
+    <Folder Include="MODELS\ANNOTATIONS\" />
+    <Folder Include="NET\HTTP\" />
+    <Folder Include="NET\MAIL\" />
+    <Folder Include="NET\NETWORK\" />
+    <Folder Include="WEB\" />
+  </ItemGroup>
+
+</Project>
