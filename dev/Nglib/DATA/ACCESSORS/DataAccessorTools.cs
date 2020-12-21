@@ -30,13 +30,20 @@ namespace Nglib.DATA.ACCESSORS
             }
         }
 
-
-
-
-
-
-
-
+        public static string[] ConvertoArrayString(object value)
+        {
+            if (value == null) return null; 
+            if (value is string[]) return value as string[]; // déja fait
+            if (!value.GetType().IsArray) return null; // c'est pas un tableau
+            Array arrayvalue = value as Array;
+            string[] retour = new string[arrayvalue.Length];
+            for (int i = 0; i < arrayvalue.Length; i++)
+            {
+                object val = arrayvalue.GetValue(i);
+                if (val != null) retour[i] = Convert.ToString(val);
+            }
+            return retour;
+        }
 
 
 

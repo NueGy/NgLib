@@ -161,7 +161,7 @@ namespace Nglib.APP.PROCESS
         /// <returns>false= Error</returns>
         public async Task<bool> LogAsync(string logtext, int LogLevel)
         {
-            LOG.LogData log = new LOG.LogData() { LogLevel = LogLevel, LogText = logtext, DateCreate = DateTime.Now };
+            LOG.LogModel log = new LOG.LogModel() { LogLevel = LogLevel, LogText = logtext, DateCreate = DateTime.Now };
             return await LogAsync(log);
         }
 
@@ -183,7 +183,7 @@ namespace Nglib.APP.PROCESS
             try
             {
                 if (this.context.ShowLogInConsole)
-                    Console.WriteLine(string.Format("LOG({0}): {1}",log.LogLevel, FORMAT.StringUtilities.Limit(log.LogText,64))); // =64+8= 72
+                    Console.WriteLine(string.Format("LOG({0}): {1}",log.LogLevel, FORMAT.StringTools.Limit(log.LogText,64))); // =64+8= 72
                 
                 if (LogEvent == null) return false;
                 return LogEvent(log);

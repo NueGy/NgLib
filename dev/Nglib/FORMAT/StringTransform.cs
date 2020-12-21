@@ -38,6 +38,23 @@ namespace Nglib.FORMAT
             // !!!
         }
 
+        /// <summary>
+        /// Permet de découper une chaine
+        /// </summary>
+        public static DATA.PARAMVALUES.ParamValues SplitString(string chaine, DATA.PARAMVALUES.ParamValues paramfordecoupe, string prefixdecoup = "decoupe_")
+        {
+            DATA.PARAMVALUES.ParamValues retour = new DATA.PARAMVALUES.ParamValues();
+
+            foreach (DATA.PARAMVALUES.ParamValuesNode itemd in paramfordecoupe.GetList())
+            {
+                DATA.PARAMVALUES.ParamValuesNode nouveau = itemd.Clone();
+                nouveau.Value = chaine;
+                //nouveau.actionDynamisation();
+                //nouveau.DynamiseLocalValue(false, true, null, prefixdecoup);
+                retour.Add(nouveau);
+            }
+            return retour;
+        }
 
 
         public static string DynamiseWithAccessor(string orgnString, DATA.ACCESSORS.IDataAccessor Accessor)

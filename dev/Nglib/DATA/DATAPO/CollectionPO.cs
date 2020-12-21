@@ -13,6 +13,12 @@ using System.Text;
 namespace Nglib.DATA.DATAPO
 {
     /// <summary>
+    /// Liste de DataPO
+    /// </summary>
+    public class CollectionPO : CollectionPO<Nglib.DATA.DATAPO.DataPO> { }
+
+
+    /// <summary>
     /// Liste de DataPo
     /// </summary>
     /// <typeparam name="Tpo"></typeparam>

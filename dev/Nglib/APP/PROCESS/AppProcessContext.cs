@@ -1,4 +1,5 @@
-﻿using Nglib.DATA.ACCESSORS;
+﻿using Nglib.DATA.PARAMVALUES;
+using Nglib.DATA.ACCESSORS;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,7 +16,7 @@ namespace Nglib.APP.PROCESS
         /// </summary>
         internal AppProcessContext()
         {
-            this.ProcessRunId = FORMAT.StringUtilities.GenerateGuid32();
+            this.ProcessRunId = FORMAT.StringTools.GenerateGuid32();
             if (CancelToken == null) this.CancelToken = new System.Threading.CancellationToken();
         }
 
@@ -64,7 +65,7 @@ namespace Nglib.APP.PROCESS
         /// <summary>
         /// Configuration personalisable pour ce processus
         /// </summary>
-        public DATA.DATAVALUES.DataValues FluxConfig { get; set; }
+        public ParamValues FluxConfig { get; set; }
 
         /// <summary>
         /// Pour forcer l'arret du processus
@@ -139,12 +140,12 @@ namespace Nglib.APP.PROCESS
         /// Chargement des paramètres avec datavalue/xml
         /// </summary>
         /// <param name="FluxConfig"></param>
-        public void LoadConfig(DATA.DATAVALUES.DataValues FluxConfig)
+        public void LoadConfig(ParamValues FluxConfig)
         {
             this.FluxConfig = FluxConfig;
 
             // COnfig Loop
-            DATA.DATAVALUES.DataValuesNode FluxConfigProcessLoop = FluxConfig.Get("/param/process/loop", false);
+            ParamValuesNode FluxConfigProcessLoop = FluxConfig.Get("/param/process/loop", false);
             if(FluxConfigProcessLoop!=null)
             {
                 if(FluxConfigProcessLoop.GetObject("iteration", DataAccessorOptionEnum.None)!=null)

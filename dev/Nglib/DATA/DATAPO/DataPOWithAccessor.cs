@@ -10,8 +10,14 @@ namespace Nglib.DATA.DATAPO
     /// Objet de base utilisant le datarow
     /// DataPO avec les accesseurs de bases
     /// </summary>
-    public class DataPOWithAccessor : DataPO, IDataAccessor
+    public class DataPOWithAccessors : DataPO, IDataAccessor
     {
+
+
+        public void SetObject(string nameValue,object obj)
+        {
+            Nglib.DATA.ACCESSORS.DataAccessorExtentions.SetObject(this, nameValue, obj);
+        }
 
         public string GetString(string nameValue)
         {
@@ -41,8 +47,7 @@ namespace Nglib.DATA.DATAPO
 
         public TEnum GetEnum<TEnum>(string fieldname) where TEnum : struct
         {
-            TEnum defaultValue = DataAccessorTools.GetEnumDefaultValue<TEnum>();
-            return Nglib.DATA.ACCESSORS.DataAccessorExtentions.GetEnum(this, fieldname, defaultValue);
+            return Nglib.DATA.ACCESSORS.DataAccessorExtentions.GetEnum<TEnum>(this, fieldname);
         }
 
     }

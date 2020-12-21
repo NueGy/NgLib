@@ -5,8 +5,6 @@
 // ----------------------------------------------------------------
 
 using Nglib.DATA.ACCESSORS;
-using Nglib.DATA.DATASET;
-using Nglib.DATA.DATAVALUES;
 using Nglib.DATA.CONNECTOR;
 using System;
 using System.Collections.Generic;
@@ -14,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq.Expressions;
+using Nglib.DATA.COLLECTIONS;
 
 namespace Nglib.DATA.DATAPO
 {
@@ -122,6 +121,7 @@ namespace Nglib.DATA.DATAPO
         public DataPOProviderSQL(DATA.CONNECTOR.ConnectorCollection connectors)
         {
             this.Connectors = connectors;
+            if (this.Connectors == null) throw new Exception("connectors Not loaded");
         }
 
         /// <summary>
@@ -130,6 +130,7 @@ namespace Nglib.DATA.DATAPO
         public DataPOProviderSQL(APP.ENV.IGlobalEnv env)
         {
             this.Connectors = env.Connectors;
+            if (this.Connectors == null) throw new Exception("Env connectors Not loaded");
         }
 
 
@@ -182,21 +183,6 @@ namespace Nglib.DATA.DATAPO
 
 
 
-  
-
-        //public Tobj GetFirstPO<Tobj>(Expression<Func<Tobj, bool>> predicate)
-        //{
-        //    string nm = predicate.Name;
-        //    throw new NotImplementedException();
-        //    return default(Tobj);
-        //}
-
-
-
-
-
-
-
 
 
 
@@ -241,6 +227,7 @@ namespace Nglib.DATA.DATAPO
         public TCollectionPO GetCollectionPO<TCollectionPO>(string SqlQuery, Dictionary<string, object> paramKeySearch) where TCollectionPO : ICollectionPO, new()
         {
             // On obtient la table du PO
+            //System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
             string TableDefault = "";
             TCollectionPO retour = new TCollectionPO();
             try
@@ -302,21 +289,8 @@ namespace Nglib.DATA.DATAPO
             }
 
             // Construction de la requette
-            string sql = null;
-            try
-            {
-                //if (nbMax > 0 && this.Connector is CONNECTOR.MsSQLConnector)sql = "SELECT TOP " + nbMax + " * FROM " + TableDefault + " ";
-                sql = string.Format("SELECT  * FROM {0} ",TableDefault);
-                if (paramKeySearch != null && paramKeySearch.Count > 0)
-                    sql += " WHERE " + DATA.CONNECTOR.SqlTools.GenerateCreateWhereSQL(paramKeySearch.Keys.ToArray());
-                if (nbMax > 0) sql += string.Format("LIMIT{0} ", nbMax); 
-                // !!! gérer le sqlbuilder selon le sgbd
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("GetListPO " + ex.Message, ex);
-            }
-            return this.GetCollectionPO<TCollectionPO>(sql, paramKeySearch);
+            SqlBuilder sqlBuilder = new SqlBuilder(TableDefault, this.Connector.GetEngine()).AddWheres(paramKeySearch).Limit(nbMax);
+            return this.GetCollectionPO<TCollectionPO>(sqlBuilder.ToString(), paramKeySearch);
         }
 
 
@@ -374,45 +348,24 @@ namespace Nglib.DATA.DATAPO
         /// <param name="bubbles">DataPos</param>
         /// <param name="ForceEvenIfNotModified">Force la mise à jours de tous les champs même si il n'ont pas été modifié</param>
         /// <returns>Modification effectué</returns>
-        public async Task<bool> SavePOAsync(DATAPO.DataPO[] bubbles, bool ForceEvenIfNotModified = false, bool AllowInsert=true)
+        public async Task<bool> SavePOAsync(DATAPO.DataPO[] bubbles, bool ForceEvenIfNotModified = false)
         {
             if (bubbles == null || bubbles.Count() == 0) return false;
             if (this.Connector == null) throw new Exception("MasterConnector Not found");
-            List<DATAPO.DataPO> bubblesNeedToSave = new List<DataPO>();
-            List<DATAPO.DataPO> bubblesNeedToInsert = new List<DataPO>();
+            List<DATAPO.DataPO> bubblesNeedToSave;
             try
             {
                 // Vérifier qu'il s'agit toujours du même type d'objets (on ne peus pas travailler sur plusieurs tables)
                 if (bubbles.Select(b => b.GetType()).Distinct().Count() != 1) throw new Exception("different types");
+                if(bubbles.FirstOrDefault().GetValues(true,false).Count==0) throw new Exception("Primarykey not found on " + bubbles.FirstOrDefault().GetType().Name);
+
 
                 // Detecter et préparer les objets qui nécessite une modifications
-                foreach (var bubble in bubbles)
-                {
-                    if(!bubble.IsInDataBase()) // Mode Insert
-                    {
-                        if (!AllowInsert) throw new Exception("Disallow Insert");
-                        bubblesNeedToInsert.Add(bubble);
-                    }
-                    else // Mode update/save
-                    {
-                        DataPOTools.PrepareDataPOForDB(bubble, ForceEvenIfNotModified); // preparera les Flux dans le datapo que si il ont été modifiés
-                        // Améliorer l'upate des flow avec des save partial de json !!!
-                        if (bubble.IsChanges() || ForceEvenIfNotModified)  //sera modifié que si nécessaire
-                            bubblesNeedToSave.Add(bubble);
-                    }
-                }
+                if (ForceEvenIfNotModified) bubblesNeedToSave = bubbles.ToList();
+                else bubblesNeedToSave=bubbles.Where(bubble => bubble.IsChanges()).ToList();
+                if (bubblesNeedToSave.Count == 0) return false;
 
-                // On commence par les INSERT
-                if (bubblesNeedToInsert.Count > 0) await this.InsertPOAsync(bubblesNeedToInsert.ToArray());
-                if (bubblesNeedToSave.Count == 0) { return (bubblesNeedToInsert.Count > 0) ? true : false; } // plus rien à modifier (on signal si on as fait des insert aussi)
-
-
-                SavePo_OneByOne(bubblesNeedToSave, ForceEvenIfNotModified);
-
-
-
-
-
+                await this.SavePo_LineByLinesAsync(bubblesNeedToSave, ForceEvenIfNotModified);
 
                 return true;
 
@@ -422,49 +375,61 @@ namespace Nglib.DATA.DATAPO
                 throw new Exception(string.Format("SavePO {0} ", e.Message), e);
             }
         }
-        public async Task<bool> SavePOAsync(DATAPO.DataPO bubble, bool ForceEvenIfNotModified = false, bool AllowInsert = true) { return  await this.SavePOAsync(new DATAPO.DataPO[]{ bubble }, ForceEvenIfNotModified, AllowInsert); }
-        public bool SavePO(DATAPO.DataPO bubble, bool ForceEvenIfNotModified = false, bool AllowInsert = true) { return this.SavePOAsync(bubble, ForceEvenIfNotModified, AllowInsert).GetAwaiter().GetResult(); }
-     
+        public async Task<bool> SavePOAsync(DATAPO.DataPO bubble, bool ForceEvenIfNotModified = false) { return  await this.SavePOAsync(new DATAPO.DataPO[]{ bubble }, ForceEvenIfNotModified); }
+        public bool SavePO(DATAPO.DataPO bubble, bool ForceEvenIfNotModified = false) { return this.SavePOAsync(bubble, ForceEvenIfNotModified).GetAwaiter().GetResult(); }
 
-
-        /// <summary>
-        /// Une requette un par un
-        /// </summary>
-        /// <param name="bubblesNeedToSave"></param>
-        private void SavePo_OneByOne(List<DATAPO.DataPO> bubblesNeedToSave, bool ForceEvenIfNotModified)
-        {
-            foreach (var bubble in bubblesNeedToSave)
-            {
-                // mut.WaitOne();
-                System.Data.DataRow rowb = bubble.GetRow(); // la structure du datapo sera défini à ce moment si nécessaire
-                Dictionary<string, object> vals = null;
-                if (ForceEvenIfNotModified) vals = DATASET.DataSetTools.GetValues(rowb, false, true);
-                else vals = DATASET.DataSetTools.GetChangedValues(rowb);
-                Dictionary<string, object> keys = DATASET.DataSetTools.GetValues(rowb, true, false);
-                this.Connector.UpdateAsync(rowb.Table.TableName, keys, vals).GetAwaiter().GetResult();
-
-                if (!DisableAcceptChange)
-                    bubble.AcceptChanges();
-            }
-        }
 
         /// <summary>
         /// Execute plusieurs Save en une requette
         /// </summary>
         /// <param name="bubblesNeedToSave"></param>
         /// <param name="ForceEvenIfNotModified"></param>
-        private void SavePo_MultiLines(List<DATAPO.DataPO> bubblesNeedToSave, bool ForceEvenIfNotModified)
+        private async Task SavePo_LineByLinesAsync(List<DATAPO.DataPO> bubblesNeedToSave, bool ForceEvenIfNotModified)
         {
+            bool openedtransact = false;
+            try
+            {
+                if (bubblesNeedToSave.Count > 1) // si nécessaire d'ouvrir une transaction pour optimiser les performances
+                    openedtransact = this.Connector.BeginTransaction(null); //this.Connector.Open(true); 
+                foreach (var bubble in bubblesNeedToSave)
+                {
+                    // mut.WaitOne();
+                    Dictionary<string, object> vals = ForceEvenIfNotModified ? bubble.GetValues(false, true) : bubble.GetChangedValues();
+                    if (vals.Count == 0 && ForceEvenIfNotModified) throw new Exception("GetChangedValues Empty");
+                    else if (vals.Count == 0) continue;
+                    Dictionary<string, object> keys = bubble.GetValues(true, false);
+                    if (keys.Count == 0) throw new Exception("Primarykey Empty");
+                    System.Data.DataRow rowb = bubble.GetRow();
+                    string tablename = rowb.Table.TableName;
+                    await this.Connector.UpdateAsync(tablename, keys, vals);
+
+                    if (!DisableAcceptChange)
+                        bubble.AcceptChanges();
+                }
+                if (openedtransact) this.Connector.CommitTransaction();
+            }
+            catch (Exception ex)
+            {
+                if (openedtransact) this.Connector.RollBackTransaction();
+                throw;
+            }
+            finally
+            {
+                if(openedtransact)this.Connector.Close();
+            }
+
         }
 
 
 
-            /// <summary>
-            /// Mettre à jours plusieurs objets en même temps avec les mêmes valeurs
-            /// </summary>
-            /// <param name="bubbles"></param>
-            /// <param name="valeursParameters"></param>
-            public async Task UpdatePOAsync(DATAPO.DataPO[] bubbles, Dictionary<string, object> valeursParameters)
+
+
+        /// <summary>
+        /// Mettre à jours plusieurs objets en même temps avec les mêmes valeurs
+        /// </summary>
+        /// <param name="bubbles"></param>
+        /// <param name="valeursParameters"></param>
+        public async Task UpdatePOAsync(DATAPO.DataPO[] bubbles, Dictionary<string, object> valeursParameters)
         {
             try
             {
@@ -479,13 +444,14 @@ namespace Nglib.DATA.DATAPO
                 {
                     if (bubble == null) throw new Exception("DataPO null");
                     System.Data.DataRow rowb = bubble.GetRow(); // la structure du datapo sera défini à ce moment si nécessaire
-                    if (!bubble.IsDefinedSchema()) bubble.InitalizeDataPO();
+                    if (!bubble.IsDefinedSchema()) bubble.DefineSchemaPO();
                     if (!bubble.IsDefinedSchema()) throw new Exception("DataPo not defined"); // on peus pas traiter un datapo sans structure, car on aura pas les primarykey pour le sql
                     if (string.IsNullOrWhiteSpace(rowb.Table.TableName)) throw new Exception("tablename empty");
                     // mut.WaitOne();
 
-                    Dictionary<string, object> keysParameters = DATASET.DataSetTools.GetValues(rowb, true, false); //clef
-                    await this.Connector.UpdateAsync(rowb.Table.TableName, keysParameters, valeursParameters);
+                    Dictionary<string, object> keys = DataSetTools.GetValues(rowb, true, false); //clef
+                    if (keys.Count == 0) throw new Exception("Primarykey not found on " + bubble.GetType().Name);
+                    await this.Connector.UpdateAsync(rowb.Table.TableName, keys, valeursParameters);
 
                 }
 
@@ -528,13 +494,16 @@ namespace Nglib.DATA.DATAPO
                 // Vérifier qu'il s'agit toujours du même type d'objets (on ne peus pas travailler sur plusieurs tables)
                 if (bubbles.Select(b => b.GetType()).Distinct().Count() != 1) throw new Exception("different types");
 
-                // Préparation des objets
-                bubbles.ToList().ForEach(bubble => DataPOTools.PrepareDataPOForDB(bubble, true));
-
-
                 // !!!voir si c'est pas plus performant de le faire un par un si il n'y as qu'une seule ligne
                 //List<System.Data.DataTable> alltables = bubbles.Select(dt => dt.GetRow().Table).Distinct().ToList();
-                System.Data.DataTable tabinsert = DataPOTools.CloneInNewDataTable(bubbles);
+                System.Data.DataTable tabinsert = DataPOTools.CloneDataTable(bubbles);
+                if(tabinsert.TableName.StartsWith("Table"))
+                {
+                    System.Data.DataTable tableStd = DataPOTools.GetSchemaOnPO(bubbles[0].GetType());
+                    if(tableStd!=null) tabinsert.TableName = tableStd.TableName;
+                }
+
+
 
                 // Obtient si existe la colonne autoincrémenté
                 List<System.Data.DataColumn> autoincrementedColumns = bubbles.FirstOrDefault().GetRow().Table.GetColumns().Where(c => c.AutoIncrement).ToList();
@@ -542,6 +511,8 @@ namespace Nglib.DATA.DATAPO
 
                 string colautoincrement = null;
                 if (autoincrementedColumns.Count() > 0) colautoincrement = autoincrementedColumns.FirstOrDefault().ColumnName;
+
+                // --- INSERT ---
                 List<long> valsincrement = await this.Connector.InsertTableAsync(tabinsert, InsertPODefaultTimeOut, colautoincrement);
 
                 // On réaffecte les id autoincrémenté aux objets
@@ -549,7 +520,7 @@ namespace Nglib.DATA.DATAPO
                 {
                     if (valsincrement.Count != bubbles.Count()) throw new Exception("Insert Increment Error"); // il doit forcément y avoir autant de clef incrémenté que de lignes
                     for (int i = 0; i < valsincrement.Count; i++)
-                        bubbles[i].SetObject(colautoincrement, valsincrement[i], DataAccessorOptionEnum.CreateIfNotExist); 
+                        bubbles[i].SetObject(colautoincrement, valsincrement[i]); 
                 }
 
                 //var colsDatasInsert = MANIPULATE.DATASET.DataSetTools.GetValues(rowb, UseKey, true);
@@ -620,16 +591,14 @@ namespace Nglib.DATA.DATAPO
                 if (this.Connector == null) throw new Exception("MasterConnector Not found");
 
                 // Préparation des objets
-                bubbles.ToList().ForEach(bubble => DataPOTools.PrepareDataPOForDB(bubble, false));
 
                 foreach (var bubble in bubbles)
                 {
                     if (bubble == null) throw new Exception("DataPO null");
+                    Dictionary<string, object> keys = bubble.GetValues(true, false); //clef// mut.WaitOne();
+                    if (keys.Count == 0) throw new Exception("Primarykey not found on " + bubble.GetType().Name);
                     System.Data.DataRow rowb = bubble.GetRow(); // la structure du datapo sera défini à ce moment si nécessaire
-                    if (rowb == null || !bubble.IsDefinedSchema()) throw new Exception("DataPo not defined"); // on peus pas traiter un datapo sans structure, car on aura pas les primarykey pour le sql
-                                                                                                               // mut.WaitOne();
-
-                    await this.Connector.DeleteAsync(rowb.Table.TableName, DATASET.DataSetTools.GetValues(rowb, true, false));
+                    await this.Connector.DeleteAsync(rowb.Table.TableName, keys);
                     try { rowb.Delete(); }
                     catch (Exception) { }
                 }

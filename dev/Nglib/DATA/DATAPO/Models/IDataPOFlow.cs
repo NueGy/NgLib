@@ -8,7 +8,7 @@ namespace Nglib.DATA.DATAPO
     /// <summary>
     /// Flux xml ou json 
     /// </summary>
-    public interface IDataPOFlow : IDataAccessor
+    public interface IDataPOFlow 
     {
         /// <summary>
         /// Obtien le nom du champ à modifier dans la base
@@ -25,7 +25,7 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// Si le champ à été encrypté en base
+        /// Si le champ à été entierement encrypté en base
         /// </summary>
         /// <returns></returns>
         bool IsFieldEncrypted();
@@ -37,7 +37,7 @@ namespace Nglib.DATA.DATAPO
         /// <param name="fieldName"></param>
         /// <param name="fieldType"></param>
         /// <param name="EncryptedKey"></param>
-        void DefineField(string fieldName, DATA.ACCESSORS.FlowTypeEnum fieldType, string EncryptedKey = null);
+        void DefineField(string fieldName, DATA.ACCESSORS.FlowTypeEnum fieldType, bool isFullEncrypted=false);
 
 
 
@@ -52,7 +52,7 @@ namespace Nglib.DATA.DATAPO
         /// resynchronise les données provenant de la base dans le flow
         /// </summary>
         /// <param name="dataField"></param>
-        void UnSerializeField(string dataField);
+        void DeSerializeField(string dataField);
 
 
         /// <summary>

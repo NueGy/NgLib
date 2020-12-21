@@ -18,6 +18,128 @@ namespace Nglib.DATA.ACCESSORS
 
 
 
+        #region ------  OBJECT  ------
+
+
+
+        /// <summary>
+        /// Obtenir la données
+        /// </summary>
+        public static object GetObject(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        {
+            //Obtenir la données la donnée
+            object adata = dataAccessor.GetData(nameValue, AccesOptions);
+
+            //Cryptage
+            if (adata!=null && AccesOptions.HasFlag(DataAccessorOptionEnum.Encrypted))
+            {
+                var cryptoctx = dataAccessor.GetCryptoContext();
+                if (cryptoctx != null)
+                    adata = cryptoctx.DecryptObjectValue(dataAccessor, nameValue, adata, AccesOptions);
+            }
+               
+            
+
+            return adata;
+        }
+        /// <summary>
+        /// Obtenir la données
+        /// </summary>
+        public static object GetObject(this IDataAccessor dataAccessor, string nameValue)
+        {
+            return dataAccessor.GetData(nameValue, DataAccessorOptionEnum.None);
+        }
+
+
+        /// <summary>
+        /// Définir une donnée
+        /// </summary>
+        public static bool SetObject(this IDataAccessor dataAccessor, string nameValue, object obj, DataAccessorOptionEnum AccesOptions)
+        {
+            object adata = obj; 
+
+            // Cryptage
+            if (obj!=null && AccesOptions.HasFlag(DataAccessorOptionEnum.Encrypted))
+            {
+                var cryptoctx = dataAccessor.GetCryptoContext();
+                if (cryptoctx != null)
+                    adata = cryptoctx.EncryptObjectValue(dataAccessor, nameValue, adata, AccesOptions);
+            }
+
+            return dataAccessor.SetData(nameValue, adata, AccesOptions);
+        }
+
+        /// <summary>
+        /// Définir une donnée
+        /// </summary>
+        public static bool SetObject(this IDataAccessor dataAccessor, string nameValue, object obj)
+        {
+            return dataAccessor.SetObject(nameValue, obj, DataAccessorOptionEnum.None);
+        }
+
+
+        /// <summary>
+        /// Obtient les données d'un autre objet par la reflexion
+        /// </summary>
+        /// <param name="objetSource"></param>
+        /// <param name="replaceifnotnull"></param>
+        /// <param name="safe"></param>
+        /// <returns></returns>
+        public static bool FromObject(this IDataAccessor dataAccessor, object objetSource, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
+        {
+            try
+            {
+                Dictionary<string, object> vals = Nglib.APP.CODE.PropertiesTools.GetValuesReflexion(objetSource);
+                vals.Keys.ToList().ForEach(k => dataAccessor.SetObject(k, vals[k]));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("FromObject "+ex.Message,ex);
+            }
+        }
+
+        /// <summary>
+        /// Définie les données d'un autre objet par la reflexion
+        /// </summary>
+        /// <param name="objetTarget"></param>
+        /// <param name="replaceifnotnull"></param>
+        /// <param name="safe"></param>
+        /// <returns></returns>
+        public static bool ToObject(this IDataAccessor dataAccessor, object objetTarget, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
+        {
+            try
+            {
+                Dictionary<string, object> vals = dataAccessor.ToDictionaryValues(AccesOptions);
+                Nglib.APP.CODE.PropertiesTools.SetValuesReflexion(objetTarget, vals);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("ToObject " + ex.Message, ex);
+            }
+        }
+
+
+        //public static bool FromObject<Tobject>(this BASICS.INTERFACES.IDataAccessor dataAccessor, object objetSource, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
+        //{
+        //    return false;
+        //    //throw new NotImplementedException();
+        //}
+
+
+
+        //public static bool ToObject<Tobject>(this BASICS.INTERFACES.IDataAccessor dataAccessor, object objetSource, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
+        //{
+        //    return false;
+        //    //throw new NotImplementedException();
+        //}
+
+
+        #endregion
+
+
+
 
         #region ------  STRING  ------
 
@@ -47,11 +169,15 @@ namespace Nglib.DATA.ACCESSORS
             {
                 if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe) && dataAccessor == null) return null;
                 object obj = dataAccessor.GetObject(nameValue, AccesOptions);
-                if (obj == null || obj == DBNull.Value) return string.Empty;
-                if (!AccesOptions.HasFlag(DataAccessorOptionEnum.Nullable)) return obj.ToString();
-                string str = obj.ToString();
+
+                if ((obj == null || obj == DBNull.Value)) // retourne pas null par default
+                {
+                    if (AccesOptions.HasFlag(DataAccessorOptionEnum.Nullable)) return null;
+                    else return string.Empty;
+                }
+                return obj.ToString();
                 //DATA.MANIPULATE.TEXT.TextTreatment.Transform
-                return str;
+                //return str;
             }
             catch (Exception ex)
             {
@@ -61,9 +187,12 @@ namespace Nglib.DATA.ACCESSORS
         }
 
 
-        public static string[] GetStringArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        public static string[] GetStringArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions = DataAccessorOptionEnum.None)
         {
-            throw new NotImplementedException(); // !!!
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe) && dataAccessor == null) return null;
+            object obj = dataAccessor.GetObject(nameValue, AccesOptions);
+            string[] retour = obj as string[];
+            return retour;
         }
 
 
@@ -164,9 +293,14 @@ namespace Nglib.DATA.ACCESSORS
             }
         }
 
-        public static int GetIntArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        public static int[] GetIntArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions= DataAccessorOptionEnum.None, int DefaultValue=0) 
         {
-            throw new NotImplementedException(); // !!!
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe) && dataAccessor == null) return null;
+            object obj = dataAccessor.GetObject(nameValue, AccesOptions);
+            int[] retour = obj as int[];
+            if (retour == null && obj is string[])
+                retour = (obj as string[]).Select(item => (string.IsNullOrWhiteSpace(item)) ? DefaultValue : Convert.ToInt32(item)).ToArray();
+            return retour;
         }
 
 
@@ -239,9 +373,14 @@ namespace Nglib.DATA.ACCESSORS
             }
         }
 
-        public static DateTime[] GetDateTimeArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        public static DateTime[] GetDateTimeArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions = DataAccessorOptionEnum.None)
         {
-            throw new NotImplementedException(); // !!!
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe) && dataAccessor == null) return null;
+            object obj = dataAccessor.GetObject(nameValue, AccesOptions);
+            DateTime[] retour = obj as DateTime[];
+            if (retour == null && obj is string[])
+                retour = (obj as string[]).Select(item => (string.IsNullOrWhiteSpace(item)) ? new DateTime() : Convert.ToDateTime(item)).ToArray();
+            return retour;
         }
 
         #endregion
@@ -312,9 +451,14 @@ namespace Nglib.DATA.ACCESSORS
             }
         }
 
-        public static long[] GetLongArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        public static long[] GetLongArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions = DataAccessorOptionEnum.None, long DefaultValue=0)
         {
-            throw new NotImplementedException(); // !!!
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe) && dataAccessor == null) return null;
+            object obj = dataAccessor.GetObject(nameValue, AccesOptions);
+            long[] retour = obj as long[];
+            if (retour == null && obj is string[])
+                retour = (obj as string[]).Select(item => (string.IsNullOrWhiteSpace(item)) ? DefaultValue : Convert.ToInt64(item)).ToArray();
+            return retour;
         }
 
         #endregion
@@ -334,7 +478,7 @@ namespace Nglib.DATA.ACCESSORS
         /// <returns></returns>
         public static double GetDouble(this IDataAccessor dataAccessor, string nameValue)
         {
-            return GetLong(dataAccessor, nameValue, 0);
+            return GetDouble(dataAccessor, nameValue, 0);
         }
 
 
@@ -387,9 +531,14 @@ namespace Nglib.DATA.ACCESSORS
         }
 
 
-        public static double[] GetDoubleArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        public static double[] GetDoubleArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions = DataAccessorOptionEnum.None, double defaultvalue=0)
         {
-            throw new NotImplementedException(); // !!!
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe) && dataAccessor == null) return null;
+            object obj = dataAccessor.GetObject(nameValue, AccesOptions);
+            double[] retour = obj as double[];
+            if (retour == null && obj is string[])
+                retour = (obj as string[]).Select(item => (string.IsNullOrWhiteSpace(item)) ? defaultvalue : Convert.ToDouble(item)).ToArray();
+            return retour;
         }
 
         #endregion
@@ -462,72 +611,20 @@ namespace Nglib.DATA.ACCESSORS
         }
 
 
-        public static bool[] GetBooleanArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        public static bool[] GetBooleanArray(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions = DataAccessorOptionEnum.None, bool defaultvalue=false)
         {
-            throw new NotImplementedException(); // !!!
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe) && dataAccessor == null) return null;
+            object obj = dataAccessor.GetObject(nameValue, AccesOptions);
+            bool[] retour = obj as bool[];
+            if (retour == null && obj is string[])
+                retour = (obj as string[]).Select(item => (string.IsNullOrWhiteSpace(item)) ? defaultvalue : Convert.ToBoolean(item)).ToArray();
+            return retour;
         }
 
 
         #endregion
 
 
-
-
-
-        #region ------  OBJECT  ------
-
-
-
-        public static bool SetObject(this IDataAccessor dataAccessor, string nameValue, object obj)
-        {
-            DataAccessorOptionEnum AccesOptions = DataAccessorOptionEnum.CreateIfNotExist;
-            return dataAccessor.SetObject(nameValue, obj, AccesOptions);
-        }
-
-
-        /// <summary>
-        /// Obtient les données d'un autre objet par la reflexion
-        /// </summary>
-        /// <param name="objetSource"></param>
-        /// <param name="replaceifnotnull"></param>
-        /// <param name="safe"></param>
-        /// <returns></returns>
-        public static bool FromObject(this IDataAccessor dataAccessor, object objetSource, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
-        {
-            return false;
-            //throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Définie les données d'un autre objet par la reflexion
-        /// </summary>
-        /// <param name="objetTarget"></param>
-        /// <param name="replaceifnotnull"></param>
-        /// <param name="safe"></param>
-        /// <returns></returns>
-        public static bool ToObject(this IDataAccessor dataAccessor, object objetTarget, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
-        {
-            return false;
-            //throw new NotImplementedException();
-        }
-
-
-        //public static bool FromObject<Tobject>(this BASICS.INTERFACES.IDataAccessor dataAccessor, object objetSource, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
-        //{
-        //    return false;
-        //    //throw new NotImplementedException();
-        //}
-
-
-
-        //public static bool ToObject<Tobject>(this BASICS.INTERFACES.IDataAccessor dataAccessor, object objetSource, bool replaceifnotnull = true, DataAccessorOptionEnum AccesOptions = 0)
-        //{
-        //    return false;
-        //    //throw new NotImplementedException();
-        //}
-
-
-        #endregion
 
 
 
@@ -593,15 +690,15 @@ namespace Nglib.DATA.ACCESSORS
         public static TEnum GetEnum<TEnum>(this IDataAccessor dataAccessor, string fieldname, DataAccessorOptionEnum AccesOptions = 0) where TEnum : struct
         {
             TEnum defaultValue = DataAccessorTools.GetEnumDefaultValue<TEnum>();
-            return GetEnum(dataAccessor, fieldname, defaultValue);
+            return GetEnum<TEnum>(dataAccessor, fieldname, defaultValue, AccesOptions).Value;
         }
 
 
 
 
-        public static TEnum GetEnum<TEnum>(this IDataAccessor dataAccessor, string fieldname, TEnum defaultValue, DataAccessorOptionEnum AccesOptions = 0) where TEnum : struct
+        public static TEnum? GetEnum<TEnum>(this IDataAccessor dataAccessor, string fieldname, TEnum? defaultValue, DataAccessorOptionEnum AccesOptions = 0) where TEnum : struct
         {
-            TEnum foo = defaultValue;
+            TEnum? foo = defaultValue;
             Object obj = dataAccessor.GetObject(fieldname, AccesOptions);
             try
             {
@@ -637,7 +734,7 @@ namespace Nglib.DATA.ACCESSORS
         }
 
 
-        public static TEnum[] GetEnumArray<TEnum>(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions)
+        public static TEnum[] GetEnumArray<TEnum>(this IDataAccessor dataAccessor, string nameValue, DataAccessorOptionEnum AccesOptions = DataAccessorOptionEnum.None)
         {
             throw new NotImplementedException(); // !!!
         }

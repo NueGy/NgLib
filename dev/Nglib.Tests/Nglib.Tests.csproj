@@ -221,7 +221,7 @@
     <Compile Include="DATA\DATAPO\DataPoTests.cs" />
     <Compile Include="DATA\DATAPO\DataPoPerfTests.cs" />
     <Compile Include="DATA\DATAPO\UnitTest1.cs" />
-    <Compile Include="CODE\CodeTests.cs" />
+    <Compile Include="APP\CodeTests.cs" />
     <Compile Include="DATA\CollectionsTests.cs" />
     <Compile Include="DATA\DATAPO\DataPOSerialTest.cs" />
     <Compile Include="FORMAT\StringTransformTests.cs" />
@@ -239,15 +239,12 @@
     <Analyzer Include="..\packages\Microsoft.CodeAnalysis.Analyzers.2.6.1\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="CODE\" />
     <Folder Include="COMPUTING\" />
     <Folder Include="FILES\" />
     <Folder Include="MANIPULATE\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Nglib.Extras\Nglib.Extras.csproj">
-      <Project>{99a80473-e471-4987-bd50-13463d8aadbc}</Project>
-      <Name>Nglib.Extras</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Nglib\Nglib.csproj">
       <Project>{d37301d5-7dc9-407f-a56d-5cb70c031d38}</Project>
       <Name>Nglib</Name>

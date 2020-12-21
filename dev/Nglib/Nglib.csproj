@@ -1,19 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Nglib</RootNamespace>
     <Authors>Nuegy SARL</Authors>
     <Company></Company>
-    <Description>C# .Net Standard Framework tools, Dev components, No dependencies</Description>
+    <Description>C# .Net Standard Framework tools, Dev components.</Description>
     <Copyright></Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
     <PackageTags>Nglib</PackageTags>
-    <Version>1.0.4-beta</Version>
+    <Version>1.0.12-beta</Version>
     <AssemblyVersion>1.0.3.0</AssemblyVersion>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -54,18 +55,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="COMPUTING\" />
-    <Folder Include="DOCUMENT\IMAGING\" />
-    <Folder Include="DOCUMENT\GENERATOR\" />
-    <Folder Include="DOCUMENT\OCR\" />
     <Folder Include="FILES\DIRECTORY\" />
     <Folder Include="FILES\ELEMENT\" />
     <Folder Include="FILES\TRANSFERT\" />
-    <Folder Include="MODELS\ANNOTATIONS\" />
-    <Folder Include="NET\HTTP\" />
     <Folder Include="NET\MAIL\" />
     <Folder Include="NET\NETWORK\" />
-    <Folder Include="WEB\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="4.7.2" />
   </ItemGroup>
 
 </Project>

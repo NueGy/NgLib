@@ -13,14 +13,41 @@ namespace Nglib.DATA.CONNECTOR
     /// </summary>
     public class QueryContext
     {
+        /// <summary>
+        /// Context SQL
+        /// </summary>
+        public QueryContext() { this.parameters = new Dictionary<string, object>(); }
 
-        public QueryContext() { }
+        /// <summary>
+        /// COntext SQL
+        /// </summary>
+        /// <param name="sqlQuery"></param>
+        /// <param name="parameters"></param>
         public QueryContext(string sqlQuery, Dictionary<string, object> parameters)
         {
             this.sqlQuery = sqlQuery;
             this.parameters = parameters;
         }
 
+        ///// <summary>
+        ///// Context SQl
+        ///// </summary>
+        ///// <param name="sqlQuery">Requette SQL</param>
+        ///// <param name="parampx">parametres @p1, @p2, @px</param>
+        //public QueryContext(string sqlQuery, params object[] parampx)
+        //{
+        //    Dictionary<string, object> parameters = new Dictionary<string, object>();
+        //    int ii = 1;
+        //    if (parampx != null)
+        //        foreach (var item in parampx)
+        //        {
+        //            parameters.Add("p" + ii, item);
+        //            ii++;
+        //        }
+
+        //    this.sqlQuery = sqlQuery;
+        //    this.parameters = parameters;
+        //}
 
         /// <summary>
         /// Nombre de tentatives
@@ -64,6 +91,10 @@ namespace Nglib.DATA.CONNECTOR
 
 
 
+        public void Validate()
+        {
+            if (string.IsNullOrWhiteSpace(sqlQuery)) throw new Exception("sqlQuery is empty");
+        }
 
 
 

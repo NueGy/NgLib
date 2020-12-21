@@ -22,8 +22,8 @@ namespace Nglib.MANIPULATE.FORMAT
             string key = "azertyuiopqsdfghjklmwxcvbn";
             for (int i = 0; i < 1000; i++)
             {
-                string ert = Nglib.FORMAT.CryptHash.Encrypt(encr, key, true);
-                string ert2 = Nglib.FORMAT.CryptHash.Decrypt(ert, key, true);
+                string ert = Nglib.FORMAT.CryptHashTools.Encrypt(encr, key);
+                string ert2 = Nglib.FORMAT.CryptHashTools.Decrypt(ert, key);
                 //Console.WriteLine(string.Format("{0} --> {1}", ert,ert2));
             }
 
@@ -41,12 +41,12 @@ namespace Nglib.MANIPULATE.FORMAT
             string encr = "12kfkfkfkfk7778";
             encr = "fyki1565!";
 
-            string ert = Nglib.FORMAT.CryptHash.Encrypt(encr, "AEjfekNFk5rgk444jrk7oznnazeryunP", false);
-            string ert2 = Nglib.FORMAT.CryptHash.Decrypt(ert, "AEjfekNFk5rgk444jrk7oznnazeryunP", false);
+            string ert = Nglib.FORMAT.CryptHashTools.Encrypt(encr, "AEjfekNFk5rgk444jrk7oznnazeryunP");
+            string ert2 = Nglib.FORMAT.CryptHashTools.Decrypt(ert, "AEjfekNFk5rgk444jrk7oznnazeryunP");
             Assert.AreEqual(encr, ert2);
 
-            string erta = Nglib.FORMAT.CryptHash.Encrypt(encr, "AEjfekNFk5rgk444jrk7oznnazeryunP", true);
-            string erta2 = Nglib.FORMAT.CryptHash.Decrypt(ert, "AEjfekNFk5rgk444jrk7oznnazeryunP", true);
+            string erta = Nglib.FORMAT.CryptHashTools.Encrypt(encr, "AEjfekNFk5rgk444jrk7oznnazeryunP");
+            string erta2 = Nglib.FORMAT.CryptHashTools.Decrypt(ert, "AEjfekNFk5rgk444jrk7oznnazeryunP");
             Assert.AreEqual(erta, erta2);
 
 

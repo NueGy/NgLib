@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace Nglib.DATA.COLLECTIONS
 {
@@ -32,7 +33,7 @@ namespace Nglib.DATA.COLLECTIONS
         ////    if (dic.Comparer == StringComparison.OrdinalIgnoreCase || )
         ////        Dictionary retour = Dictionary()
         ////}
-
+     
 
         public static bool ContainsKey(this IDictionary<string,dynamic> dic, string keySearch, bool Insensitive)
         {
@@ -43,6 +44,10 @@ namespace Nglib.DATA.COLLECTIONS
         {
             return CollectionsTools.Contains(dic.Keys, keysSearch, Insensitive);
         }
+
+
+
+
 
 
 
@@ -97,19 +102,24 @@ namespace Nglib.DATA.COLLECTIONS
         }
 
 
+        public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue> dic, IDictionary<TKey, TValue> dicToAdd, bool AllowOverride = true)
+        {
+            dicToAdd.ForEach(x => { if (!dic.ContainsKey(x.Key)) dic.Add(x.Key, x.Value); else if (AllowOverride) dic[x.Key] = x.Value; });
+        }
 
 
 
         /// <summary>
-        /// Fusionner un dictionary
-        /// Adds new keys only
+        /// Permet d'ajouter ou remplacer une valeur
         /// </summary>
-        /// <param name="dic">origine</param>
-        /// <param name="dicToAdd">rangetomerge</param>
-        /// <param name="AllowOverride">remplace ou ignore les memes clef</param>
-        public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue> dic, IDictionary<TKey, TValue> dicToAdd, bool AllowOverride=true)
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dic"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void AddOrReplace<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue value)
         {
-            dicToAdd.ForEach(x => { if (!dic.ContainsKey(x.Key)) dic.Add(x.Key, x.Value); else if(AllowOverride) dic[x.Key] = x.Value; });
+            if (!dic.ContainsKey(key)) dic.Add(key, value); else dic[key] = value;
         }
 
         public static bool ContainsKeys<TKey, TValue>(this Dictionary<TKey, TValue> dic, IEnumerable<TKey> keys)
@@ -185,6 +195,30 @@ namespace Nglib.DATA.COLLECTIONS
             list.RemoveAt(0);
             list.Insert(count - 1, item);
         }
+
+
+
+        public static Dictionary<TKey,TValue> Clone<TKey,TValue>(this Dictionary<TKey, TValue> dic)
+        {
+            if (dic == null) return new Dictionary<TKey, TValue>();
+            return dic.ToDictionary(k => k.Key, v => v.Value); // clonner aussi les valeurs ...
+        }
+
+
+        public static string GetSafeString(this IDictionary<string, object> dic, string key)
+        {
+            object obj = GetSafeObject(dic, key);
+            if (obj == null || obj == DBNull.Value) return "";
+            return Convert.ToString(obj);
+        }
+        public static object GetSafeObject(this IDictionary<string, object> dic, string key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            var val = dic.FirstOrDefault(d=> key.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
+            //if (val.) return null;
+            return val.Value;
+        }
+
 
 
     }

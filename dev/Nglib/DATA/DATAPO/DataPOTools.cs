@@ -5,7 +5,7 @@
 // ----------------------------------------------------------------
 
 using Nglib.DATA.ACCESSORS;
-using Nglib.DATA.DATASET;
+using Nglib.DATA.COLLECTIONS;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -24,13 +24,61 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
+        /// Création d'un nouvel objet
+        /// </summary>
+        public static T Create<T>(System.Data.DataRow row) where T : Nglib.DATA.DATAPO.DataPO, new()
+        {
+            if (row == null) return null;
+            T retour = new T();
+            retour.SetRow(row);
+            return retour;
+        }
+        public static DataPO Create(System.Data.DataRow row) { return Create<DataPO>(row); }
+
+
+        /// <summary>
+        /// Création d'un nouvel objet (le premier de la table)
+        /// </summary>
+        public static T CreateFirst<T>(System.Data.DataTable table) where T : Nglib.DATA.DATAPO.DataPO, new()
+        {
+            if (table == null || table.Rows.Count < 1) return null;
+            return Create<T>(table.Rows[0]);
+        }
+        public static DataPO CreateFirst(System.Data.DataTable table) { return CreateFirst<DataPO>(table); }
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Présence de changements
+        /// </summary>
+        /// <returns></returns>
+        public static bool IsChanges(this DataPO item)
+        {
+            // On regarde si il y as eu un changement dans les flow
+            if (item.flows != null && item.flows.Count(f => f.IsChanges()) > 0) return true;
+
+            // on regarde si il y as eu un changement dans le datarow
+            if (item.localRow == null) return false;
+            else if (item.localRow.RowState.HasFlag(System.Data.DataRowState.Modified)) return true;
+            else if (item.localRow.RowState.HasFlag(System.Data.DataRowState.Detached)) return true; // on considere que les datarow Detached nécesite un Insert donc ils nécessiteront un traitement
+            else return false;
+        }
+
+        /// <summary>
         /// Obtientir les données du DataPO
         /// </summary>
         /// <returns></returns>
-        public static Dictionary<string, object> GetValues(this DataPO po, bool keys, bool Values)
+        public static Dictionary<string, object> GetValues(this DataPO po, bool returnKeys, bool returnValues)
         {
-            System.Data.DataRow row = po.GetRow();
-            return DataSetTools.GetValues(row, keys, Values);
+            System.Data.DataRow row = po.GetRow(returnValues);// Si les valeurs sont demandé on refresh les flow
+            if(returnKeys && !IsDefinedSchema(po)) DefineSchemaPO(po); // Si l'objet est pas définis il faut le daire
+            return DataSetTools.GetValues(row, returnKeys, returnValues);
         }
 
         /// <summary>
@@ -39,12 +87,21 @@ namespace Nglib.DATA.DATAPO
         /// <returns></returns>
         public static Dictionary<string, object> GetValues(this DataPO po, params string[] ColNames)
         {
-            System.Data.DataRow row = po.GetRow();
-
-
+            if (ColNames == null || ColNames.Length == 0) return new Dictionary<string, object>();
+            bool refreshflow = false;
+            if(po.flows!=null && po.flows.Count>0)
+                refreshflow = po.flows.Select(f => f.GetFieldName()).Where(fn => !string.IsNullOrWhiteSpace(fn)).Any(fn => ColNames.Any(eq => fn.Equals(eq, StringComparison.OrdinalIgnoreCase)));
+            
+            System.Data.DataRow row = po.GetRow(refreshflow);
             return DataSetTools.GetValues(row, ColNames);
         }
 
+        public static Dictionary<string, object> GetChangedValues(this DataPO po)
+        {
+            bool refreshflow = (po.flows != null && po.flows.Count(f => f.IsChanges()) > 0);
+            System.Data.DataRow row = po.GetRow(refreshflow);
+            return DataSetTools.GetChangedValues(row);
+        }
 
 
         /// <summary>
@@ -55,7 +112,7 @@ namespace Nglib.DATA.DATAPO
         {
             try
             {
-                if (po.localRow == null) po.InitalizeDataPO(); // si pas de datarow, on l'initialise (identique à GetRow())
+                if (po.localRow == null) po.DefineSchemaPO(); // si pas de datarow, on l'initialise (identique à GetRow())
                 foreach (var item in DicDataRow)
                     po.SetObject(item.Key, item.Value);
 
@@ -79,7 +136,7 @@ namespace Nglib.DATA.DATAPO
         public static Dictionary<string, object> GetDeclaredValues(this DataPO po)
         {
             Dictionary<string, object> dict = new Dictionary<string, object>();
-            foreach (PropertyInfo prp in CODE.REFLEXION.ReflexionTools.GetProperties(po.GetType()))
+            foreach (PropertyInfo prp in APP.CODE.PropertiesTools.GetProperties(po.GetType()))
             {
                 object value = prp.GetValue(po, new object[] { });
                 dict.Add(prp.Name, value);
@@ -101,39 +158,26 @@ namespace Nglib.DATA.DATAPO
         /// </summary>
         /// <param name="datas"></param>
         /// <returns></returns>
-        public static System.Data.DataTable CloneInNewDataTable(params DATAPO.DataPO[] datas)
+        public static System.Data.DataTable CloneDataTable(params DATAPO.DataPO[] datas)
         {
             
             try
             {
                 List<System.Data.DataTable> alltables = datas.Select(dt => dt.GetRow().Table).Distinct().ToList();
-                System.Data.DataTable tabinsert = DATA.DATASET.DataSetTools.DataTableMergeSchemas(alltables.ToArray());
-                DATA.DATASET.DataSetTools.DataTableRemoveConstraints(tabinsert);
+                System.Data.DataTable tabinsert = DataSetTools.DataTableMergeSchemas(alltables.ToArray());
+                DataSetTools.DataTableRemoveConstraints(tabinsert);
                 foreach (var itemdata in datas)
                 {
                     System.Data.DataRow newrow = tabinsert.NewRow();
-                    foreach (System.Data.DataColumn itemcol in tabinsert.Columns)
-                    {
-                        object obj = itemdata.GetObject(itemcol.ColumnName, DataAccessorOptionEnum.Safe);
-                        if (obj == null) newrow[itemcol] = DBNull.Value;
-                        else newrow[itemcol] = obj;
-                        
-                    }
+                    System.Data.DataRow oldrow = itemdata.GetRow(true);
+                    oldrow.CopyRow(newrow);
                     tabinsert.Rows.Add(newrow);
-
-
-                    //System.Data.DataRow srcrow = item.GetRow();
-                    //tabinsert.Merge(srcrow.Table, true, System.Data.MissingSchemaAction.Add); // on merge les deux structure de tables, car les po peuvent créer des colones séparément
-
-                    // la fonction merge, merge aussi les données, mais quand un datapo n'a pas été ajouté en base (datarow detached), il ne figure pas dans les datatable
-                    //tabinsert.Rows.Add(srcrow.ItemArray); // on Ajoute donc la nouvelle ligne
-
                 }
                 return tabinsert;
             }
             catch (Exception ex)
             {
-                throw new Exception("MergeInOneDataTable " + ex.Message);
+                throw new Exception("CloneDataTable " + ex.Message);
             }
         }
 
@@ -248,7 +292,12 @@ namespace Nglib.DATA.DATAPO
         }
 
 
-
+        public static IList<Tpo> LoadFromDataTable<Tpo>(System.Data.DataTable table) where Tpo : DataPO, new()
+        {
+            List<Tpo> retour = new List<Tpo>();
+            LoadFromDataTable<Tpo>(retour, table);
+            return retour;
+        }
 
 
 
@@ -263,13 +312,16 @@ namespace Nglib.DATA.DATAPO
         private static Dictionary<Type, System.Data.DataTable> TablePoSchemasCache = new Dictionary<Type, DataTable>();
 
 
+ 
+
+
         /// <summary>
         /// Permet de preparer l'objet (notament définir le datarow et son schema)
         /// C'est nécessaire pour les opérations SQL, ou l'instanciation vide d'un DATAPO
         /// </summary>
         /// <param name="po"></param>
         /// <returns></returns>
-        public static void InitalizeDataPO(this DataPO po, bool allowCache = true)
+        public static void DefineSchemaPO(this DataPO po, bool allowCache = true)
         {
             try
             {
@@ -309,7 +361,7 @@ namespace Nglib.DATA.DATAPO
         /// <param name="po"></param>
         /// <param name="table"></param>
         /// <param name="AllowKeepOriginalRow">Si il y as déja un datarow avec des données, on préserve les données dans la nouvelle Table</param>
-        public static void DefineSchemaPO(DataPO po, DataTable table, bool AllowKeepOriginalRow = true, bool CloneTable = true)
+        public static void DefineSchemaPO(DataPO po, DataTable tableSchema, bool AllowKeepOriginalRow = true, bool CloneNewTable = true)
         {
             try
             {
@@ -318,10 +370,15 @@ namespace Nglib.DATA.DATAPO
                     rowexisting = true; // il y as des données dans le datarow existant
 
                 if (rowexisting && AllowKeepOriginalRow) //Clone un nouveau datarow dans la nouvelle table avec des données d'origine
-                    po.localRow.Table.MergeAddSchema(table); // il suffit juste de vérifier que le shémas est bien identique
+                    po.localRow.Table.MergeAddSchema(tableSchema); // il suffit juste de vérifier que le shémas est bien identique
                 //po.localRow = DataSetTools.ReplaceRowInOtherTable(po.localRow, table); // premet de recopier les données orgininal dans la nouvelle table
                 else
-                    po.localRow = table.NewRow(); // init simple
+                {
+                    DataTable tabledata = CloneNewTable ? tableSchema.Clone() : tableSchema;
+                    // il faut clonner la table pour eviter les erreurs sur autoincrement, !!! voir si possible d'améliorer car multipli le temps de traitement x10
+                    po.localRow = tabledata.NewRow(); // init simple
+                }
+               
                 po._isDefined = true;
             }
             catch (Exception ex)
@@ -348,25 +405,25 @@ namespace Nglib.DATA.DATAPO
 
 
 
-        /// <summary>
-        /// permet de preparer un Objet pour sont update ou insert en base
-        /// </summary>
-        /// <param name="bubble"></param>
-        /// <param name="PrepareForInsert"></param>
-        public static void PrepareDataPOForDB(DATAPO.DataPO bubble, bool ForcePrepareFlow)
-        {
-            try
-            {
-                if (bubble == null) throw new Exception("DataPO null");
-                System.Data.DataRow rowb = bubble.GetRow(true); // la structure du datapo sera défini à ce moment si nécessaire
-                if (!bubble.IsDefinedSchema()) bubble.InitalizeDataPO(true);// initialisation
-                if (!bubble.IsDefinedSchema()) throw new Exception("DataPo not defined"); // on peus pas traiter un datapo sans structure, car on aura pas les primarykey pour le sql
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(string.Format("PrepareDataPOForDB {0}", ex.Message), ex);
-            }
-        }
+        ///// <summary>
+        ///// permet de preparer un Objet pour sont update ou insert en base
+        ///// </summary>
+        ///// <param name="bubble"></param>
+        ///// <param name="PrepareForInsert"></param>
+        //public static void PrepareDataPOForDB(DATAPO.DataPO bubble, bool ForcePrepareFlow)
+        //{
+        //    try
+        //    {
+        //        if (bubble == null) throw new Exception("DataPO null");
+        //        System.Data.DataRow rowb = bubble.GetRow(true); // la structure du datapo sera défini à ce moment si nécessaire
+        //        if (!bubble.IsDefinedSchema()) bubble.DefineSchemaPO(true);// initialisation
+        //        if (!bubble.IsDefinedSchema()) throw new Exception("DataPo not defined"); // on peus pas traiter un datapo sans structure, car on aura pas les primarykey pour le sql
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exception(string.Format("PrepareDataPOForDB {0}", ex.Message), ex);
+        //    }
+        //}
 
 
 
@@ -420,8 +477,15 @@ namespace Nglib.DATA.DATAPO
         public static System.Data.DataTable CreateSchemaOnPO(Type potype)
         {
             System.Data.DataTable tableStd = null;
-            if (tableStd == null) tableStd = CreateSchemaWithAttributes(potype);// sinon on tente de mettre l'objet en cache avec les attributs
-            //if (tableStd == null) tableStd = po.InitSchema(); // sinon on tente avec la prédéinition hérité 
+            if (tableStd == null) // La structure est defini dans une methode hérité.
+            {
+                // sinon on tente avec la prédéinition hérité, mais pour cela il faut instancier un objet (!!! gérer si constructeur non vide)
+                DataPO pofictif = APP.CODE.ReflectionTools.NewInstance(potype) as DataPO;
+                tableStd = pofictif.InitSchema(); 
+            }
+            // sinon on tente de voir si l'objet dispose d'attributs spécifiant sa structure
+            if (tableStd == null) 
+                tableStd = CreateSchemaWithAttributes(potype);
             return tableStd;
         }
 
@@ -443,9 +507,9 @@ namespace Nglib.DATA.DATAPO
             try
             {
 
-                System.Attribute tableAttribute = CODE.REFLEXION.AttributesTools.FindObjectAttribute(potype, DataAnnotationsFactory.TableAttributeType);
+                System.Attribute tableAttribute = APP.CODE.AttributesTools.FindObjectAttribute(potype, DataAnnotationsFactory.TableAttributeType);
                 if (tableAttribute == null) return null;
-                string tableName = CODE.REFLEXION.ReflexionTools.GetPropertyString(tableAttribute, "Name");
+                string tableName = APP.CODE.PropertiesTools.GetStringReflexion(tableAttribute, "Name");
 
                 List<System.Data.DataColumn> Cols = new List<System.Data.DataColumn>();
                 List<System.Data.DataColumn> ColKeys = new List<System.Data.DataColumn>();
@@ -454,7 +518,7 @@ namespace Nglib.DATA.DATAPO
 
                 // Parcours des propriétés (cols)
 
-                List<PropertyInfo> props = CODE.REFLEXION.ReflexionTools.GetProperties(potype);
+                List<PropertyInfo> props = APP.CODE.PropertiesTools.GetProperties(potype);
                 foreach (PropertyInfo prop in props)
                 {
                     System.Data.DataColumn col = null;
@@ -466,7 +530,7 @@ namespace Nglib.DATA.DATAPO
                         {
                             col = new DataColumn();
                             col.ColumnName = prop.Name.ToLower();
-                            if (prop.PropertyType == typeof(DATAPO.DataPOFlux)) // les flux seront consiédéré comme des string
+                            if (prop.PropertyType == typeof(Nglib.DATA.PARAMVALUES.ParamValuesPOFlux)) // les flux seront consiédéré comme des string
                                 col.DataType = typeof(string);
                             else col.DataType = prop.PropertyType;
                         }
@@ -480,7 +544,7 @@ namespace Nglib.DATA.DATAPO
                         {
                             col = new DataColumn();
                             col.ColumnName = prop.Name.ToLower();
-                            if (prop.PropertyType == typeof(DATAPO.DataPOFlux)) // les flux seront consiédéré comme des string
+                            if (prop.PropertyType == typeof(Nglib.DATA.PARAMVALUES.ParamValuesPOFlux)) // les flux seront consiédéré comme des string
                                 col.DataType = typeof(string);
                             else col.DataType = prop.PropertyType;
                         }

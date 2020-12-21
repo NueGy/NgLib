@@ -40,7 +40,7 @@ namespace Nglib.DATA.DATAPO
             // Insert
             DataPoSample dataPoSample = new DataPoSample();
             dataPoSample.Pseudo = "test";
-            dataPoSample.FluxXml.SetObject("/param/sut1", "valeur1", DATA.ACCESSORS.DataAccessorOptionEnum.CreateIfNotExist);
+            dataPoSample.FluxXml.SetObject("/param/sut1", "valeur1", DATA.ACCESSORS.DataAccessorOptionEnum.None);
             dataPoSample.FluxXml["/param/sut2"] = "valeur2";
             await dataPoSampleProvider.InsertPOAsync(dataPoSample);
             Assert.IsTrue(dataPoSample.TestId > 0);
@@ -74,21 +74,7 @@ namespace Nglib.DATA.DATAPO
         {
             var connector = Nglib.DATA.CONNECTOR.ConnectorTests.GetDefaultConenctor();
             DataPoSampleProvider dataPoSampleProvider = new DataPoSampleProvider(connector);
-            string maval = FORMAT.StringUtilities.GenerateGuid32();
-
-            DataPoSample dataPoSample = dataPoSampleProvider.GetFirstPO(6);
-            string fluxstr = DATAVALUES.DataValuesTools.ToFlux(dataPoSample.FluxXml);
-            Assert.IsTrue(!string.IsNullOrWhiteSpace(fluxstr) && fluxstr.Length > 6);
-            DATAVALUES.DataValues dvtemp = new DATAVALUES.DataValues();
-            DATAVALUES.DataValuesTools.FromFlux(dvtemp, fluxstr);
-            dvtemp.SetObject("maval", maval, DATA.ACCESSORS.DataAccessorOptionEnum.CreateIfNotExist);
-            fluxstr = DATAVALUES.DataValuesTools.ToFlux(dvtemp);
-            dataPoSample.FluxXml.Fusion(dvtemp, true);
-            fluxstr = DATAVALUES.DataValuesTools.ToFlux(dataPoSample.FluxXml);
-            await dataPoSampleProvider.SavePOAsync(dataPoSample);
-            string mavalafter = dataPoSample.FluxXml.GetString("maval");
-            Assert.AreEqual(maval, mavalafter);
-            Assert.AreEqual(maval, mavalafter);
+ 
 
         }
 
@@ -102,7 +88,7 @@ namespace Nglib.DATA.DATAPO
             // Insert
             DataPoSampleNK dataPoSample = new DataPoSampleNK();
             dataPoSample.Pseudo = "test";
-            dataPoSample.FluxXml.SetObject("/param/sut1", "valeur1", DATA.ACCESSORS.DataAccessorOptionEnum.CreateIfNotExist);
+            dataPoSample.FluxXml.SetObject("/param/sut1", "valeur1", DATA.ACCESSORS.DataAccessorOptionEnum.None);
             dataPoSample.FluxXml["/param/sut2"] = "valeur2";
             await dataPoSampleProvider.InsertPOAsync(dataPoSample);
 

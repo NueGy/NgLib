@@ -17,7 +17,18 @@ namespace Nglib.DATA.CONNECTOR
     public class SqlTools
     {
 
-        
+
+        /// <summary>
+        /// Savoir Si il s'agit d'une requette
+        /// </summary>
+        public static bool IsSQLQuery(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql)) return false;
+            if (sql.Trim().Contains(" ")) return true;
+            else return false;
+        }
+
+
 
         /// <summary>
         /// création de ('value1','value2','valueN')
@@ -97,9 +108,9 @@ namespace Nglib.DATA.CONNECTOR
             {
                 sqlwhere += virgule + useTable;
 
-                if (AppendDynamicWhere && itemkey.Contains("_wheremin")) sqlwhere += itemkey.Replace("_wheremin", "") + " >= @" + itemkey;
-                else if (AppendDynamicWhere && itemkey.Contains("_wheremax")) sqlwhere += itemkey.Replace("_wheremax", "") + " <= @" + itemkey;
-                else if (AppendDynamicWhere && itemkey.Contains("_wherein")) continue;
+                if (AppendDynamicWhere && itemkey.EndsWith("_wheremin")) sqlwhere += itemkey.Replace("_wheremin", "") + " >= @" + itemkey;
+                else if (AppendDynamicWhere && itemkey.EndsWith("_wheremax")) sqlwhere += itemkey.Replace("_wheremax", "") + " <= @" + itemkey;
+                else if (AppendDynamicWhere && itemkey.EndsWith("_wherein")) continue;
                 else sqlwhere += itemkey.ToLower() + "=@" + itemkey;
                 virgule = " AND ";
             }
@@ -117,9 +128,9 @@ namespace Nglib.DATA.CONNECTOR
             {
                 sqlwhere += virgule + useTable;
 
-                if (FieldDynamicWhere && itemkey.Contains("_wheremin")) sqlwhere += itemkey.Replace("_wheremin", "") + " >= @" + itemkey;
-                else if (FieldDynamicWhere && itemkey.Contains("_wheremax")) sqlwhere += itemkey.Replace("_wheremax", "") + " <= @" + itemkey;
-                else if (FieldDynamicWhere && itemkey.Contains("_wherein") && WhereObjects[itemkey] != null) sqlwhere += itemkey.Replace("_wherein", "") + " in " + ConvertToinsql(WhereObjects[itemkey].ToString());
+                if (FieldDynamicWhere && itemkey.EndsWith("_wheremin")) sqlwhere += itemkey.Replace("_wheremin", "") + " >= @" + itemkey;
+                else if (FieldDynamicWhere && itemkey.EndsWith("_wheremax")) sqlwhere += itemkey.Replace("_wheremax", "") + " <= @" + itemkey;
+                else if (FieldDynamicWhere && itemkey.EndsWith("_wherein") && WhereObjects[itemkey] != null) sqlwhere += itemkey.Replace("_wherein", "") + " in " + ConvertToinsql(WhereObjects[itemkey].ToString());
                 else sqlwhere += itemkey.ToLower() + "=@" + itemkey;
                 virgule = " AND ";
             }
@@ -155,7 +166,7 @@ namespace Nglib.DATA.CONNECTOR
         //    string sqlQuery = "";
         //    string sel = "*";
         //    string selgrp = "";
- 
+
 
         //    List<string> LSelectCols = null;
         //    if (FieldDynamicWhere) LSelectCols = DynamicWhereCleanupCols(SelectCols);
@@ -182,7 +193,7 @@ namespace Nglib.DATA.CONNECTOR
         //        List<string> aggregationColsclean = null;
         //        if (FieldDynamicWhere) aggregationColsclean = DynamicWhereCleanupCols(aggregationCols);
         //        else aggregationColsclean = aggregationCols;
-                 
+
 
         //        sel = "";
         //        string virgule = "";
@@ -254,42 +265,42 @@ namespace Nglib.DATA.CONNECTOR
 
 
 
+        /*
 
-
-        public static string GenerateInsertSQL(string tablebd, string[] keys)
+    public static string GenerateInsertSQL(string tablebd, string[] keys)
+    {
+        string retour = "INSERT INTO " + tablebd + " (";
+        string virgule = "";
+        foreach (string itemkey in keys)
         {
-            string retour = "INSERT INTO " + tablebd + " (";
-            string virgule = "";
-            foreach (string itemkey in keys)
-            {
-                retour += virgule + itemkey.ToLower();
-                virgule = ", ";
-            }
-            retour += ") VALUES (";
-            virgule = "";
-
-            foreach (string itemkey in keys)
-            {
-                retour += virgule + "@" + itemkey + "";
-                virgule = ", ";
-            }
-            retour += ")";
-            return retour;
+            retour += virgule + itemkey.ToLower();
+            virgule = ", ";
         }
+        retour += ") VALUES (";
+        virgule = "";
 
-
-        public static string GenerateDeleteSQL(string tablebd, string[] keys)
+        foreach (string itemkey in keys)
         {
-
-            string sql = "DELETE FROM " + tablebd + " ";
-            if (keys != null)
-            {
-                sql += " WHERE " + GenerateCreateWhereSQL(keys);
-            }
-            return sql;
-
+            retour += virgule + "@" + itemkey + "";
+            virgule = ", ";
         }
+        retour += ")";
+        return retour;
+    }
 
+
+    public static string GenerateDeleteSQL(string tablebd, string[] keys)
+    {
+
+        string sql = "DELETE FROM " + tablebd + " ";
+        if (keys != null)
+        {
+            sql += " WHERE " + GenerateCreateWhereSQL(keys);
+        }
+        return sql;
+
+    }
+    
 
         public static string GenerateUpdateSQL(string tablebd, string[] Values, string[] keysWhere)
         {
@@ -309,7 +320,7 @@ namespace Nglib.DATA.CONNECTOR
 
 
 
-
+*/
 
 
 
@@ -362,39 +373,7 @@ namespace Nglib.DATA.CONNECTOR
         //    SqlWhereDateIndexBetween(iDateMin, iDateMax, FieldNameDb, ref wheres, ref ins, NoTime);
         //}
 
-        public static void SqlWhereDateIndexBetween(DateTime? DateMin, DateTime? DateMax, string FieldNameDb,
-                                                    ref List<string> wheres, ref Dictionary<string, object> ins, bool NoTime = false)
-        {
-            if (!DateMin.HasValue && !DateMax.HasValue) return;
-            //if(DateMin.HasValue && DateMin.Value.Year<1900) 
 
-            if (DateMin.HasValue && !DateMax.HasValue)
-            {
-                wheres.Add(string.Format(" {0} >= @{0}Min ", FieldNameDb));
-                if (NoTime) ins.Add(FieldNameDb + "Min", DateMin.Value.Date);
-                else ins.Add(FieldNameDb + "Min", DateMin.Value);
-            }
-            else if (DateMax.HasValue && !DateMin.HasValue)
-            {
-                wheres.Add(string.Format(" {0} <= @{0}Max ", FieldNameDb));
-                if (NoTime) ins.Add(FieldNameDb + "Max", DateMax.Value.Date);
-                else ins.Add(FieldNameDb + "Max", DateMax.Value);
-            }
-            else if (DateMin.HasValue && DateMax.HasValue)
-            {
-                wheres.Add(string.Format(" {0} BETWEEN @{0}Min AND @{0}Max ", FieldNameDb));
-                if (NoTime)
-                {
-                    ins.Add(FieldNameDb + "Min", DateMin.Value.Date);
-                    ins.Add(FieldNameDb + "Max", DateMax.Value.Date);
-                }
-                else
-                {
-                    ins.Add(FieldNameDb + "Min", DateMin.Value);
-                    ins.Add(FieldNameDb + "Max", DateMax.Value);
-                }
-            }
-        }
 
 
         /// <summary>

@@ -20,10 +20,10 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_TableAttributeType == null) _TableAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.TableAttribute, System.ComponentModel.DataAnnotations");
-                if (_TableAttributeType == null) _TableAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.TableAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_TableAttributeType == null) _TableAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.TableAttribute, System.ComponentModel.DataAnnotations");
+                if (_TableAttributeType == null) _TableAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.TableAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 
-
+              
                 return _TableAttributeType;
             }
         }
@@ -38,8 +38,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_RequiredAttributeType == null) _RequiredAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.RequiredAttribute, System.ComponentModel.DataAnnotations");
-                if (_RequiredAttributeType == null) _RequiredAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.RequiredAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_RequiredAttributeType == null) _RequiredAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.RequiredAttribute, System.ComponentModel.DataAnnotations");
+                if (_RequiredAttributeType == null) _RequiredAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.RequiredAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _RequiredAttributeType;
             }
         }
@@ -54,8 +54,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_KeyAttributeType == null) _KeyAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.KeyAttribute, System.ComponentModel.DataAnnotations");
-                if (_KeyAttributeType == null) _KeyAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.KeyAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_KeyAttributeType == null) _KeyAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.KeyAttribute, System.ComponentModel.DataAnnotations");
+                if (_KeyAttributeType == null) _KeyAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.KeyAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _KeyAttributeType;
             }
         }
@@ -70,8 +70,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_ColumnAttributeType == null) _ColumnAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ColumnAttribute, System.ComponentModel.DataAnnotations");
-                if (_ColumnAttributeType == null) _ColumnAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ColumnAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_ColumnAttributeType == null) _ColumnAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ColumnAttribute, System.ComponentModel.DataAnnotations");
+                if (_ColumnAttributeType == null) _ColumnAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ColumnAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _ColumnAttributeType;
             }
         }
@@ -86,8 +86,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_DatabaseGeneratedAttributeType == null) _DatabaseGeneratedAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute, System.ComponentModel.DataAnnotations");
-                if (_DatabaseGeneratedAttributeType == null) _DatabaseGeneratedAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_DatabaseGeneratedAttributeType == null) _DatabaseGeneratedAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute, System.ComponentModel.DataAnnotations");
+                if (_DatabaseGeneratedAttributeType == null) _DatabaseGeneratedAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _DatabaseGeneratedAttributeType;
             }
         }
@@ -102,8 +102,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_ForeignKeyAttributeType == null) _ForeignKeyAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ForeignKeyAttribute, System.ComponentModel.DataAnnotations");
-                if (_ForeignKeyAttributeType == null) _ForeignKeyAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ForeignKeyAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_ForeignKeyAttributeType == null) _ForeignKeyAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ForeignKeyAttribute, System.ComponentModel.DataAnnotations");
+                if (_ForeignKeyAttributeType == null) _ForeignKeyAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.Schema.ForeignKeyAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _ForeignKeyAttributeType;
             }
         }
@@ -118,8 +118,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_DisplayColumnAttributeType == null) _DisplayColumnAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.DisplayColumnAttribute, System.ComponentModel.DataAnnotations");
-                if (_DisplayColumnAttributeType == null) _DisplayColumnAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.DisplayColumnAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_DisplayColumnAttributeType == null) _DisplayColumnAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.DisplayColumnAttribute, System.ComponentModel.DataAnnotations");
+                if (_DisplayColumnAttributeType == null) _DisplayColumnAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.DisplayColumnAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _DisplayColumnAttributeType;
             }
         }
@@ -134,8 +134,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_EditableAttributeType == null) _EditableAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.EditableAttribute, System.ComponentModel.DataAnnotations");
-                if (_EditableAttributeType == null) _EditableAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.EditableAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_EditableAttributeType == null) _EditableAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.EditableAttribute, System.ComponentModel.DataAnnotations");
+                if (_EditableAttributeType == null) _EditableAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.EditableAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _EditableAttributeType;
             }
         }
@@ -151,8 +151,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             get
             {
-                if (_AssociationAttributeType == null) _AssociationAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.AssociationAttribute, System.ComponentModel.DataAnnotations");
-                if (_AssociationAttributeType == null) _AssociationAttributeType = CODE.REFLEXION.ReflexionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.AssociationAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
+                if (_AssociationAttributeType == null) _AssociationAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.AssociationAttribute, System.ComponentModel.DataAnnotations");
+                if (_AssociationAttributeType == null) _AssociationAttributeType = APP.CODE.ReflectionTools.GetTypeByReflexion("System.ComponentModel.DataAnnotations.AssociationAttribute, System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");
                 return _AssociationAttributeType;
             }
         }
@@ -165,18 +165,18 @@ namespace Nglib.DATA.ACCESSORS
 
         public static bool AnnotationClassExist(object objClass, Type type)
         {
-            if (CODE.REFLEXION.AttributesTools.FindObjectAttribute(objClass, type) != null) return true;
+            if (APP.CODE.AttributesTools.FindObjectAttribute(objClass, type) != null) return true;
             return false;
         }
 
         public static bool AnnotationExist(PropertyInfo property, Type type)
         {
-            if (CODE.REFLEXION.AttributesTools.FindAttribute(property, type) != null) return true;
+            if (property.GetCustomAttribute(type) != null) return true;
             return false;
         }
         public static string AnnotationGetString(PropertyInfo property, Type type, string valuename)
         {
-            return CODE.REFLEXION.AttributesTools.FindAttributeGetString(property, type, valuename);
+            return APP.CODE.AttributesTools.GetStringFromAttribute(property, type, valuename);
         }
 
 

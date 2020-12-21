@@ -10,7 +10,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Nglib.DATA.ACCESSORS;
-using Nglib.DATA.DATASET;
+using Nglib.DATA.COLLECTIONS;
+using Nglib.SECURITY.CRYPTO;
 
 
 // Amélioreration avec http://tlevesque.developpez.com/tutoriels/dotnet/acces-aux-donnees-avec-dapper/
@@ -21,7 +22,7 @@ namespace Nglib.DATA.DATAPO
     /// <summary>
     /// Objet de base utilisant le datarow (ADO.NET)
     /// </summary>
-    public class DataPO : IDataPO,IDataAccessor
+    public class DataPO : IDataPO, IDataAccessor
     {
         /// <summary>
         /// Ce sont les donnees de base du datapo !
@@ -43,13 +44,17 @@ namespace Nglib.DATA.DATAPO
         /// </summary>
         protected internal bool _isLoaded = false;
 
+        /// <summary>
+        /// Parametre pour encrypter les données
+        /// </summary>
+        protected internal DATA.ACCESSORS.IDataAccessorCryptoContext CryptoContext { get; set; }
+
 
 
 
         /// <summary>
         /// constructeur vide
         /// </summary>
-       
         public DataPO() 
         {
            
@@ -65,7 +70,7 @@ namespace Nglib.DATA.DATAPO
         public object this[string nameValue, bool isLegalCreateColIfNotExist = true]
         {
             get { return this.GetObject(nameValue, DataAccessorOptionEnum.Safe); }
-            set { this.SetObject(nameValue, value, isLegalCreateColIfNotExist ? DataAccessorOptionEnum.CreateIfNotExist: DataAccessorOptionEnum.None); }
+            set { this.SetObject(nameValue, value, isLegalCreateColIfNotExist ? DataAccessorOptionEnum.None: DataAccessorOptionEnum.NotCreateColumn); }
         }
 
 
@@ -76,24 +81,19 @@ namespace Nglib.DATA.DATAPO
         /// </summary>
         /// <param name="RefreshFlow">Refrachit les champs qui contienne les flux nosql</param>
         /// <returns></returns>
-        public System.Data.DataRow GetRow(bool RefreshFlow=true)
+        public System.Data.DataRow GetRow(bool RefreshFlow = true)
         {
-            if(this.localRow==null)
-                this.InitalizeDataPO();
+            if (this.localRow == null)
+                this.DefineSchemaPO();
 
-
-            if(RefreshFlow)
-            {
-                if (this.flows != null) // il faut sérialiser les données des collections Nosql dans le datarow
-                    foreach (var item in this.flows)
-                    {
-                        if (!item.IsChanges()) continue; // aucun changement donc aucune modifications nécessaire (sauf pour l'insert)
-                        if (item.ToDictionaryValues().Count() == 0) continue; // inutile de stocker un champs vide
-                        string serialfield = item.SerializeField();
-                        string fieldname = item.GetFieldName();
-                        this.SetObject(fieldname, serialfield, DataAccessorOptionEnum.CreateIfNotExist);
-                    }
-            }
+            if (RefreshFlow && this.flows != null) // il faut sérialiser les données des collections Nosql dans le datarow
+                foreach (var flow in this.flows)
+                {
+                    if (!flow.IsChanges()) continue; // aucun changement donc aucune modifications nécessaire (sauf pour l'insert)
+                    string serialfield = flow.SerializeField();
+                    string fieldname = flow.GetFieldName();
+                    this.SetObject(fieldname, serialfield, flow.IsFieldEncrypted() ? DataAccessorOptionEnum.Encrypted : DataAccessorOptionEnum.None);
+                }
             return this.localRow;
         }
 
@@ -118,7 +118,6 @@ namespace Nglib.DATA.DATAPO
 
 
 
-
         
 
 
@@ -138,7 +137,7 @@ namespace Nglib.DATA.DATAPO
         /// <typeparam name="Tflow"></typeparam>
         /// <param name="fieldName"></param>
         /// <returns></returns>
-        protected IDataPOFlow GetFlow(string fieldName)
+        private IDataPOFlow GetFlow(string fieldName)
         {
             if (this.flows == null || string.IsNullOrWhiteSpace(fieldName)) return null;
             return this.flows.FirstOrDefault(f => f.GetFieldName().Equals(fieldName));
@@ -150,9 +149,9 @@ namespace Nglib.DATA.DATAPO
         /// <typeparam name="Tflow"></typeparam>
         /// <param name="fieldName"></param>
         /// <param name="fieldType"></param>
-        /// <param name="encryptedKey"></param>
+        /// <param name="FullEncrypted">Le champs xml/json est totalement crypté en text en base</param>
         /// <returns></returns>
-        protected Tflow GetOrDefineFlow<Tflow>(string fieldName, DATA.ACCESSORS.FlowTypeEnum fieldType, string encryptedKey=null) where Tflow : class,IDataPOFlow,new()
+        protected Tflow GetOrDefineFlow<Tflow>(string fieldName, DATA.ACCESSORS.FlowTypeEnum fieldType, bool FullEncrypted=false) where Tflow : class,IDataPOFlow,new()
         {
             if (string.IsNullOrWhiteSpace(fieldName)) return null;
             if (this.flows == null) this.flows = new List<IDataPOFlow>();
@@ -160,13 +159,15 @@ namespace Nglib.DATA.DATAPO
             if (flow == null)
             {
                 flow = new Tflow();
-                flow.DefineField(fieldName, fieldType, encryptedKey);
+                flow.DefineField(fieldName, fieldType, FullEncrypted);
+                string flowContent = this.GetString(fieldName, flow.IsFieldEncrypted() ? DataAccessorOptionEnum.Encrypted: DataAccessorOptionEnum.None);   // Chargement des données dans le flux
+                flow.DeSerializeField(flowContent);
                 this.flows.Add(flow);
+
+
             }
 
-            // Chargement des données dans le flux
-            string flowContent = this.GetString(fieldName);
-            flow.UnSerializeField(flowContent);
+
             return flow;
         }
 
@@ -179,7 +180,7 @@ namespace Nglib.DATA.DATAPO
         /// méthode principale
         /// </summary>
         /// <returns></returns>
-        public object GetObject(string nameValue, DataAccessorOptionEnum AccesOptions)
+        public object GetData(string nameValue, DataAccessorOptionEnum AccesOptions)
         {
             if (this.localRow == null) return null; // vraiement innutile, y'a aucune données
             try
@@ -211,15 +212,17 @@ namespace Nglib.DATA.DATAPO
                 // -----------------------------
                 else if (nameValue.StartsWith("/")) // Il s'agit du flux de données nosql
                 {
-                    string fieldName = nameValue.Split('/')[1]; // le nom du champ est équivalent au nom du root
-                    IDataPOFlow flow = this.GetFlow(fieldName);
-                    if (flow == null) return null;
-                    return flow.GetObject(nameValue, AccesOptions);
+                    //string fieldName = nameValue.Split('/')[1]; // le nom du champ est équivalent au nom du root
+                    //IDataPOFlow flow = this.GetFlow(fieldName);
+                    //// IDataAccessor flowdata = this.GetFlow(fieldName) as IDataAccessor; // On converti le 
+                    //if (flow == null ||) return null;
+                    //return flow.GetObject(nameValue, AccesOptions);
+                    //!!!!!!!!!
                 }
                 // -----------------------------
                 else // sinon c'est un champdu datarow
                 {
-                    System.Data.DataColumn realColumn = DATA.DATASET.DataSetTools.GetRealColumn(this.localRow.Table, nameValue);
+                    System.Data.DataColumn realColumn = DataSetTools.GetColumn(this.localRow.Table, nameValue);
                     if (realColumn != null) return this.localRow[realColumn];
                 }
                 return null;
@@ -238,7 +241,7 @@ namespace Nglib.DATA.DATAPO
         /// Défini un objet
         /// </summary>
         /// <returns></returns>
-        public bool SetObject(string nameValue, object obj, DataAccessorOptionEnum AccesOptions)
+        public bool SetData(string nameValue, object obj, DataAccessorOptionEnum AccesOptions)
         {
             try
             {
@@ -255,20 +258,22 @@ namespace Nglib.DATA.DATAPO
                     string fieldName = nameValue.Split('/')[1]; // le nom du champ est équivalent au nom du root
                     IDataPOFlow flow = this.GetFlow(fieldName);
                     if (flow == null) return false;
-                    bool iset = flow.SetObject(nameValue, obj, AccesOptions);
-                    if (iset) this.localRow.SetModified();
-                    return iset;
+                    //bool iset = flow.SetObject(nameValue, obj, AccesOptions);
+                    //if (iset) this.localRow.SetModified();
+                    //return iset;
+                    //!!!!!!!!!!!!
+                    return false;
                 }
                 else
                 { // Obtien la valeur normalement dans le datarow local
-                    if (this.localRow == null) this.InitalizeDataPO(); // si pas de datarow, on l'initialiser (identique à GetRow())
+                    if (this.localRow == null) this.DefineSchemaPO(); // si pas de datarow, on l'initialiser (identique à GetRow())
                     System.Data.DataColumn realColumn = this.localRow.Table.Columns[nameValue];
                     if (realColumn == null)
                     {
-                        if (!AccesOptions.HasFlag(DataAccessorOptionEnum.CreateIfNotExist))
+                        if (AccesOptions.HasFlag(DataAccessorOptionEnum.NotCreateColumn)) // création de la colonne interdite
                         {
                             if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe)) return false;
-                            else throw new Exception("Colonne Introuvable dans le DataRow (CreateIfNotExist = false)");
+                            else throw new Exception("Colonne Introuvable dans le DataRow (NotCreateColumn = true)");
                         }
                         else if (obj == null || obj == DBNull.Value) // si la valeur est null et que la valeur existe pas c'est pas la peine de créer une colone
                         {
@@ -330,21 +335,7 @@ namespace Nglib.DATA.DATAPO
 
 
 
-        /// <summary>
-        /// Présence de changements
-        /// </summary>
-        /// <returns></returns>
-        public bool IsChanges()
-        {
-            // On regarde si il y as eu un changement dans les flow
-            if (this.flows != null && this.flows.Count(f => f.IsChanges()) > 0) return true;
 
-            // on regarde si il y as eu un changement dans le datarow
-            if (this.localRow == null) return false;
-            else if (this.localRow.RowState.HasFlag(System.Data.DataRowState.Modified)) return true;
-            else if(this.localRow.RowState.HasFlag(System.Data.DataRowState.Detached)) return true; // on considere que les datarow Detached nécesite un Insert donc ils nécessiteront un traitement
-            else return false;
-        }
 
 
 
@@ -366,7 +357,8 @@ namespace Nglib.DATA.DATAPO
 
 
                     // Mise à jours des flow
-                    this.flows.ForEach(f => f.AcceptChanges());
+                    if (this.flows!=null)
+                        this.flows.ForEach(f => f.AcceptChanges());
    
                     return true;
                 }
@@ -388,8 +380,35 @@ namespace Nglib.DATA.DATAPO
         }
 
 
+        /// <summary>
+        /// obtenir le context de cryptage de l'objet
+        /// </summary>
+        public virtual IDataAccessorCryptoContext GetCryptoContext()
+        {
+            return this.CryptoContext;
+        }
 
-       
+
+
+        /// <summary>
+        /// définir le context de cryptage de l'objet
+        /// </summary>
+        public void SetCryptoOptions(IDataAccessorCryptoContext dataPOCryptoContext)
+        {
+            this.CryptoContext = dataPOCryptoContext;
+        }
+
+
+        /// <summary>
+        /// obtient un vecteur d'initialisation unique pour l'objet
+        /// </summary>
+        /// <returns></returns>
+        protected virtual string GetCryptoIV()
+        {
+            //string md5 = FORMAT.CryptHash.Hash(compose.ToString(), HashModeEnum.MD5);
+            return "";
+        }
+
 
 
 

@@ -11,8 +11,8 @@ namespace Nglib.SECURITY
         {
 
             string orgn = "mavaleur1238";
-            var encstr = Nglib.FORMAT.CryptHash.Encrypt(orgn, "monpass", false);
-            string dest = Nglib.FORMAT.CryptHash.Decrypt(encstr, "monpass", false);
+            var encstr = Nglib.FORMAT.CryptHashTools.Encrypt(orgn, "monpass");
+            string dest = Nglib.FORMAT.CryptHashTools.Decrypt(encstr, "monpass");
             Assert.AreEqual(orgn, dest);
 
         }

@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nglib.Tests", "Nglib.Tests\Nglib.Tests.csproj", "{98D938E7-A016-4F89-8838-2C3AC4223CCC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nglib", "Nglib\Nglib.csproj", "{D37301D5-7DC9-407F-A56D-5CB70C031D38}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{98D938E7-A016-4F89-8838-2C3AC4223CCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98D938E7-A016-4F89-8838-2C3AC4223CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98D938E7-A016-4F89-8838-2C3AC4223CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98D938E7-A016-4F89-8838-2C3AC4223CCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D37301D5-7DC9-407F-A56D-5CB70C031D38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D37301D5-7DC9-407F-A56D-5CB70C031D38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D37301D5-7DC9-407F-A56D-5CB70C031D38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D37301D5-7DC9-407F-A56D-5CB70C031D38}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F2D356C9-10B6-408C-8366-DAC2C3CEF4FB}
+	EndGlobalSection
+EndGlobal

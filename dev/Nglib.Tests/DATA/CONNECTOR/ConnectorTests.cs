@@ -40,7 +40,7 @@ namespace Nglib.DATA.CONNECTOR
             {
                 System.Data.DataRow row = table.NewRow();
                 //(websitename,domainname,ixdomain,ixdomain1,scanneed,ipcountrycode,urlmaster)
-                string aleweb = Nglib.FORMAT.StringUtilities.GenerateString(7, "azertyuiopqsdfghjklmwxcvbn");
+                string aleweb = Nglib.FORMAT.StringTools.GenerateString(7, "azertyuiopqsdfghjklmwxcvbn");
                 row["websitename"]= string.Format("http://{0}{1}.{2}.com", f, i.ToString(), aleweb);
                 row["domainname"] = string.Format("{0}.com", aleweb);
                 row["ixdomain"] = aleweb.Substring(0, 3).ToUpper();
@@ -73,7 +73,7 @@ namespace Nglib.DATA.CONNECTOR
             {
                 Dictionary<string, object> ins = new Dictionary<string, object>();
                 //(websitename,domainname,ixdomain,ixdomain1,scanneed,ipcountrycode,urlmaster)
-                string aleweb = Nglib.FORMAT.StringUtilities.GenerateString(7, "azertyuiopqsdfghjklmwxcvbn");
+                string aleweb = Nglib.FORMAT.StringTools.GenerateString(7, "azertyuiopqsdfghjklmwxcvbn");
                 ins.Add("websitename", string.Format("http://{0}.com", aleweb));
                 ins.Add("domainname", string.Format("{0}.com", aleweb));
                 ins.Add("ixdomain", aleweb.Substring(0, 3).ToUpper());

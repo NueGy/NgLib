@@ -4,6 +4,7 @@
 // https://github.com/NueGy/NgLib
 // ----------------------------------------------------------------
 
+using Nglib.DATA.COLLECTIONS;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -22,6 +23,7 @@ namespace Nglib.DATA.CONNECTOR
     {
         private long _CountRequests = 0;
         protected System.Threading.Mutex OpenedMutex = new System.Threading.Mutex(); // permet que le connecteur soit utilisé par plusieurs threads
+        protected int _OpenedMutexCount = 0;
         protected System.Threading.Mutex QueryMutex = new System.Threading.Mutex(); // permet que le connecteur soit utilisé par plusieurs threads meme si MultiThreadingSafe=false
         protected string ConnectionString = null;
         protected System.Data.IDbConnection connection = null;
@@ -91,6 +93,10 @@ namespace Nglib.DATA.CONNECTOR
         #region transaction et ouverture
 
 
+
+
+
+
         /// <summary>
         /// Définir la chaine de connexion
         /// instanciation du  IDbConnection
@@ -112,7 +118,7 @@ namespace Nglib.DATA.CONNECTOR
             System.Data.Common.DbConnectionStringBuilder dbConnectionStringBuilder = null;
             // Factorisation du connecteur SGBD
 
-            this.connection = ConnectorGenericFactory.ConnectionFactory(this.EngineName);
+            this.connection = this.ConnectionFactory();
             this.connection.ConnectionString = this.ConnectionString;
             //if (connection == null) throw new Exception();
 
@@ -129,14 +135,18 @@ namespace Nglib.DATA.CONNECTOR
         /// </summary>
         /// <param name="keepOpen">Garder la connexion ouverte après la première requette et après les commit/rollback transaction (penser à la fermer)</param>
         /// <returns></returns>
-        public bool Open(bool keepOpen = true)
+        public bool Open(bool keepOpen = false)
         {
             try
             {
                 if (connection == null) throw new Exception("IDbConnection not init (please use SetConnectionString(string,string))");
 
-                if (MultiThreadingSafe) // Il ne peus y avoir qu'un seul thread sur une connection, sera fermer lors du close
+                if (MultiThreadingSafe)
+                {
+                    // Il ne peus y avoir qu'un seul thread sur une connection, sera fermer lors du close
                     this.OpenedMutex.WaitOne(); //  (normalement quand le meme thread qui la ouvert repassera dessu, il n'aura pas besoin d'attendre)
+                    _OpenedMutexCount++; // Il faut compter le nombre de fois ou le thread passe dessu pour faire autant de release
+                }
 
                 // ouverture de la connection nécessare
                 if (this.connection.State==ConnectionState.Closed || this.connection.State==ConnectionState.Broken)
@@ -167,7 +177,10 @@ namespace Nglib.DATA.CONNECTOR
                 if (this.transaction != null) this.RollBackTransaction(true);
                 this.keepOpenMode = false; // on annule ce paramètre, le choix reviendra à la prochaine ouverture open(true)
                 this.connection.Close();
-                if (this.MultiThreadingSafe) this.OpenedMutex.ReleaseMutex(); // A ete ouverte lors du Open()
+
+
+                if (this.MultiThreadingSafe) { for (int i = 0; i < _OpenedMutexCount; i++) this.OpenedMutex.ReleaseMutex(); _OpenedMutexCount = 0; }   // A ete ouverte lors du Open()  this.OpenedMutex.ReleaseMutex(); 
+
                 return true;
             }
             catch (Exception ex)
@@ -260,7 +273,7 @@ namespace Nglib.DATA.CONNECTOR
         /// </summary>
         /// <param name="query"></param>
         /// <returns></returns>
-        protected System.Data.IDbCommand InitCommand(QueryContext query)
+        protected virtual System.Data.IDbCommand InitCommand(QueryContext query)
         {
             
             System.Data.IDbCommand cmd = null;
@@ -271,38 +284,28 @@ namespace Nglib.DATA.CONNECTOR
                 cmd.CommandTimeout = this.DefaultTimeOut; // ajoute un timeout, mais ne fonctionne pas toujours !!!
 
                 // Ajoute la commande SQL
-                if (CONNECTOR.ConnectorTools.IsSQLQuery(query.sqlQuery)) cmd.CommandType = System.Data.CommandType.Text;
+                if (CONNECTOR.SqlTools.IsSQLQuery(query.sqlQuery)) cmd.CommandType = System.Data.CommandType.Text;
                 else cmd.CommandType = System.Data.CommandType.StoredProcedure;
                 cmd.CommandText = query.sqlQuery;
 
 
-                // identifie les param nécessaires dans la requettes (pour ne pas envoyer sur le réseaux des parametres innutiles)
-                List<string> paramneed = new List<string>();
-                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(query.sqlQuery.ToLower() + " ", "(\\@\\w+)"))
-                    paramneed.Add(match.Groups[1].Value);
-
-                // Ajoute les paramètres
                 if (query.parameters != null)
-                    foreach (string fieldKey in query.parameters.Keys)
-                    {
-                        if (cmd.CommandType == CommandType.Text) // ne concerne pas les procstock
-                            if (!paramneed.Contains("@" + fieldKey.ToLower())) continue; // nvoyer que les params demandés, ignore ceux qui sont pas dans la requette
-
-                        object obj = query.parameters[fieldKey];
-
-                        IDataParameter sqlparam = null;
-                        //sqlparam = ConnectorTools.AddDataParameterWithValue(cmd, "@" + fieldKey, obj); //NpgsqlCommand cmd = conn.CreateCommand();
-                        sqlparam = cmd.CreateParameter();
-                        sqlparam.ParameterName = "@" + fieldKey;
-                        sqlparam.Value = obj;
-
-                        // Détection du type
-                        //https://github.com/npgsql/Npgsql/issues/177
-                        if(obj!=null && obj!= DBNull.Value && obj is string && ((string)obj).StartsWith("<?xml", StringComparison.OrdinalIgnoreCase)) sqlparam.DbType = DbType.Xml;
+                {
+                    // identifie les param nécessaires dans la requettes (pour ne pas envoyer sur le réseaux des parametres innutiles)
+                    List<string> keyFilterIsNecessary = new List<string>();
+                    if (cmd.CommandType == CommandType.StoredProcedure || cmd.CommandType == CommandType.TableDirect)  // Si procstock on prend tous les arguments
+                        keyFilterIsNecessary = query.parameters.Keys.ToList();
+                    else if (cmd.CommandType == CommandType.Text) // sinon on prend que les clef utiles
+                        foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(query.sqlQuery.ToLower() + " ", "(\\@\\w+)"))
+                            keyFilterIsNecessary.Add(match.Groups[1].Value.Replace("@",""));
 
 
-                        cmd.Parameters.Add(sqlparam);
-                    }
+                    // Ajoute les paramètres
+                    foreach (string fieldKey in query.parameters.Keys.Where(k => keyFilterIsNecessary.Contains(k, true)))
+                        this.InitCommandSetParameter(query, cmd, fieldKey, query.parameters[fieldKey]);
+                }
+                 
+                    
                 //this.connection.Prepare(); //https://www.npgsql.org/doc/prepare.html
                 return cmd;
             }
@@ -311,6 +314,31 @@ namespace Nglib.DATA.CONNECTOR
                 throw new Exception("Initialisation SQL", ex);
             }
         }
+
+
+        protected virtual void InitCommandSetParameter(QueryContext query, System.Data.IDbCommand cmd, string parametername, object parameterValue)
+        {
+            IDataParameter sqlparam = null;
+            //sqlparam = ConnectorTools.AddDataParameterWithValue(cmd, "@" + fieldKey, obj); //NpgsqlCommand cmd = conn.CreateCommand();
+            sqlparam = cmd.CreateParameter();
+            sqlparam.ParameterName = "@" + parametername;
+            sqlparam.Value = parameterValue;
+
+            // Détection du type
+            if (ConnectorTools.FindEngine(this.EngineName) == ConnectorConstants.ConnectorEngineEnum.POSTGRESQL)
+            {
+                // !!! A revoir
+                //https://github.com/npgsql/Npgsql/issues/177
+                if (parameterValue != null && parameterValue != DBNull.Value && parameterValue is string && ((string)parameterValue).StartsWith("<?xml", StringComparison.OrdinalIgnoreCase)) sqlparam.DbType = DbType.Xml;
+            }
+
+
+            cmd.Parameters.Add(sqlparam);
+        }
+
+
+
+
 
         /// <summary>
         /// Clonner
@@ -372,6 +400,7 @@ namespace Nglib.DATA.CONNECTOR
         {
             try
             {
+                queryContext.Validate();
                 queryContext.watchAll.Start();
                 if (QueryBegin != null) this.QueryBegin(queryContext);
                 this.Open(false); // ouvre la connection si nécessaire (sera refermé juste après)
@@ -431,6 +460,7 @@ namespace Nglib.DATA.CONNECTOR
         {
             try
             {
+                queryContext.Validate();
                 queryContext.watchAll.Start();
                 if(QueryBegin!=null) this.QueryBegin(queryContext);
                 this.Open(false); // ouvre la connection si nécessaire (sera refermé juste après)
@@ -481,7 +511,7 @@ namespace Nglib.DATA.CONNECTOR
             System.Data.DataSet ret = new DataSet();
             using (System.Data.IDbCommand cmd = this.InitCommand(query))
             {
-                System.Data.IDataAdapter reader = ConnectorGenericFactory.DataAdapterFactory(this.EngineName, cmd);
+                System.Data.IDataAdapter reader = DataAdapterFactory(cmd);
                 reader.Fill(ret);
                 // !!! tester performance entre un dataadaptater et un simple datareader
             }
@@ -489,8 +519,15 @@ namespace Nglib.DATA.CONNECTOR
         }
 
 
+        protected virtual System.Data.IDataAdapter DataAdapterFactory(IDbCommand cmd)
+        {
+            return ConnectorTools.DataAdapterFactory(this.EngineName, cmd);
+        }
 
-
+        protected virtual System.Data.IDbConnection ConnectionFactory()
+        {
+            return ConnectorTools.ConnectionFactory(this.EngineName);
+        }
 
 
         /// <summary>
@@ -503,7 +540,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         public async Task<List<long>> InsertTableAsync( System.Data.DataTable dataTable, int SpecialTimeOut = 600, string AutoIncrementColumn = null)
         {
-            List<System.Data.DataTable> tablesSpliteds = DATA.DATASET.DataSetTools.DataTableSplit(dataTable, 50); // Découpe 50 lignes par 50 lignes
+            List<System.Data.DataTable> tablesSpliteds = DataSetTools.DataTableSplit(dataTable, 50); // Découpe 50 lignes par 50 lignes
             bool UseTransaction = true;
             List<long> retourIncremented = new List<long>();
             try
@@ -548,7 +585,7 @@ namespace Nglib.DATA.CONNECTOR
             //Obtien le SQL
             var sqlAndDatas = SqlTools.GenerateSqlMultiInsert(subtabl);
             string sql = sqlAndDatas.Item1;
-            ConnectorConstants.ConnectorEngineEnum connectorEngine = ConnectorGenericFactory.FindEngine(this.EngineName);
+            ConnectorConstants.ConnectorEngineEnum connectorEngine = ConnectorTools.FindEngine(this.EngineName);
 
             // Complete la requette pour obtenir les id du champs auto incrémenté (en un seul appel SQL)
             if (!string.IsNullOrWhiteSpace(AutoIncrementColumn))
@@ -584,11 +621,16 @@ namespace Nglib.DATA.CONNECTOR
                     foreach (System.Data.DataRow row in ret.Rows)
                         retourIncremented.Add(Convert.ToInt64(row[0]));
                 }
-                else if (connectorEngine == ConnectorConstants.ConnectorEngineEnum.SQLITE)
+                else if(ret.Rows.Count==1)
                 {
                     // on obtient le dernier ID et on décompte les autres
+                    long lastid = Convert.ToInt64(ret.Rows[0][0]);
+                    int totalrow = subtabl.Rows.Count;
+                    for (int i = 0; i < totalrow; i++)
+                        retourIncremented.Add(lastid-(totalrow-1)+i);
 
                 }
+
 
             }
             return retourIncremented;

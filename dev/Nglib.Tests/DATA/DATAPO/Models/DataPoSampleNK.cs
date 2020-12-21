@@ -20,15 +20,15 @@ namespace Nglib.DATA.DATAPO
 
 
         [Column("fluxxml")]
-        public DATAPO.DataPOFlux FluxXml
+        public DATA.KEYVALUES.KeyValuesPOFlow FluxXml
         {
-            get { return this.GetOrDefineFlow<DATA.DATAPO.DataPOFlux>("fluxxml", FlowTypeEnum.XML); }
+            get { return this.GetOrDefineFlow<DATA.KEYVALUES.KeyValuesPOFlow>("fluxxml", FlowTypeEnum.XML); }
         }
 
         [Column("fluxxml2")]
-        public DATAPO.DataPOFlux FluxXml2
+        public DATA.KEYVALUES.KeyValuesPOFlow FluxXml2
         {
-            get { return this.GetOrDefineFlow<DATA.DATAPO.DataPOFlux>("fluxxml2", FlowTypeEnum.XML); }
+            get { return this.GetOrDefineFlow<DATA.KEYVALUES.KeyValuesPOFlow>("fluxxml2", FlowTypeEnum.XML); }
         }
 
 
