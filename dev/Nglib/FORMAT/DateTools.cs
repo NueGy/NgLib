@@ -189,6 +189,16 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
+        /// Obtient le dernier jour du mois
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static DateTime GetEndOfMounth(DateTime input)
+        {
+            return new DateTime(input.Year, input.Month, DateTime.DaysInMonth(input.Year, input.Month));
+        }
+
+        /// <summary>
         /// Mois enum
         /// </summary>
         public enum MonthEnum : int

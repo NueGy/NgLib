@@ -58,8 +58,10 @@ namespace Nglib.DATA.COLLECTIONS
             try
             {
                 System.Data.DataColumn realColumn = GetColumn(row.Table, nameValue);
-                if (realColumn != null) return row[realColumn];
-                else return null;
+                if (realColumn == null) return null;
+                object obj = row[realColumn];
+                if (obj == DBNull.Value) return null;
+                return obj;
             }
             catch (Exception)
             {

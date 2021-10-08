@@ -50,7 +50,7 @@ namespace Nglib.DATA.DATAPO
     {
         public DataPOProviderSQL(DATA.CONNECTOR.IDataConnector connector) : base(connector) { }
         public DataPOProviderSQL(APP.ENV.IGlobalEnv env) : base(env) { }
-
+        public DataPOProviderSQL() : base() { }
         public CollectionPO<Tobj> GetListPO(string SqlQuery, params object[] insparam)
         {
             return base.GetListPO<Tobj>(SqlQuery, insparam);
@@ -101,6 +101,7 @@ namespace Nglib.DATA.DATAPO
         /// <summary>
         /// manipulation des dataPo en base
         /// </summary>
+        [Obsolete("use constructor with param")]
         public DataPOProviderSQL()
         {
         }

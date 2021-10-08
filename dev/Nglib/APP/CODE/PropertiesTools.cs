@@ -174,13 +174,24 @@ namespace Nglib.APP.CODE
         public static void SetValuesReflexion(object objDest, IDictionary<string, object> values)
         {
             if (objDest == null) throw new ArgumentNullException("objDest");
+            if (values == null) return;
             Type someObjectType = objDest.GetType();
-            foreach (KeyValuePair<string, object> item in values)
+            var properties = someObjectType.GetProperties().Where(p=>p.CanWrite).ToArray(); // !!! Filtrer les types impossibles
+
+            foreach (PropertyInfo proinfo in properties)
             {
-                PropertyInfo proinfo = someObjectType.GetProperty(item.Key);
-                if (proinfo != null)
-                    proinfo.SetValue(objDest, item.Value, null);
+                KeyValuePair<string, object> itemval = values.FirstOrDefault(d=> proinfo.Name.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
+                if (itemval.Key == null) continue;
+                proinfo.SetValue(objDest, itemval.Value, null); //!!! améliorer : Gérer les cast automatiquement
             }
+
+
+            //foreach (KeyValuePair<string, object> item in values)
+            //{
+            //    PropertyInfo proinfo = someObjectType.GetProperty(item.Key, BindingFlags.IgnoreCase);
+            //    if (proinfo == null) continue;
+            //    proinfo.SetValue(objDest, item.Value, null);
+            //}
         }
 
 

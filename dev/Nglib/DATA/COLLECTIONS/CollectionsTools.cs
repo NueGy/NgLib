@@ -213,7 +213,7 @@ namespace Nglib.DATA.COLLECTIONS
         }
         public static object GetSafeObject(this IDictionary<string, object> dic, string key)
         {
-            if (string.IsNullOrEmpty(key)) return null;
+            if (string.IsNullOrEmpty(key) || dic==null) return null;
             var val = dic.FirstOrDefault(d=> key.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
             //if (val.) return null;
             return val.Value;

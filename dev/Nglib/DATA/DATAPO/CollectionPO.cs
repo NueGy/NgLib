@@ -22,7 +22,7 @@ namespace Nglib.DATA.DATAPO
     /// Liste de DataPo
     /// </summary>
     /// <typeparam name="Tpo"></typeparam>
-    public class CollectionPO<Tpo> : List<Tpo>, System.Collections.IEnumerable, ICollectionPO where Tpo : DataPO, new()
+    public class CollectionPO<Tpo> : List<Tpo>, System.Collections.IEnumerable, ICollectionPO where Tpo : DataPO,new()
     {
         /// <summary>
         /// Nombre total de resultats disponible sur le serveur

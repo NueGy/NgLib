@@ -67,6 +67,9 @@ namespace Nglib.APP.PROCESS
         /// </summary>
         public ParamValues FluxConfig { get; set; }
 
+        //public ng Configuration { get; set; }
+
+
         /// <summary>
         /// Pour forcer l'arret du processus
         /// </summary>

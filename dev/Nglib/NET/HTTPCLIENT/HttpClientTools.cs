@@ -35,14 +35,14 @@ namespace Nglib.NET.HTTPCLIENT
         }
 
 
-        public static HttpRequestMessage PrepareRequestFromModel(object model)
+        public static HttpRequestMessage PrepareRequestFromModel(object model, HttpMethod method)
         {
             if (model == null) return null;
-            HTTPCLIENT.HttpRequestModelAttribute modelAttribute = Nglib.APP.CODE.AttributesTools.FindObjectAttribute<HTTPCLIENT.HttpRequestModelAttribute>(model);
+            DATA.BASICS.ModelConfigAttribute modelAttribute = Nglib.APP.CODE.AttributesTools.FindObjectAttribute<DATA.BASICS.ModelConfigAttribute>(model);
             if (modelAttribute == null) throw new Exception("Invalid Model");
 
             Type modeltype = model.GetType();
-            string QueryUrl = modelAttribute.PartUrl;
+            string QueryUrl = modelAttribute.ApiPartUrl;
 
             Dictionary<string, Tuple<HttpRequestValueAttribute, object>> properties =
                         Nglib.APP.CODE.AttributesTools.FindPropertiesValueAttribute<HTTPCLIENT.HttpRequestValueAttribute>(model);
@@ -57,7 +57,7 @@ namespace Nglib.NET.HTTPCLIENT
                 }
             });
 
-            HttpRequestMessage req = new HttpRequestMessage(modelAttribute.Method, QueryUrl);
+            HttpRequestMessage req = new HttpRequestMessage(method, QueryUrl);
 
             return req;
         }
@@ -94,11 +94,11 @@ namespace Nglib.NET.HTTPCLIENT
         }
 
 
-        public static async Task<TResponseModel> ExecuteWithModelAsync<TResponseModel>(this HttpClient client, object requestModel)
+        public static async Task<TResponseModel> ExecuteWithModelAsync<TResponseModel>(this HttpClient client, object requestModel, HttpMethod method)
         {
             try
             {
-                HttpRequestMessage req = PrepareRequestFromModel(requestModel);
+                HttpRequestMessage req = PrepareRequestFromModel(requestModel, method);
                 HttpResponseMessage resp = await client.SendAsync(req);
                 resp.Validate();
 
@@ -117,7 +117,7 @@ namespace Nglib.NET.HTTPCLIENT
             {
                 HttpRequestMessage req = null;
                 req = new HttpRequestMessage(method, urlPart);
-                if (requestModel != null) req.Content = JsonContent(requestModel);
+                if (requestModel != null) req.Content = PrepareJsonContent(requestModel);
                 HttpResponseMessage resp = await client.SendAsync(req);
                 if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return default(TResponseModel); // return null si 404
                 resp.Validate();
@@ -357,16 +357,31 @@ namespace Nglib.NET.HTTPCLIENT
             return txtdata;
         }
 
+ 
 
-
-
-        public static System.Net.Http.HttpContent JsonContent(object model)
+        public static System.Net.Http.HttpContent PrepareJsonContent(object model)
         {
             if (model == null) return null;
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { IgnoreNullValues = true };
             string bodyjsoncontent = JsonSerializer.Serialize(model, model.GetType(), jsonSerializerOptions);
             return new System.Net.Http.StringContent(bodyjsoncontent, Encoding.UTF8, "application/json");
         }
+
+
+
+        public static HttpMethod ConvertToHttpMethod(string method)
+        {
+            if (string.IsNullOrWhiteSpace(method) || method.Equals("Get", StringComparison.OrdinalIgnoreCase)) return  HttpMethod.Get;
+            else if (method.Equals("Post", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Post;
+            else if (method.Equals("Put", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Put;
+            else if (method.Equals("Delete", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Delete;
+            else if (method.Equals("Head", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Head;
+            else if (method.Equals("Options", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Options;
+            else if (method.Equals("Trace", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Trace;
+            else throw new Exception("method invalid");
+        }
+
+
 
     }
 }

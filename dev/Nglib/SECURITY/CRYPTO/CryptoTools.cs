@@ -69,6 +69,7 @@ namespace Nglib.SECURITY.CRYPTO
         public static byte[] Encrypt(byte[] bytesToBeEncrypted, ICryptoOption cryptoInformation)
         {
             if (cryptoInformation == null) throw new ArgumentNullException("cryptoInformation");
+            if (bytesToBeEncrypted == null) return null;
             byte[] encryptedBytes = null;
             System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 
@@ -147,6 +148,7 @@ namespace Nglib.SECURITY.CRYPTO
         public static byte[] Decrypt(byte[] bytesToBeDecrypted, ICryptoOption cryptoInformation)
         {
             if (cryptoInformation == null) throw new ArgumentNullException("cryptoInformation");
+            if (bytesToBeDecrypted == null) return null;
             byte[] decryptedBytes = null;
             using (MemoryStream ms = new MemoryStream())
             {

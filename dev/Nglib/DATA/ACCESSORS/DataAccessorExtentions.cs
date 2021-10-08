@@ -65,7 +65,7 @@ namespace Nglib.DATA.ACCESSORS
                 if (cryptoctx != null)
                     adata = cryptoctx.EncryptObjectValue(dataAccessor, nameValue, adata, AccesOptions);
             }
-
+            if (adata == null) adata = DBNull.Value; // les nul son interdit en base
             return dataAccessor.SetData(nameValue, adata, AccesOptions);
         }
 

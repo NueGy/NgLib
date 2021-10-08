@@ -72,11 +72,18 @@ namespace Nglib.APP.CODE
         public static Tattribute FindObjectAttribute<Tattribute>(object objClass) where Tattribute : System.Attribute
         {
             if (objClass == null) return null;
-            var attributes = objClass.GetType().GetCustomAttributes().Cast<System.Attribute>().ToList(); ;
+            return FindObjectAttribute<Tattribute>(objClass.GetType());
+        }
+
+        public static Tattribute FindObjectAttribute<Tattribute>(Type objClassType) where Tattribute : System.Attribute
+        {
+            if (objClassType == null) return null;
+            var attributes = objClassType.GetCustomAttributes().Cast<System.Attribute>().ToList(); ;
             if (attributes == null) return null;
             Type typeAttributeWant = typeof(Tattribute);
             return attributes.FirstOrDefault(at => (at.GetType().Equals(typeAttributeWant))) as Tattribute;
         }
+
 
         public static Dictionary<string, Tuple<Tattribute, object>> FindPropertiesValueAttribute<Tattribute>(object model) where Tattribute : System.Attribute
         {

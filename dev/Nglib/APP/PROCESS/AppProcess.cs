@@ -15,6 +15,12 @@ namespace Nglib.APP.PROCESS
         /// </summary>
         public AppProcessContext context { get; private set; }
 
+        /// <summary>
+        /// Environnement d'execution
+        /// </summary>
+        public APP.ENV.IGlobalEnv appEnv { get; set; }
+
+
         public AppProcess()
         {
             this.context = new AppProcessContext();
@@ -76,7 +82,7 @@ namespace Nglib.APP.PROCESS
             catch (Exception ex)
             {
                 this.context.ErrorException = ex;
-                throw new Exception(string.Format("Process Run ERROR {0}", ex.Message), ex);
+                throw new Exception(string.Format("Process ERROR {0}", ex.Message), ex);
             }
             finally
             {

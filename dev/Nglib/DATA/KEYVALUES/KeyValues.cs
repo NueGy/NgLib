@@ -103,6 +103,10 @@ namespace Nglib.DATA.KEYVALUES
         }
 
 
+       
+
+
+
         public Dictionary<string, object> GroupKeys()
         {
             Dictionary<string, object> retour = new Dictionary<string, object>();
@@ -230,6 +234,10 @@ namespace Nglib.DATA.KEYVALUES
             this.isChangedValueList = true;
         }
 
+        public List<KeyValue> GetList()
+        {
+            return this.datas.ToList();
+        }
 
         public void AddRange(IEnumerable<KeyValue> items)
         {

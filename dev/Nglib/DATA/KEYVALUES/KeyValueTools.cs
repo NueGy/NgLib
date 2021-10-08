@@ -77,8 +77,20 @@ namespace Nglib.DATA.KEYVALUES
 
 
 
-
-
+        public static string Serialize(KEYVALUES.KeyValues val,string type="sjon")
+        {
+            bool isxml = type.Equals("xml");
+            IKeyValuesSerializer serialer = SerializerFactory(isxml);
+            return serialer.Serialize(val);
+        }
+        public static KEYVALUES.KeyValues Deserialize(string val)
+        {
+            if (val == null) return null;
+            if (string.IsNullOrWhiteSpace(val)) return new KeyValues();
+            bool isxml = val.TrimStart().StartsWith("<");
+            IKeyValuesSerializer serialer = SerializerFactory(isxml);
+            return serialer.DeSerialize(val);
+        }
 
 
     }

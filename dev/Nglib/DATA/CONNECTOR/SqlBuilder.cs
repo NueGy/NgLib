@@ -220,7 +220,9 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         public SqlBuilder AddWhereClause(string sqlpart, string parametername, object parameterValue)
         {
-            return AddWhereClause(sqlpart, new Dictionary<string, object>() { { parametername, parameterValue } });
+            Dictionary<string, object> Parameters = new Dictionary<string, object>();
+            if (!string.IsNullOrWhiteSpace(parametername)) Parameters.Add(parametername, parameterValue);
+            return AddWhereClause(sqlpart, Parameters);
         }
 
         /// <summary>
@@ -233,7 +235,8 @@ namespace Nglib.DATA.CONNECTOR
         {
             if (string.IsNullOrWhiteSpace(sqlpart)) return this;
             this.WhereClauses.Add(sqlpart);
-            this.SqlInputParameters.AddRange(Parameters);
+            if(Parameters!=null)
+                this.SqlInputParameters.AddRange(Parameters);
             return this;
         }
 
