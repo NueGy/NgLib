@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Nglib.FILES.SERIAL
@@ -13,68 +14,14 @@ namespace Nglib.FILES.SERIAL
     public static class JsonTools
     {
 
-        private static System.Reflection.MethodInfo TypeNewtonsoftSerializeObject = null;
-        private static System.Reflection.MethodInfo TypeNewtonsoftDeserializeObject = null;
-
-        public static string SerializeWithNewtonsoft(object value)
+        /// <summary>
+        /// SerializeObject
+        /// </summary>
+        public static string Serialize(object value)
         {
-            // test performance : for1000 110ms VS 1ms ...
-            if (TypeNewtonsoftSerializeObject == null)
-            {
-                //Newtonsoft.Json.JsonConvert, Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed
-                Type tjsonconvert = Nglib.APP.CODE.ReflectionTools.GetTypeByReflexion("Newtonsoft.Json.JsonConvert, Newtonsoft.Json");
-                if (tjsonconvert != null)
-                    TypeNewtonsoftSerializeObject = tjsonconvert.GetMethods().FirstOrDefault(m => m.ToString().Equals("System.String SerializeObject(System.Object)"));
-            }
-            if (TypeNewtonsoftSerializeObject == null) return null;
-            return Convert.ToString(TypeNewtonsoftSerializeObject.Invoke(null, new object[] { value }));
+            return JsonSerializer.Serialize(value);
         }
-
-
-        public static T DeserializeWithNewtonsoft<T>(object value)
-        {
-            // test performance : for1000 36ms VS 4ms ...
-            if (TypeNewtonsoftDeserializeObject == null)
-            {
-                //Newtonsoft.Json.JsonConvert, Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed
-                Type tjsonconvert = Nglib.APP.CODE.ReflectionTools.GetTypeByReflexion("Newtonsoft.Json.JsonConvert, Newtonsoft.Json");
-                if (tjsonconvert != null)
-                    TypeNewtonsoftDeserializeObject = tjsonconvert.GetMethods().FirstOrDefault(m => m.ToString().Equals("System.Object DeserializeObject(System.String, System.Type)"));
-            }
-            if (TypeNewtonsoftDeserializeObject == null) return default(T);
-            Type tretour = typeof(T);
-            object val = TypeNewtonsoftDeserializeObject.Invoke(null, new object[] { value, tretour });
-            return (T)val;
-        }
-
-
-
-        ///// <summary>
-        ///// Serializes an object to JSON (DataContractJsonSerializer)
-        ///// </summary>
-        //public static string Serialize<TType>(TType instance) where TType : class
-        //    {
-        //        var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(TType));
-        //        using (var stream = new System.IO.MemoryStream())
-        //        {
-        //            serializer.WriteObject(stream, instance);
-        //            return Encoding.Default.GetString(stream.ToArray());
-        //        }
-        //    }
-
-        ///// <summary>
-        ///// DeSerializes an object from JSON (DataContractJsonSerializer)
-        ///// </summary>
-        //public static TType DeSerialize<TType>(string json) where TType : class
-        //{
-        //    using (var stream = new System.IO.MemoryStream(Encoding.Default.GetBytes(json)))
-        //    {
-        //        var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(TType));
-        //        return serializer.ReadObject(stream) as TType;
-        //    }
-        //}
-
-
+         
 
         /// <summary>
         /// Serialisation Simple sans utilisation de DLL exterieure
@@ -96,122 +43,40 @@ namespace Nglib.FILES.SERIAL
 
 
 
-
-
-
-
-        [Obsolete("Use JSON.NET",false)]
+    
         public static Dictionary<string, object> DeSerializeDictionaryValues(string json)
         {
-            int end;
-            return DeSerializeDictionaryValues(json, 0, out end);
-        }
-        private static Dictionary<string, object> DeSerializeDictionaryValues(string json, int start, out int end)
-        {
-            Dictionary<string, object> dict = new Dictionary<string, object>();
-            bool escbegin = false;
-            bool escend = false;
-            bool inquotes = false;
-            string key = null;
-            int cend;
-            StringBuilder sb = new StringBuilder();
-            Dictionary<string, object> child = null;
-            List<object> arraylist = null;
-            Regex regex = new Regex(@"\\u([0-9a-z]{4})", RegexOptions.IgnoreCase);
-            int autoKey = 0;
-            for (int i = start; i < json.Length; i++)
+            Dictionary<string, object> datas = new Dictionary<string, object>();
+            if (string.IsNullOrWhiteSpace(json)) return datas;
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
+            foreach (var item in jsonElement.EnumerateObject())
             {
-                char c = json[i];
-                if (c == '\\') escbegin = !escbegin;
-                if (!escbegin)
-                {
-                    if (c == '"')
-                    {
-                        inquotes = !inquotes;
-                        if (!inquotes && arraylist != null)
-                        {
-                            arraylist.Add(DecodeString(regex, sb.ToString()));
-                            sb.Length = 0;
-                        }
-                        continue;
-                    }
-                    if (!inquotes)
-                    {
-                        switch (c)
-                        {
-                            case '{':
-                                if (i != start)
-                                {
-                                    child = DeSerializeDictionaryValues(json, i, out cend);
-                                    if (arraylist != null) arraylist.Add(child);
-                                    else
-                                    {
-                                        dict.Add(key, child);
-                                        key = null;
-                                    }
-                                    i = cend;
-                                }
-                                continue;
-                            case '}':
-                                end = i;
-                                if (key != null)
-                                {
-                                    if (arraylist != null) dict.Add(key, arraylist);
-                                    else dict.Add(key, DecodeString(regex, sb.ToString()));
-                                }
-                                return dict;
-                            case '[':
-                                arraylist = new List<object>();
-                                continue;
-                            case ']':
-                                if (key == null)
-                                {
-                                    key = "array" + autoKey.ToString();
-                                    autoKey++;
-                                }
-                                if (arraylist != null && sb.Length > 0)
-                                {
-                                    arraylist.Add(sb.ToString());
-                                    sb.Length = 0;
-                                }
-                                dict.Add(key, arraylist);
-                                arraylist = null;
-                                key = null;
-                                continue;
-                            case ',':
-                                if (arraylist == null && key != null)
-                                {
-                                    dict.Add(key, DecodeString(regex, sb.ToString()));
-                                    key = null;
-                                    sb.Length = 0;
-                                }
-                                if (arraylist != null && sb.Length > 0)
-                                {
-                                    arraylist.Add(sb.ToString());
-                                    sb.Length = 0;
-                                }
-                                continue;
-                            case ':':
-                                key = DecodeString(regex, sb.ToString());
-                                sb.Length = 0;
-                                continue;
-                        }
-                    }
-                }
-                sb.Append(c);
-                if (escend) escbegin = false;
-                if (escbegin) escend = true;
-                else escend = false;
+                if (item.Value.ValueKind == JsonValueKind.Null) datas.Add(item.Name, null);
+                else if (item.Value.ValueKind == JsonValueKind.True) datas.Add(item.Name, true);
+                else if (item.Value.ValueKind == JsonValueKind.False) datas.Add(item.Name, false);
+                else if (item.Value.ValueKind == JsonValueKind.Number) datas.Add(item.Name, item.Value.GetDouble());
+                else if (item.Value.ValueKind == JsonValueKind.String) datas.Add(item.Name, item.Value.GetString());
+                else if (item.Value.ValueKind == JsonValueKind.Array) datas.Add(item.Name, item.Value.GetString());
+                else if (item.Value.ValueKind == JsonValueKind.Object) datas.Add(item.Name, item.Value.GetString());
+                else throw new Exception("Unknow JsonValueKind " + item.Value.ValueKind);
             }
-            end = json.Length - 1;
-            return dict; //theoretically shouldn't ever get here
+            return datas;
         }
-        private static string DecodeString(Regex regex, string str)
+      
+
+
+        public static string PrettyJson(string unPrettyJson)
         {
-            return Regex.Unescape(regex.Replace(str, match => char.ConvertFromUtf32(Int32.Parse(match.Groups[1].Value, System.Globalization.NumberStyles.HexNumber))));
+            if (string.IsNullOrWhiteSpace(unPrettyJson)) return null;
+            var options = new JsonSerializerOptions()
+            {
+                WriteIndented = true
+            };
+
+            var jsonElement = JsonSerializer.Deserialize<JsonElement>(unPrettyJson);
+
+            return JsonSerializer.Serialize(jsonElement, options);
         }
-
-
 
 
     }

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>Nglib</RootNamespace>
+
+     <PackageId>Nglib.Core</PackageId>
+	<Authors>Nuegy SARL</Authors>
+    <Description>C# .Net Framework tools, Dev components.</Description>
+    <Copyright></Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl></PackageProjectUrl>
+	 <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl> 
+    <!--<RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl> -->
+    <PackageTags>Nglib</PackageTags>
+	<Version>1.1.5-beta</Version>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>false</Optimize>
+    <DocumentationFile>Nglib.core.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DATA\CONNECTOR\MsSQLConnector.cs" />
+    <Compile Remove="DATA\CONNECTOR\SqLiteConnector.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nglib\Nglib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DATA\DATAMODEL\" />
+    <Folder Include="MODELS\" />
+    <Folder Include="SOLUTIONS\IDENTITY\USERS\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,19 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>Nglib</RootNamespace>
-    <Authors>Nuegy SARL</Authors>
-    <Company></Company>
-    <Description>C# .Net Standard Framework tools, Dev components.</Description>
-    <Copyright></Copyright>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageProjectUrl></PackageProjectUrl>
-    <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
-    <PackageTags>Nglib</PackageTags>
-    <Version>1.0.13-beta</Version>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+	  <AssemblyVersion>1.1.5.0</AssemblyVersion>
+
+	  <PackageId>Nglib</PackageId>
+	  <Authors>Nuegy SARL</Authors>
+	  <Description>C# .Net Standard Framework tools, Dev components.</Description>
+	  <Copyright></Copyright>
+	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+	  <PackageProjectUrl></PackageProjectUrl>
+	   <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl> 
+	  <!--<RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl> -->
+	  <PackageTags>Nglib</PackageTags>
+	  <Version>1.1.5-beta</Version>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
@@ -28,16 +29,25 @@
     <Compile Remove="DATA\DATES\**" />
     <Compile Remove="DATA\NUMBERS\**" />
     <Compile Remove="DATA\TEXT\**" />
+    <Compile Remove="FILES\DIRECTORY\**" />
+    <Compile Remove="FILES\ELEMENT\**" />
+    <Compile Remove="FILES\TRANSFERT\**" />
     <EmbeddedResource Remove="DATA\CONNECTOR\SEARCH\**" />
     <EmbeddedResource Remove="DATA\CONNECTOR\SEARCH\**" />
     <EmbeddedResource Remove="DATA\DATES\**" />
     <EmbeddedResource Remove="DATA\NUMBERS\**" />
     <EmbeddedResource Remove="DATA\TEXT\**" />
+    <EmbeddedResource Remove="FILES\DIRECTORY\**" />
+    <EmbeddedResource Remove="FILES\ELEMENT\**" />
+    <EmbeddedResource Remove="FILES\TRANSFERT\**" />
     <None Remove="DATA\CONNECTOR\SEARCH\**" />
     <None Remove="DATA\CONNECTOR\SEARCH\**" />
     <None Remove="DATA\DATES\**" />
     <None Remove="DATA\NUMBERS\**" />
     <None Remove="DATA\TEXT\**" />
+    <None Remove="FILES\DIRECTORY\**" />
+    <None Remove="FILES\ELEMENT\**" />
+    <None Remove="FILES\TRANSFERT\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,15 +65,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="FILES\DIRECTORY\" />
-    <Folder Include="FILES\ELEMENT\" />
-    <Folder Include="FILES\TRANSFERT\" />
+    <Folder Include="APP\PROCESS\" />
+    <Folder Include="DATA\CONNECTOR\" />
     <Folder Include="NET\MAIL\" />
     <Folder Include="NET\NETWORK\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="4.7.2" />
+    <Folder Include="WEB\PIPELINE\" />
   </ItemGroup>
 
 </Project>

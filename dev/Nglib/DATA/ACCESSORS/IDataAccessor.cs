@@ -1,19 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Nglib.DATA.ACCESSORS
+﻿namespace Nglib.DATA.ACCESSORS
 {
     /// <summary>
-    /// Fournis des accesseurs pour la transformation de valeurs
+    ///     Fournis des accesseurs pour la transformation de valeurs
     /// </summary>
     public interface IDataAccessor //<TRetour>
     {
-
         /// <summary>
-        /// Obtenir un objet depuis la source
+        ///     Obtenir un objet depuis la source
         /// </summary>
         /// <param name="nameValue"></param>
         /// <param name="AccesOptions"></param>
@@ -21,7 +14,7 @@ namespace Nglib.DATA.ACCESSORS
         object GetData(string nameValue, DataAccessorOptionEnum AccesOptions);
 
         /// <summary>
-        /// Définir un Objet depuis la source
+        ///     Définir un Objet depuis la source
         /// </summary>
         /// <param name="nameValue"></param>
         /// <param name="obj"></param>
@@ -31,23 +24,15 @@ namespace Nglib.DATA.ACCESSORS
 
 
         /// <summary>
-        /// Obtient la liste de tous les champs de l'objet
+        ///     Obtient la liste de tous les champs de l'objet
         /// </summary>
         /// <returns></returns>
         string[] ListFieldsKeys();
 
 
-
-
         /// <summary>
-        /// obtenir le context de cryptage de l'objet
+        ///     obtenir le context de cryptage de l'objet
         /// </summary>
         IDataAccessorCryptoContext GetCryptoContext();
-
-
- 
-
     }
-
-
 }

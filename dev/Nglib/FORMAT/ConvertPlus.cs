@@ -5,19 +5,14 @@
 // ----------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Nglib.FORMAT
 {
     /// <summary>
-    /// Amélioration du convertisseur en prenant en compte plus de possibilitées
+    ///     Amélioration du convertisseur en prenant en compte plus de possibilitées
     /// </summary>
     public static class ConvertPlus
     {
-
-
         /*
         public static Tobj ChangeType<Tobj>(object obj, Tobj DefaultValue)
         {
@@ -31,49 +26,44 @@ namespace Nglib.FORMAT
         */
 
 
-
-
         /// <summary>
-        /// Object to Bool, prend en compte des
+        ///     Object to Bool, prend en compte des
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static bool ToBoolean(object obj)
+        public static bool ToBoolean(object obj, bool safe = false)
         {
             try
             {
                 if (obj == null) return false;
 
                 if (obj is bool) return (bool)obj;
-                else if (obj is int)
+
+                if (obj is int)
                 {
                     if ((int)obj > 0) return true;
-                    else return false;
+                    return false;
                 }
 
-                string ret = obj.ToString().ToLower();
+                var ret = obj.ToString().ToLower();
                 if (string.IsNullOrWhiteSpace(ret)) return false;
-                else if (ret == "true") return true;
-                else if (ret == "false") return false;
-                else if (ret == "on") return true;
-                else if (ret == "yes") return true;
-                else if (ret == "1") return true;
-                else return false;
+                if (ret == "true") return true;
+                if (ret == "false") return false;
+                if (ret == "on") return true;
+                if (ret == "yes") return true;
+                if (ret == "1") return true;
+                return false;
             }
             catch (Exception ex)
             {
+                if (safe) return false;
                 throw new Exception("ToBoolean " + ex.Message);
             }
         }
 
 
-
-
-
-
-
         /// <summary>
-        /// permet de convertir un string en une date (support les format yyyyMMdd ou ddMMyyyy)
+        ///     permet de convertir un string en une date (support les format yyyyMMdd ou ddMMyyyy)
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
@@ -81,21 +71,26 @@ namespace Nglib.FORMAT
         {
             if (obj is string)
             {
-                string objstr = (string)obj;
-                if (objstr.Length == 8 && !objstr.Contains(" ") && !objstr.Contains("/") && !objstr.Contains("-")) // CONVERTION depuis yyyyMMdd ou ddMMyyyy
+                var objstr = (string)obj;
+                if (objstr.Length == 8 && !objstr.Contains(" ") && !objstr.Contains("/") &&
+                    !objstr.Contains("-")) // CONVERTION depuis yyyyMMdd ou ddMMyyyy
                 {
-                    int selFormdate = Convert.ToInt32(objstr.Substring(6, 2));
-                    DateTime retour = new DateTime();
+                    var selFormdate = Convert.ToInt32(objstr.Substring(6, 2));
+                    var retour = new DateTime();
                     if (selFormdate > 12) // Si le mois supérieur à 12 donc c'est une année
-                        retour = new DateTime(Convert.ToInt32(objstr.Substring(0, 4)), Convert.ToInt32(objstr.Substring(4, 2)), Convert.ToInt32(objstr.Substring(6, 2)));
+                        retour = new DateTime(Convert.ToInt32(objstr.Substring(0, 4)),
+                            Convert.ToInt32(objstr.Substring(4, 2)), Convert.ToInt32(objstr.Substring(6, 2)));
                     else
-                        retour = new DateTime(Convert.ToInt32(objstr.Substring(4, 4)), Convert.ToInt32(objstr.Substring(2, 2)), Convert.ToInt32(objstr.Substring(0, 2)));
+                        retour = new DateTime(Convert.ToInt32(objstr.Substring(4, 4)),
+                            Convert.ToInt32(objstr.Substring(2, 2)), Convert.ToInt32(objstr.Substring(0, 2)));
                     if (retour.Year < 2000 && retour.Year > 2099) throw new Exception("date year invalide");
-                    else return retour;
+                    return retour;
                 }
-                else return Convert.ToDateTime(obj);
+
+                return Convert.ToDateTime(obj);
             }
-            else return Convert.ToDateTime(obj);
+
+            return Convert.ToDateTime(obj);
         }
 
 
@@ -104,47 +99,42 @@ namespace Nglib.FORMAT
             if ((obj == null || obj == DBNull.Value) && defaultValue.HasValue) return defaultValue.Value;
 
             if (obj is bool)
-                if ((bool)obj == true) return 1; else return 0;
+                if ((bool)obj) return 1;
+                else return 0;
             if (obj is string)
             {
-                string ret = obj.ToString().ToLower();
+                var ret = obj.ToString().ToLower();
                 if (string.IsNullOrWhiteSpace(ret) && defaultValue.HasValue) return defaultValue.Value;
-                else if (ret == "true") return 1;
-                else if (ret == "false") return 0;
+                if (ret == "true") return 1;
+                if (ret == "false") return 0;
             }
 
             return Convert.ToInt32(obj);
-
         }
 
 
-
-
         /// <summary>
-        /// Changer le type d'un objet en un autre. En utilisant la fonction  Nglib.FORMAT.ConvertPlus
+        ///     Changer le type d'un objet en un autre. En utilisant la fonction  Nglib.FORMAT.ConvertPlus
         /// </summary>
-        public static object ChangeType(object valeur, System.Type type)
+        public static object ChangeType(object valeur, Type type)
         {
             if (type.Equals(typeof(int)))
-                return ConvertPlus.ToInt(valeur);
-            else if (type.Equals(typeof(bool))) return ConvertPlus.ToBoolean(valeur);
-            else if (type.Equals(typeof(DateTime))) return ConvertPlus.ToDateTime(valeur);
-            else return Convert.ChangeType(valeur, type); // sinon on utilise le changetype normal
-
+                return ToInt(valeur);
+            if (type.Equals(typeof(bool))) return ToBoolean(valeur);
+            if (type.Equals(typeof(DateTime))) return ToDateTime(valeur);
+            return Convert.ChangeType(valeur, type); // sinon on utilise le changetype normal
         }
 
 
-
-
         /// <summary>
-        /// Changer le type d'un objet en un autre. En utilisant la fonction  Nglib.FORMAT.ConvertPlus
+        ///     Changer le type d'un objet en un autre. En utilisant la fonction  Nglib.FORMAT.ConvertPlus
         /// </summary>
         public static object ChangeType(object valeur, string typename)
         {
             if (string.IsNullOrWhiteSpace(typename)) return valeur;
-            System.Type type = null;
+            Type type = null;
             if (typename == "string") type = typeof(string);
-            else if ((typename == "int" || typename == "numeric")) type = typeof(int);
+            else if (typename == "int" || typename == "numeric") type = typeof(int);
             else if (typename == "datetime") type = typeof(DateTime);
             else if (typename == "double" && !(valeur is double)) type = typeof(double);
             else if (typename == "bool" && !(valeur is bool)) type = typeof(bool);
@@ -152,8 +142,5 @@ namespace Nglib.FORMAT
             if (type == null) throw new Exception("typename factory not found");
             return ChangeType(valeur, type);
         }
-
-
-
     }
 }

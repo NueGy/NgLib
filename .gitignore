@@ -8,3 +8,5 @@
 /dev/Nglib.Extras/bin
 /dev/Nglib.Tests/obj
 /dev/Nglib.Tests/bin
+/dev/Nglib.Core/obj
+/dev/Nglib.Core/bin

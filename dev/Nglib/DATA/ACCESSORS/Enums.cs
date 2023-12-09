@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Nglib.DATA.ACCESSORS
 {
     /// <summary>
-    /// Type de flux disponibles
+    ///     Type de flux disponibles
     /// </summary>
     public enum FlowTypeEnum
     {
@@ -17,61 +15,52 @@ namespace Nglib.DATA.ACCESSORS
     }
 
 
-
-
-
-
     [Flags]
     public enum DataAccessorOptionEnum
     {
         /// <summary>
-        /// Aucunes opération spécial (default)
+        ///     Aucunes opération spécial (default)
         /// </summary>
         None = 0x00,
 
         /// <summary>
-        /// Permet de rendre une valeur null
+        ///     Permet de rendre une valeur null
         /// </summary>
         Nullable = 0x01,
 
         /// <summary>
-        /// Ne provoquera pas d'erreur
+        ///     Ne provoquera pas d'erreur
         /// </summary>
         Safe = 0x02,
 
         /// <summary>
-        /// Interdit le remplacement d'une valeur si elle exist déja
+        ///     Interdit le remplacement d'une valeur si elle exist déja
         /// </summary>
         NotReplace = 0x04,
 
         /// <summary>
-        /// Créer la colonne si elle existe pas
+        ///     Créer la colonne si elle existe pas
         /// </summary>
         NotCreateColumn = 0x08,
 
         /// <summary>
-        /// La donnée est cryptée (Use with IDataAccessorEncrypted)
+        ///     La donnée est cryptée (Use with IDataAccessorEncrypted)
         /// </summary>
-        [Obsolete("DevSoon")]
-        Encrypted = 0x16,
+        [Obsolete("DevSoon")] Encrypted = 0x16,
 
         /// <summary>
-        /// Défini la donnée sans indiquer qu'elle à été changée (datapo/datarow)
+        ///     Défini la donnée sans indiquer qu'elle à été changée (datapo/datarow)
         /// </summary>
         IgnoreChange = 0x32,
 
         /// <summary>
-        /// Permet l'utilisation ou la mise en cache
+        ///     Permet l'utilisation ou la mise en cache
         /// </summary>
         UseCache = 0x64,
 
         /// <summary>
-        /// permet de convertir la données avec des convertisseur amélioré (get only)
+        ///     permet de convertir la données avec des convertisseur amélioré (get only)
         /// </summary>
         AdvancedConverter = 0x128
-
-
-
     }
-
 }

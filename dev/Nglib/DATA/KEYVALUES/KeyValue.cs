@@ -1,12 +1,15 @@
-﻿using Nglib.DATA.ACCESSORS;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using Nglib.DATA.ACCESSORS;
 
 namespace Nglib.DATA.KEYVALUES
 {
     public class KeyValue : IValue
     {
+        public KeyValue(string key, object value)
+        {
+            Key = key;
+            Value = value;
+        }
 
         public string Key { get; protected set; }
 
@@ -15,24 +18,19 @@ namespace Nglib.DATA.KEYVALUES
         private bool isChangedValue { get; set; }
 
         /// <summary>
-        /// Plusieurs valeurs avec cette clef.
-        /// Il s'agit d'une valeur à exporter en temps que array
+        ///     Plusieurs valeurs avec cette clef.
+        ///     Il s'agit d'une valeur à exporter en temps que array
         /// </summary>
         public bool IsMultiples { get; set; }
 
-        public KeyValue(string key, object value) 
-        {
-            this.Key = key;
-            this.Value = value;
-        }
-
         public void AcceptChanges()
         {
-            this.isChangedValue = false;
+            isChangedValue = false;
         }
+
         public bool IsChanges()
         {
-            return this.isChangedValue;
+            return isChangedValue;
         }
 
         public object GetData()
@@ -43,14 +41,19 @@ namespace Nglib.DATA.KEYVALUES
         public bool SetData(object obj, DataAccessorOptionEnum AccesOptions)
         {
             if (!AccesOptions.HasFlag(DataAccessorOptionEnum.IgnoreChange))
-                this.isChangedValue = true;
-            this.Value = obj;
+                isChangedValue = true;
+            Value = obj;
             return true;
         }
-        public KeyValuePair<string,object> ToKeyValuePair()
+
+        public KeyValuePair<string, object> ToKeyValuePair()
         {
-            return new KeyValuePair<string, object>(this.Key,this.Value);
+            return new KeyValuePair<string, object>(Key, Value);
         }
 
+        public override string ToString()
+        {
+            return $"{Key}={Value}";
+        }
     }
 }

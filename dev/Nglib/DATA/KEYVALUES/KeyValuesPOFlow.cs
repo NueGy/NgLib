@@ -1,16 +1,13 @@
 ﻿using Nglib.DATA.ACCESSORS;
-using Nglib.SECURITY.CRYPTO;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Nglib.DATA.DATAPO;
 
 namespace Nglib.DATA.KEYVALUES
 {
-    public class KeyValuesPOFlow : KeyValues, Nglib.DATA.DATAPO.IDataPOFlow
+    public class KeyValuesPOFlow : KeyValues, IDataPOFlow
     {
-        string fieldName = null;
-        bool isFullEncrypted = false;
-        FlowTypeEnum fieldType = FlowTypeEnum.AUTO;
+        private string fieldName;
+        private FlowTypeEnum fieldType = FlowTypeEnum.AUTO;
+        private bool isFullEncrypted;
 
 
         public void DefineField(string fieldName, FlowTypeEnum fieldType, bool isFullEncrypted = false)
@@ -20,17 +17,15 @@ namespace Nglib.DATA.KEYVALUES
             this.fieldType = fieldType;
         }
 
-  
-
 
         public string GetFieldName()
         {
-            return this.fieldName;
+            return fieldName;
         }
 
         public FlowTypeEnum GetFieldType()
         {
-            return this.fieldType;
+            return fieldType;
         }
 
         public bool IsFieldEncrypted()
@@ -41,21 +36,20 @@ namespace Nglib.DATA.KEYVALUES
 
         public void DeSerializeField(string dataField)
         {
-            bool isxml = fieldType == FlowTypeEnum.XML;
-            KEYVALUES.IKeyValuesSerializer serializer = KeyValueTools.SerializerFactory(isxml);
-            KeyValues edes =serializer.DeSerialize(dataField);
-            this.Clear();
-            this.AddRange(edes);
+            var isxml = fieldType == FlowTypeEnum.XML;
+            var serializer = KeyValueTools.SerializerFactory(isxml);
+            var edes = serializer.DeSerialize(dataField);
+            Clear();
+            AddRange(edes);
         }
 
         public string SerializeField()
         {
-            bool isxml = fieldType == FlowTypeEnum.XML;
-            KEYVALUES.IKeyValuesSerializer serializer = KeyValueTools.SerializerFactory(isxml);
-            string json = serializer.Serialize(this);
+            var isxml = fieldType == FlowTypeEnum.XML;
+            var serializer = KeyValueTools.SerializerFactory(isxml);
+            var json = serializer.Serialize(this);
+            if (string.IsNullOrWhiteSpace(json)) json = null;
             return json;
         }
-
-
     }
 }
