@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Nglib.FORMAT
 {
+    [Obsolete("BETA")]
     public static class ObjectBaseTools
     {
 
@@ -26,11 +27,16 @@ namespace Nglib.FORMAT
         }
 
 
+        public static string BaseConvert(string number, int fromBase, int toBase)
+        {
+            return BaseConvertGeneric(number, fromBase, toBase);
+        }
+
 
         /// <summary>
         /// Conversion en base 10,16,...
         /// </summary>
-        public static string BaseConvert(string number, int fromBase, int toBase)
+        private static string BaseConvertGeneric(string number, int fromBase, int toBase)
         {
             var digits = "0123456789abcdefghijklmnopqrstuvwxyz";
             var length = number.Length;
@@ -73,6 +79,59 @@ namespace Nglib.FORMAT
         }
 
 
+        /// <summary>
+        /// Convert string to base64 string.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string RebaseString(this string input, int fromBase, int toBase)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(input)) return string.Empty;
+                byte[] bytes = null;
+                if (fromBase > 255) fromBase = 0;
+                if (toBase > 255) toBase = 0;
+
+                // Convert to bytes
+                if (fromBase == 16)
+                {
+                    bytes = Convert.FromHexString(input);
+                }
+                else if (fromBase == 64)
+                {
+                    bytes = Convert.FromBase64String(input);
+                }
+                else if (fromBase == 0)
+                {
+                    bytes = Encoding.UTF8.GetBytes(input);
+                }
+                else throw new Exception($"fromBase{fromBase} not supported");
+
+                // Convert to string
+                if (toBase == 16)
+                {
+                    return Convert.ToHexString(bytes);
+                }
+                else if (toBase == 64)
+                {
+                    return Convert.ToBase64String(bytes);
+                }
+                else if (toBase == 0)
+                {
+                    return Encoding.UTF8.GetString(bytes);
+                }
+                else throw new Exception($"toBase{toBase} not supported");
+            }
+            catch (Exception ex)
+            {
+                throw new Nglib.APP.DIAG.CascadeException("RebaseString", ex);
+            }
+
+        }
+
+
+
 
 
 
@@ -100,6 +159,62 @@ namespace Nglib.FORMAT
             var work = Encoding.UTF8.GetBytes(string.Empty + input);
             return Convert.ToBase64String(work);
         }
+
+
+        public static string ToBase64(byte[] val)
+        {
+            if (val == null) return null;
+            return Convert.ToBase64String(val);
+        }
+
+
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Convert Integer to hex string.
+        /// </summary>
+        /// <param name="input">The input.</param>
+        /// <returns>Hexadecimal equivalent of input</returns>
+        public static string ToHexString(int input)
+        {
+            return Convert.ToString(input, 16);
+        }
+
+        public static string ToHexString(string input)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            return ToHexString(bytes);
+        }
+
+        public static string ToHexString(byte[] bytes)
+        {
+            return BitConverter.ToString(bytes).Replace("-", string.Empty).ToLower(); // retour hexa
+        }
+
+
+
+        public static string EncryptCeasar(string str, int cryptoNumber)
+        {
+            return string.Join("", str.Select(chr => {
+                int x = chr - 65;
+                return (char)((65) + ((x + cryptoNumber) % 26));
+            }));
+        }
+
+        public static string DecryptCeasar(string str, int cryptoNumber)
+        {
+            return string.Join("", str.Select(chr => {
+                int x = chr - 65;
+                return (char)((65) + ((x - cryptoNumber) % 26));
+            }));
+        }
+
 
     }
 }

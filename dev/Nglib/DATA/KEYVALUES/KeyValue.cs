@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Nglib.DATA.ACCESSORS;
 
 namespace Nglib.DATA.KEYVALUES
 {
+    [Obsolete("BETA")]
     public class KeyValue : IValue
     {
         public KeyValue(string key, object value)

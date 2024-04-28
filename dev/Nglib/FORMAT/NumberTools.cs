@@ -29,7 +29,22 @@ namespace Nglib.FORMAT
         }
 
         /// <summary>
-        ///     Montant
+        ///     la chaine contient au moins un nombre
+        /// </summary>
+        public static bool HasNumeric(string input)
+        {
+            //Verify input
+            if (string.IsNullOrEmpty(input))
+                return false;
+
+            for (var i = 0; i < input.Length; i++)
+                if (char.IsNumber(input[i]))
+                    return true; //single numeric integer makes function true
+            return false;
+        }
+
+        /// <summary>
+        ///     Montant , Math.Round(number, 2);
         /// </summary>
         public static double RoundAmount(double number)
         {
@@ -62,34 +77,6 @@ namespace Nglib.FORMAT
         }
 
 
-        /// <summary>
-        ///     Permet d'extraire les différent nombres d'une chaine de caractères
-        /// </summary>
-        /// <param name="chaine"></param>
-        /// <returns></returns>
-        public static List<string> ExtractNumbers(string chaine)
-        {
-            var retour = new List<string>();
-            var cumul = "";
-            foreach (var c in chaine)
-                if (char.IsNumber(c))
-                {
-                    cumul += c;
-                }
-                else if (cumul != "")
-                {
-                    try
-                    {
-                        retour.Add(cumul);
-                    }
-                    catch (Exception)
-                    {
-                    }
-
-                    cumul = "";
-                }
-
-            return retour;
-        }
+ 
     }
 }

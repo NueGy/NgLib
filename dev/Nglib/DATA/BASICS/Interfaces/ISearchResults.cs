@@ -5,6 +5,6 @@
     /// </summary>
     public interface ISearchResults
     {
-        int TotalCountResults { get; set; }
+        int TotalCount { get; set; }
     }
 }

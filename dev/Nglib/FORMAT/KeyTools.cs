@@ -6,36 +6,40 @@ using Nglib.SECURITY.CRYPTO;
 
 namespace Nglib.FORMAT
 {
+    /// <summary>
+    /// Permet de manipuler des clefs
+    /// </summary>
     public static class KeyTools
     {
         //private const string CharList = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private const string CharList = "0123456789abcdefghijklmnopqrstuvwxyz";
+        public const string AllowCharactersForKey = "azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN1234567890_-";
 
         /// <summary>
-        ///     Prépare un string pour une clef (supprime les blanc, remplace les accent, to lower, ...)
+        ///     Prépare un string pour une clef (supprime les blanc, remplace les accents, ...)
         ///     AllowCharacters = azertyuiopqsdfghjklmwxcvbn1234567890_
         /// </summary>
         public static string CleanStringForKey(string orgnStr)
         {
             if (string.IsNullOrWhiteSpace(orgnStr)) return null;
             orgnStr = StringTools.CleanString(orgnStr);
-            orgnStr = orgnStr.Replace(" ", "").Replace("-", "_")
-                .Replace(".", "_"); // pas de blancs, pas de tiret, pas de point
+            orgnStr = orgnStr.Replace(" ", "")
+                .Replace(".", "_"); // pas de blancs,  pas de point
             orgnStr = StringTools.ReplaceDiacritics(orgnStr); // Accent interdit;
-            orgnStr = StringTools.FilterCharacters(orgnStr,
-                "azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN1234567890_");
+            orgnStr = StringTools.FilterCharacters(orgnStr, AllowCharactersForKey);
             return orgnStr;
         }
 
 
         /// <summary>
-        ///     Permet de générer une clef composé avec un caractère checksum en fin
+        ///     Permet de générer une clef en base36 composé de 3 valeurs avec un checksum
         /// </summary>
-        /// <param name="DateIndex"></param>
-        /// <param name="tenantId"></param>
-        /// <param name="itemId"></param>
-        /// <param name="keyGroup"></param>
+        /// <param name="DateIndex">Date (Facultative)</param>
+        /// <param name="tenantId">Groupe</param>
+        /// <param name="itemId">Identifiant unique</param>
+        /// <param name="prefix">Ajoutera un prefix xx- sur la clef</param>
         /// <returns></returns>
+        [Obsolete("BETA")]
         public static string WriteKeyB36(DateTime? DateIndex, int tenantId, long itemId, string prefix = null)
         {
             try
@@ -88,6 +92,7 @@ namespace Nglib.FORMAT
         /// <param name="fullid">val</param>
         /// <param name="IgnoreFirstChar">Ignorer les premiers charactères</param>
         /// <returns></returns>
+        [Obsolete("BETA")]
         public static KeyB36 ParseKeyB36(string fullid)
         {
             try
@@ -103,9 +108,6 @@ namespace Nglib.FORMAT
                     fullid = idt[1];
                     if (fullid.Length < 4) return new KeyB36(); // taille impossible
                 }
-
-                var EncryptedMode = fullid.StartsWith("Z");
-                var AdvancedMode = fullid.StartsWith("X");
 
                 var Checksum = '0';
                 var p1 = FromBase36(fullid.Substring(0, 1)).ToString(); //p1 à une taille de 36 maxi
@@ -127,7 +129,7 @@ namespace Nglib.FORMAT
                 }
                 else if (p1.StartsWith("1"))
                 {
-                    // date en 2000 (mode pour économiser des chars)
+                    // date en 20xx (mode pour économiser des chars)
                     var yearstr = "20" + p2.Substring(p2.Length - 5, 2);
                     retourk.DateIndex = new DateTime(Convert.ToInt32(yearstr), 1, 1);
                     retourk.DateIndex = retourk.DateIndex.AddDays(Convert.ToInt32(p2.Substring(p2.Length - 3, 3)) - 1);
@@ -152,6 +154,7 @@ namespace Nglib.FORMAT
             }
         }
 
+
         public static long ParseKeyB36AndValidate(string fullid, int tenantidRequired)
         {
             if (string.IsNullOrEmpty(fullid)) return 0;
@@ -163,51 +166,6 @@ namespace Nglib.FORMAT
         }
 
 
-        /// <summary>
-        ///     Parser un clef
-        /// </summary>
-        /// <param name="fullid"></param>
-        /// <returns></returns>
-        public static Tuple<DateTime, int, long> ParsekeyDigits(string fullid)
-        {
-            try
-            {
-                if (fullid == null) return null;
-                fullid = fullid.Trim();
-                if (string.IsNullOrEmpty(fullid) || fullid.Length != 30) return null;
-                var Checksum = '0';
-                var fullWithoutSign = fullid.Substring(0, 29);
-                Checksum = CheckModulo11Digit(fullWithoutSign);
-                if (Checksum != fullid[29]) return null; // Checksum invalid
-                var DateIndex = new DateTime(Convert.ToInt32(fullid.Substring(0, 4)),
-                    Convert.ToInt32(fullid.Substring(4, 2)), Convert.ToInt32(fullid.Substring(6, 2)));
-                var TenantId = Convert.ToInt32(fullid.Substring(8, 9));
-                var itemId = Convert.ToInt64(fullid.Substring(17, 12));
-                return new Tuple<DateTime, int, long>(DateIndex, TenantId, itemId);
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
-        }
-
-
-        /// <summary>
-        ///     Permet de générer une clef composé avec un caractère checksum en fin
-        /// </summary>
-        /// <param name="DateIndex"></param>
-        /// <param name="tenantId"></param>
-        /// <param name="itemId"></param>
-        /// <param name="keyGroup"></param>
-        /// <returns></returns>
-        public static string WriteKeyDigits(DateTime DateIndex, int tenantId, long itemId) // 8+9+12+1=30
-        {
-            // 000 000 000 000
-            var fullWithoutSign = DateIndex.ToString("yyyyMMdd") + tenantId.ToString().PadLeft(9, '0') +
-                                  itemId.ToString().PadLeft(12, '0');
-            var Checksum = CheckModulo11Digit(fullWithoutSign);
-            return fullWithoutSign + Checksum;
-        }
 
 
         public static char CheckModulo11Digit(string inputNumbers)
@@ -280,6 +238,7 @@ namespace Nglib.FORMAT
         }
 
 
+        [Obsolete("BETA")]
         public static string StringSignRemove(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return null;

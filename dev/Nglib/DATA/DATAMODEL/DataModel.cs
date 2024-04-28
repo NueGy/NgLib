@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Nglib.DATA.BASICS;
 
 namespace Nglib.DATA.DATAMODEL
@@ -8,6 +9,7 @@ namespace Nglib.DATA.DATAMODEL
     ///     Permet d'avoir un model de données plus complet pour gérer une génération automatique du formulaire html
     /// </summary>
     /// <typeparam name="Tmodel"></typeparam>
+    [Obsolete("SOON")]
     public class DataModel<Tmodel> : IDataModel where Tmodel : IModel, new()
     {
         /// <summary>

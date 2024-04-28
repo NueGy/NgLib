@@ -3,73 +3,26 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>Nglib</RootNamespace>
-	  <AssemblyVersion>1.1.5.0</AssemblyVersion>
+	  <AssemblyVersion>1.1.6.3</AssemblyVersion>
 
+    <!-- PACKAGE PUBLIC-->
+    <Version>1.1.6-beta</Version>
 	  <PackageId>Nglib</PackageId>
 	  <Authors>Nuegy SARL</Authors>
-	  <Description>C# .Net Standard Framework tools, Dev components.</Description>
+	  <Description>C# Basics Tools, Abstractions, No dependencies.</Description>
 	  <Copyright></Copyright>
 	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	  <PackageProjectUrl></PackageProjectUrl>
-	   <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl> 
-	  <!--<RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl> -->
+	  <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
 	  <PackageTags>Nglib</PackageTags>
-	  <Version>1.1.5-beta</Version>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <Optimize>false</Optimize>
-    <DocumentationFile>bin\Debug\netstandard2.0\Nglib.xml</DocumentationFile>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="DATA\CONNECTOR\SEARCH\**" />
-    <Compile Remove="DATA\CONNECTOR\SEARCH\**" />
-    <Compile Remove="DATA\DATES\**" />
-    <Compile Remove="DATA\NUMBERS\**" />
-    <Compile Remove="DATA\TEXT\**" />
-    <Compile Remove="FILES\DIRECTORY\**" />
-    <Compile Remove="FILES\ELEMENT\**" />
-    <Compile Remove="FILES\TRANSFERT\**" />
-    <EmbeddedResource Remove="DATA\CONNECTOR\SEARCH\**" />
-    <EmbeddedResource Remove="DATA\CONNECTOR\SEARCH\**" />
-    <EmbeddedResource Remove="DATA\DATES\**" />
-    <EmbeddedResource Remove="DATA\NUMBERS\**" />
-    <EmbeddedResource Remove="DATA\TEXT\**" />
-    <EmbeddedResource Remove="FILES\DIRECTORY\**" />
-    <EmbeddedResource Remove="FILES\ELEMENT\**" />
-    <EmbeddedResource Remove="FILES\TRANSFERT\**" />
-    <None Remove="DATA\CONNECTOR\SEARCH\**" />
-    <None Remove="DATA\CONNECTOR\SEARCH\**" />
-    <None Remove="DATA\DATES\**" />
-    <None Remove="DATA\NUMBERS\**" />
-    <None Remove="DATA\TEXT\**" />
-    <None Remove="FILES\DIRECTORY\**" />
-    <None Remove="FILES\ELEMENT\**" />
-    <None Remove="FILES\TRANSFERT\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="DATA\CONNECTOR\ConnectorFactory.cs" />
-    <Compile Remove="DATA\CONNECTOR\ConnectorObjectParser.cs" />
-    <Compile Remove="DATA\CONNECTOR\MsSQLConnector.cs" />
-    <Compile Remove="DATA\CONNECTOR\MYSQLConnector.cs" />
-    <Compile Remove="DATA\CONNECTOR\PostgreSQLConnector.cs" />
-    <Compile Remove="DATA\CONNECTOR\SqLiteConnector.cs" />
-    <Compile Remove="DATA\DATAPO\DataPOAttributes.cs" />
-    <Compile Remove="DATA\DATAPO\DataPODynamizer.cs" />
-    <Compile Remove="DATA\DATAPO\DataPoSerializer.cs" />
-    <Compile Remove="DATA\ChaineTools.cs" />
-    <Compile Remove="DATA\Cryptage.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="APP\PROCESS\" />
-    <Folder Include="DATA\CONNECTOR\" />
-    <Folder Include="NET\MAIL\" />
-    <Folder Include="NET\NETWORK\" />
-    <Folder Include="WEB\PIPELINE\" />
-  </ItemGroup>
 
 </Project>

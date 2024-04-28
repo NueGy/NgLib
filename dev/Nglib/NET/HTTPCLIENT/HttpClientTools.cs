@@ -15,114 +15,210 @@ namespace Nglib.NET.HTTPCLIENT
 {
     public static class HttpClientTools
     {
-        /// <summary>
-        ///     Permet de composer une request avec une Url Propre
-        /// </summary>
-        /// <param name="method"></param>
-        /// <param name="RootUrl"></param>
-        /// <param name="ServicePartUrl"></param>
-        /// <returns></returns>
+
+        [Obsolete("todelete")]
         public static HttpRequestMessage PrepareRequest(HttpMethod method, string RootUrl, string ServicePartUrl)
         {
-            if (RootUrl == null) RootUrl = "";
-            RootUrl = RootUrl.TrimEnd('/') + "/";
-            ServicePartUrl = ServicePartUrl.TrimStart('/');
-            var finalUrl = ServicePartUrl.StartsWith("http") ? ServicePartUrl : RootUrl + ServicePartUrl;
+            var finalUrl = HttpTools.CombineRootUrl(RootUrl, ServicePartUrl);
             return PrepareRequest(method, finalUrl);
         }
 
 
+
+        /// <summary>
+        /// Permet de composer une requête HTTP
+        /// </summary>
         public static HttpRequestMessage PrepareRequest(HttpMethod method, string ServicePartUrl)
         {
-            ServicePartUrl = ServicePartUrl.TrimStart('/');
+            ServicePartUrl = ServicePartUrl.Trim();
             var req = new HttpRequestMessage(method, ServicePartUrl);
+  
             //req.Headers.Accept.Clear();
             //req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
             return req;
         }
+         
 
 
-        public static HttpRequestMessage PrepareRequestFromModel(object model, HttpMethod method)
-        {
-            if (model == null) return null;
-            var modelAttribute = AttributesTools.FindObjectAttribute<DataModelConfigAttribute>(model);
-            if (modelAttribute == null) throw new Exception("Invalid Model");
-
-            var modeltype = model.GetType();
-            var QueryUrl = modelAttribute.ApiPartUrl;
-
-            var properties =
-                AttributesTools.FindPropertiesValueAttribute<HttpRequestValueAttribute>(model);
-            properties.Where(p => p.Value.Item1.Type == HttpRequestParameterType.Path).ToList().ForEach(p =>
-            {
-                QueryUrl.Replace("{" + p.Value.Item1.RealName + "}",
-                    TransformValue(p.Value.Item1, p.Value.Item2) as string);
-            });
-
-            properties.Where(p => p.Value.Item1.Type == HttpRequestParameterType.Query).ToList().ForEach(p =>
-            {
-                var val = TransformValue(p.Value.Item1, p.Value.Item2);
-                if (val != null)
-                {
-                    if (!QueryUrl.Contains("?")) QueryUrl += "?";
-                    else QueryUrl += "&";
-                    QueryUrl += $"{p.Value.Item1.RealName}={val}";
-                }
-            });
-
-            var req = new HttpRequestMessage(method, QueryUrl);
-
-            return req;
-        }
-
-        private static object TransformValue(HttpRequestValueAttribute attr, object val)
-        {
-            if (val == null || val == DBNull.Value) return null;
-            if (val is DateTime && !string.IsNullOrEmpty(attr.StringFormat))
-                val = ((DateTime)val).ToString(attr.StringFormat);
-
-            if (val is List<string> && !string.IsNullOrEmpty(attr.StringFormat))
-                val = string.Join(attr.StringFormat, (List<string>)val);
-
-            return val;
-        }
-
-
-        public static HttpClient CreateNewClient(string rootUrl, string bearerToken) // !!! use factory standard
+        /// <summary>
+        ///     Génération d'un client HTTP avec un token Bearer
+        /// </summary>
+        public static HttpClient CreateNewClient(HttpClientConfigModel tokenConfig=null, string rootUrl=null)
         {
             var client = new HttpClient();
-            rootUrl = rootUrl.TrimEnd('/') + "/";
-            client.BaseAddress = new Uri(rootUrl);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            if (!string.IsNullOrEmpty(rootUrl))
+            {
+                rootUrl = rootUrl.TrimEnd('/') + "/";
+                client.BaseAddress = new Uri(rootUrl);
+            }
+            if (tokenConfig != null)
+            {
+                var tokenHandler = new HttpClientTokenHandler(tokenConfig);
+                client = new HttpClient(tokenHandler);
+            }
             return client;
+        }
+
+ 
+
+        [Obsolete("BETA")]  
+        public static async Task<TResponseModel> SendWithAttributeModelAsync<TResponseModel>(this HttpClient client,object requestModel)
+        {
+            var req = HttpAttributesTools.CreateRequestFromModel(requestModel);
+            var resp = await client.SendAsync(req);
+            resp.Validate();
+
+            var retour = await ReadAsync<TResponseModel>(resp);
+            return retour;
+        }
+
+        /// <summary>
+        /// Création d'un appel avec un model. use  PrepareRequest+PrepareJsonContent+ReadWithModelAsync
+        /// </summary>
+        public static async Task<TResponseModel> SendWithModelAsync<TResponseModel>(this HttpClient client,
+            HttpMethod method, string urlPart, object requestModel = null)
+        {
+            HttpRequestMessage req = null;
+            req = new HttpRequestMessage(method, urlPart);
+            req.SetContent(requestModel);
+            var resp = await client.SendAsync(req);
+            if (resp.StatusCode == HttpStatusCode.NotFound) return default; // return null si 404
+            resp.Validate();
+
+            var retour = await ReadAsync<TResponseModel>(resp);
+            return retour;
         }
 
 
         /// <summary>
-        ///     Permet d'ajouter un model (utilisation des attributs HttpRequestValueAttribute)
+        /// Permet de définir un token Bearer dans une requête
         /// </summary>
-        /// <typeparam name="Tmodel"></typeparam>
-        /// <param name="request"></param>
-        /// <param name="model"></param>
-        /// <returns></returns>
-        public static void AddValueModelContent<Tmodel>(this HttpRequestMessage request, Tmodel model)
+        /// <param name="httpRequestMessage"></param>
+        /// <param name="token"></param>
+        public static void SetBearerToken(this HttpRequestMessage httpRequestMessage, string token)
         {
-            //// Path properties
-            //if (properties.Any(p => p.Value.Type == HttpRequestParameterType.Path || p.Value.Type == HttpRequestParameterType.Query))
-            //{
-            //    string newpath = request.RequestUri.ToString();
-            //    properties.Where(p => p.Value.Type == HttpRequestParameterType.Path).ToList().ForEach(p => { newpath.Replace("{"+p.Value.RealName+"}",) });
+            if(string.IsNullOrEmpty(token)) return;
+            if (httpRequestMessage == null) throw new ArgumentNullException(nameof(httpRequestMessage));
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("bearer", token);
+        }
 
-            //    Uri newUri = new Uri(newpath);
-            //    request.RequestUri = newUri;
-            //}
-
-
-            // Query Properties
+        public static void SetBasicAuth(this HttpRequestMessage httpRequestMessage, string username, string password)
+        {
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password)) return;
+            if (httpRequestMessage == null) throw new ArgumentNullException(nameof(httpRequestMessage));
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")));
         }
 
 
-        public static async Task<TResponseModel> ReadWithModelAsync<TResponseModel>(this HttpResponseMessage resp)
+        /// <summary>
+        /// Ajouter un header dans une requête
+        /// </summary>
+        public static bool SetParameterHeader(HttpRequestMessage request, string key, string value)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrWhiteSpace(key)) return false;
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            if (request.Headers.Contains(key)) return false; // already exists
+            request.Headers.Add(key.ToLower(), value);
+            return true;
+        }
+
+
+        /// <summary>
+        /// Pemet de créer un contenu JSON. Sérialisation du model, Si post Alors application/json si Get alors querystring
+        /// </summary>
+        public static HttpContent SetContent(this HttpRequestMessage httpRequestMessage, object formToSerialize, bool ForcePostFormUrlContent=false)
+        {
+            if (formToSerialize == null) return null;
+            try
+            {
+                HttpContent httpContent = null;
+                // Si Get ou Head, pas de body donc on passe le content dans l'url
+                List<HttpMethod> methodsWithNoBody = new List<HttpMethod> { HttpMethod.Get, HttpMethod.Head };
+                if (httpRequestMessage!=null && methodsWithNoBody.Contains(httpRequestMessage.Method))
+                {
+                    var values = APP.CODE.PropertiesTools.GetValues(formToSerialize);
+                    string fullurl = HttpTools.AppendQueryToUrl(httpRequestMessage.RequestUri.ToString(), values.ToDictionary(k => k.Key, v => v.Value?.ToString()));
+                    httpRequestMessage.RequestUri = new Uri(fullurl);
+                }
+                else if (formToSerialize is string) // C'est déja un type primitif
+                {
+                    httpContent= new StringContent(formToSerialize as string, Encoding.UTF8, "application/json");
+                }
+                else if(ForcePostFormUrlContent) // demande explicite de FormUrlEncodedContent
+                {
+                    var values = APP.CODE.PropertiesTools.GetValues(formToSerialize);
+                    httpContent = new FormUrlEncodedContent(values.ToDictionary(d => d.Key, d => Convert.ToString(d.Value)));
+                }
+                else // Serialisation standard
+                {
+                    var jsonSerializerOptions = new JsonSerializerOptions { IgnoreNullValues = true };
+                    var bodyjsoncontent = JsonSerializer.Serialize(formToSerialize, formToSerialize.GetType(), jsonSerializerOptions);
+                    httpContent= new StringContent(bodyjsoncontent, Encoding.UTF8, "application/json");
+                }
+
+
+
+                if (httpRequestMessage != null) httpRequestMessage.Content = httpContent;
+                return httpContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("HttpClient.SetContent() " + ex.Message, ex);
+            }
+        }
+
+
+        public static HttpContent PrepareJsonContent(object formToSerialize)
+        {
+            if (formToSerialize == null) return null;
+            try
+            {
+                var jsonSerializerOptions = new JsonSerializerOptions { IgnoreNullValues = true };
+                var bodyjsoncontent = JsonSerializer.Serialize(formToSerialize, formToSerialize.GetType(), jsonSerializerOptions);
+                return new StringContent(bodyjsoncontent, Encoding.UTF8, "application/json");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("HttpClient.PrepareJsonContent() " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Permet d'ajouter les valeurs d'un dictionnaire dans une requête
+        /// Si get, ajout dans l'url si post FormUrlEncodedContent
+        /// </summary>
+        /// <param name="httpRequestMessage"></param>
+        /// <param name="values"></param>
+        public static FormUrlEncodedContent PrepareFormUrlContent(Dictionary<string, object> values)
+        {
+                    return new FormUrlEncodedContent(values.ToDictionary(d => d.Key, d => Convert.ToString(d.Value)));
+        }
+
+        /// <summary>
+        /// Permet de valider le retour du serveur. Génère une exception si invalide
+        /// Plus précis que EnsureSuccessStatusCode
+        /// </summary>
+        public static void Validate(this HttpResponseMessage resp, string msgPrefix = null)
+        {
+            if (resp == null) throw new Exception($"{msgPrefix} HTTPResponseMessage null");
+            if (resp.IsSuccessStatusCode) return;
+            string bodymsg = ReadResponseTextSafe(resp);
+            //todo!!! : Supprimer les eventuels balises html
+            bodymsg = StringTools.Limit(bodymsg, 256);
+            string resqEndUrl = null;
+            if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null)
+                resqEndUrl = $"{resp.RequestMessage.RequestUri} [{resp.RequestMessage.Method}]";
+ 
+            throw new Exception(
+                $"{msgPrefix} HTTP {resqEndUrl} ({(int)resp.StatusCode}) {resp.ReasonPhrase} : {bodymsg}");
+        }
+
+
+        /// <summary>
+        /// Lecture d'une réponse, Désérialisation JSON
+        /// </summary>
+        public static async Task<TResponseModel> ReadAsync<TResponseModel>(this HttpResponseMessage resp)
         {
             try
             {
@@ -140,139 +236,57 @@ namespace Nglib.NET.HTTPCLIENT
             }
         }
 
+        public static TResponseModel Read<TResponseModel>(this HttpResponseMessage resp) => ReadAsync<TResponseModel>(resp).GetAwaiter().GetResult();
 
-        public static async Task<TResponseModel> ExecuteWithModelAsync<TResponseModel>(this HttpClient client,
-            object requestModel, HttpMethod method)
+
+        /// <summary>
+        /// Obtenir un header de la réponse
+        /// </summary>
+        /// <param name="response"></param>
+        public static string GetResponseHeader(HttpResponseMessage response, string headername)
         {
-            var req = PrepareRequestFromModel(requestModel, method);
-            var resp = await client.SendAsync(req);
-            resp.Validate();
-
-            var retour = await ReadWithModelAsync<TResponseModel>(resp);
-            return retour;
-        }
-
-        public static async Task<TResponseModel> ExecuteWithModelAsync<TResponseModel>(this HttpClient client,
-            HttpMethod method, string urlPart, Dictionary<string, object> formdata = null, object requestModel = null)
-        {
-            HttpRequestMessage req = null;
-            req = new HttpRequestMessage(method, urlPart);
-            if (requestModel != null) req.Content = PrepareJsonContent(requestModel);
-            var resp = await client.SendAsync(req);
-            if (resp.StatusCode == HttpStatusCode.NotFound) return default; // return null si 404
-            resp.Validate();
-
-            var retour = await ReadWithModelAsync<TResponseModel>(resp);
-            return retour;
+            if (response == null) return null;
+            if (response.Headers.TryGetValues(headername, out IEnumerable<string> values))
+                return values.FirstOrDefault();
+            return null;
         }
 
 
-        public static HttpContent PrepareJsonContent(object model)
+        /// <summary>
+        /// Identique à ReadAsStringAsync()
+        /// </summary>
+        /// <param name="res"></param>
+        /// <returns></returns>
+        public static string ReadResponseTextSafe(HttpResponseMessage res)
         {
-            if (model == null) return null;
-            if (model is string) return new StringContent(model as string, Encoding.UTF8, "application/json");
-            var jsonSerializerOptions = new JsonSerializerOptions { IgnoreNullValues = true };
-            var bodyjsoncontent = JsonSerializer.Serialize(model, model.GetType(), jsonSerializerOptions);
-            return new StringContent(bodyjsoncontent, Encoding.UTF8, "application/json");
-        }
-
-
-        public static void SetDictionaryContent(this HttpRequestMessage httpRequestMessage,
-            Dictionary<string, object> values)
-        {
-            if (httpRequestMessage.Method == HttpMethod.Get)
-            {
-                // !!! dev 
-            }
-            else
-            {
-                httpRequestMessage.Content =
-                    new FormUrlEncodedContent(values.ToDictionary(d => d.Key, d => Convert.ToString(d.Value)));
-            }
-        }
-
-
-        public static void Validate(this HttpResponseMessage resp, string msgPrefix = null)
-        {
-            if (resp == null) throw new Exception($"{msgPrefix} HTTPResponseMessage null");
-            if (resp.IsSuccessStatusCode) return;
-            string bodymsg = null;
             try
             {
-                bodymsg = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                var txtdata = res.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                return txtdata;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //safe
-            }
-
-            bodymsg = StringTools.Limit(bodymsg, 256);
-
-            string resqEndUrl = null;
-            if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null)
-                resqEndUrl = $"{resp.RequestMessage.RequestUri} [{resp.RequestMessage.Method}]";
-
-            throw new Exception(
-                $"{msgPrefix} HTTP {resqEndUrl} ({(int)resp.StatusCode}) {resp.ReasonPhrase} : {bodymsg}");
-        }
-
-
-        public static void SetBearerToken(this HttpRequestMessage httpRequestMessage, string token)
-        {
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("bearer", token);
-        }
-
-
-        public static string ReadResponseText(HttpResponseMessage res)
-        {
-            var txtdata = res.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            return txtdata;
-        }
-
-        public static string ReadResponseByte(HttpResponseMessage res)
-        {
-            var txtdata = res.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            return txtdata;
-        }
-
-
-        public static string PrepareUrlQueryContent(this object objModel)
-        {
-            if (objModel == null) return "";
-            try
-            {
-                var keyvalues = new List<string>();
-                foreach (var itemprp in objModel.GetType().GetProperties())
-                {
-                    //!!! filter
-                    var obj = itemprp.GetValue(objModel);
-                    if (obj == null) continue;
-                    if (obj is int && (int)obj == 0) continue;
-                    if (!(obj is string)) obj = obj.ToString();
-                    if (string.IsNullOrWhiteSpace((string)obj)) continue;
-                    keyvalues.Add($"{itemprp.Name}={obj}");
-                }
-
-                if (keyvalues.Count == 0) return "";
-                return string.Join("&", keyvalues);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("PrepareUrlQueryContent " + ex.Message, ex);
+                return null;
             }
         }
 
+ 
+        /// <summary>
+        /// Obtenir le type HttpMethod depuis un string
+        /// </summary>
         public static HttpMethod ConvertToHttpMethod(string method)
         {
             if (string.IsNullOrWhiteSpace(method) || method.Equals("Get", StringComparison.OrdinalIgnoreCase))
                 return HttpMethod.Get;
-            if (method.Equals("Post", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Post;
-            if (method.Equals("Put", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Put;
-            if (method.Equals("Delete", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Delete;
-            if (method.Equals("Head", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Head;
-            if (method.Equals("Options", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Options;
-            if (method.Equals("Trace", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Trace;
-            throw new Exception("method invalid");
+            else if (method.Equals("Post", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Post;
+            else if (method.Equals("Put", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Put;
+            else if (method.Equals("Delete", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Delete;
+            else if (method.Equals("Head", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Head;
+            else if (method.Equals("Options", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Options;
+            else if (method.Equals("Trace", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Trace;
+            else if (method.Equals("Patch", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Patch;
+            else throw new Exception("method invalid");
+             
         }
     }
 }

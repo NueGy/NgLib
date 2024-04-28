@@ -84,7 +84,7 @@ namespace Nglib.DATA.ACCESSORS
         {
             try
             {
-                var vals = PropertiesTools.GetValuesReflexion(objetSource);
+                var vals = PropertiesTools.GetValues(objetSource);
                 vals.Keys.ToList().ForEach(k => dataAccessor.SetObject(k, vals[k]));
                 return false;
             }
@@ -107,7 +107,7 @@ namespace Nglib.DATA.ACCESSORS
             try
             {
                 var vals = dataAccessor.ToDictionaryValues(AccesOptions);
-                PropertiesTools.SetValuesReflexion(objetTarget, vals);
+                PropertiesTools.SetValues(objetTarget, vals);
                 return false;
             }
             catch (Exception ex)

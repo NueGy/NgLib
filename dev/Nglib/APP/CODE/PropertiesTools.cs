@@ -2,206 +2,94 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Nglib.DATA.KEYVALUES;
 using Nglib.FORMAT;
 
 namespace Nglib.APP.CODE
 {
     /// <summary>
-    ///     Manipulation de valeurs dans un objets
+    ///     Manipulation de valeurs dans un objet
     /// </summary>
     public static class PropertiesTools
     {
         /// <summary>
-        ///     Obtient toute les propriété déclarées et les valeurs
+        ///     Obtient toutes les propriétés(Accesseurs) déclarées
         /// </summary>
         /// <returns></returns>
-        public static List<PropertyInfo> GetProperties(Type potype)
+        public static PropertyInfo[] GetProperties(Type potype, bool OnlyPublic = true)
         {
-            var props = potype.GetProperties();
-            var retour = new List<PropertyInfo>();
-            if (props != null)
-                foreach (var prp in props)
-                    // !!! trier uniquement les vraies données
-                    retour.Add(prp);
-            return retour;
+            if(potype == null) return null;
+            if(OnlyPublic)
+                return potype.GetProperties();
+            else 
+                return potype.GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
         }
 
 
         /// <summary>
-        ///     Obtient la property d'un objet
+        ///     Obtient la property(Accesseurs) d'un objet
         /// </summary>
-        /// <param name="objSrc"></param>
-        /// <param name="propertyName"></param>
-        /// <returns></returns>
         public static PropertyInfo GetProperty(object objSrc, string propertyName)
         {
             if (objSrc == null || string.IsNullOrWhiteSpace(propertyName)) return null;
-            var prop = objSrc.GetType().GetProperty(propertyName);
+            BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            var prop = objSrc.GetType().GetProperty(propertyName, bindFlags);
             if (prop == null)
-                prop = objSrc.GetType().GetProperties()
+                prop = objSrc.GetType().GetProperties(bindFlags)
                     .FirstOrDefault(p =>
                         propertyName.Equals(p.Name,
                             StringComparison.OrdinalIgnoreCase)); // onréessaye en mode case nosensitive
             return prop;
         }
 
+        /// <summary>
+        ///     Obtient la property(Variable) d'un objet
+        /// </summary>
+        public static FieldInfo GetField(object objSrc, string memberName)
+        {
+            BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            if (objSrc == null || string.IsNullOrWhiteSpace(memberName)) return null;
+            var prop = objSrc.GetType().GetField(memberName, bindFlags);
+            if (prop == null)
+                prop = objSrc.GetType().GetFields(bindFlags)
+                    .FirstOrDefault(p =>memberName.Equals(p.Name,StringComparison.OrdinalIgnoreCase)); // onréessaye en mode case nosensitive
+            return prop;
+        }   
+
+
+
+
 
         /// <summary>
-        ///     Obtenir la données dans un objet
+        ///     Obtenir la données dans un objet, Meme si private
         /// </summary>
-        /// <param name="objSrc"></param>
-        /// <param name="propertyName"></param>
-        /// <returns></returns>
-        public static object GetValueReflexion(object objSrc, string propertyName)
+        public static object GetValue(object objSrc, string propertyName, bool safe = false)
         {
-            if (objSrc == null) throw new ArgumentNullException("objSrc");
-            if (string.IsNullOrEmpty(propertyName)) throw new ArgumentNullException("propertyName");
+            if (objSrc == null)
+            {
+                if (safe) return null;
+                else throw new ArgumentNullException("objSrc");
+            }
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                if (safe) return null;
+                else throw new ArgumentNullException("propertyName");
+            }
             var prop = GetProperty(objSrc, propertyName);
-            if (prop == null) throw new Exception($"Property {propertyName} not found in {objSrc.GetType().Name}");
-            return prop.GetValue(objSrc, null);
-        }
+            if (prop != null) return prop.GetValue(objSrc, null);
 
+            var prfl = GetField(objSrc, propertyName);
+            if (prfl != null) return prfl.GetValue(objSrc);
 
-        /// <summary>
-        ///     Obtenir la données dans un objet SAFE
-        /// </summary>
-        /// <param name="objSrc"></param>
-        /// <param name="propertyName"></param>
-        /// <param name="safeException"></param>
-        /// <returns></returns>
-        public static object GetValueReflexion(object objSrc, string propertyName, bool safeException)
-        {
-            try
-            {
-                if (objSrc == null)
-                {
-                    if (safeException) return null;
-                    throw new ArgumentNullException("objSrc");
-                }
-
-                return GetValueReflexion(objSrc, propertyName);
-            }
-            catch (Exception ex)
-            {
-                if (safeException) return null;
-                throw new Exception("GetValueReflexion " + ex.Message, ex);
-            }
-        }
-
-        /// <summary>
-        ///     Obtenir la données et la convertir en string
-        /// </summary>
-        /// <param name="objSrc"></param>
-        /// <param name="propertyName"></param>
-        /// <param name="safeException"></param>
-        /// <returns></returns>
-        public static string GetStringReflexion(object objSrc, string propertyName, bool safeException = false)
-        {
-            var obj = GetValueReflexion(objSrc, propertyName, safeException);
-            if (obj == null) return null;
-            return obj.ToString();
-        }
-
-
-        /// <summary>
-        ///     Permet de mettre à jours une veleur dans un objet
-        ///     Réalisera un convertion de la valeur si nécessaire
-        /// </summary>
-        /// <param name="propertyInfo"></param>
-        /// <param name="obj"></param>
-        /// <param name="value"></param>
-        /// <param name="index"></param>
-        public static void SetValueReflexion(object objDest, PropertyInfo propertyInfo, object value,
-            object[] index = null)
-        {
-            if (objDest == null) throw new ArgumentNullException("objSrc");
-            if (propertyInfo == null) throw new ArgumentNullException("propertyInfo");
-            try
-            {
-                object realvalue;
-                if (propertyInfo.PropertyType == typeof(string))
-                    realvalue = Convert.ToString(value);
-                else if (propertyInfo.PropertyType == typeof(bool))
-                    realvalue = ConvertPlus.ToBoolean(value);
-                else if (propertyInfo.PropertyType == typeof(char))
-                    realvalue = Convert.ToChar(value);
-                else if (propertyInfo.PropertyType == typeof(byte))
-                    realvalue = Convert.ToByte(value);
-                else if (propertyInfo.PropertyType == typeof(decimal))
-                    realvalue = Convert.ToDecimal(value);
-                else if (propertyInfo.PropertyType == typeof(int))
-                    realvalue = Convert.ToInt32(value);
-                else if (propertyInfo.PropertyType == typeof(long))
-                    realvalue = Convert.ToInt64(value);
-                else if (propertyInfo.PropertyType == typeof(DateTime))
-                    realvalue = ConvertPlus.ToDateTime(value);
-                else if (propertyInfo.PropertyType == typeof(DateTime?))
-                    realvalue = ConvertPlus.ToDateTime(value); // !!!
-                else
-                    realvalue = value;
-
-                propertyInfo.SetValue(objDest, realvalue, index);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"SetValueAndConvert({propertyInfo.Name}) {ex.Message}", ex);
-            }
-        }
-
-
-        /// <summary>
-        ///     Permet de mettre à jours une veleur dans un objet
-        ///     Réalisera un convertion de la valeur si nécessaire
-        /// </summary>
-        /// <param name="objDest"></param>
-        /// <param name="propertyName"></param>
-        /// <param name="value"></param>
-        /// <param name="index"></param>
-        public static void SetValueReflexion(object objDest, string propertyName, object value, object[] index = null)
-        {
-            if (objDest == null) throw new ArgumentNullException("objDest");
-            var prop = GetProperty(objDest, propertyName);
-            if (prop == null) throw new Exception($"Property {propertyName} not found in {objDest.GetType().Name}");
-            SetValueReflexion(objDest, prop, value, index);
-        }
-
-
-        /// <summary>
-        ///     Mettre à jours un objet à partir d'un dictionary
-        /// </summary>
-        /// <param name="objDest"></param>
-        /// <param name="values"></param>
-        public static void SetValuesReflexion(object objDest, IDictionary<string, object> values)
-        {
-            if (objDest == null) throw new ArgumentNullException("objDest");
-            if (values == null) return;
-            var someObjectType = objDest.GetType();
-            var properties =
-                someObjectType.GetProperties().Where(p => p.CanWrite).ToArray(); // !!! Filtrer les types impossibles
-
-            foreach (var proinfo in properties)
-            {
-                var itemval =
-                    values.FirstOrDefault(d => proinfo.Name.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
-                if (itemval.Key == null) continue;
-                proinfo.SetValue(objDest, itemval.Value, null); //!!! améliorer : Gérer les cast automatiquement
-            }
-
-
-            //foreach (KeyValuePair<string, object> item in values)
-            //{
-            //    PropertyInfo proinfo = someObjectType.GetProperty(item.Key, BindingFlags.IgnoreCase);
-            //    if (proinfo == null) continue;
-            //    proinfo.SetValue(objDest, item.Value, null);
-            //}
+            if (safe) return null;
+            else throw new Exception($"PropertiesTools.GetValue: {propertyName} not found in {objSrc.GetType().Name}");
         }
 
 
         /// <summary>
         ///     Obtenir les données d'un objet dans un dictionary
         /// </summary>
-        public static Dictionary<string, object> GetValuesReflexion(object objScr,
-            BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
+        public static Dictionary<string, object> GetValues(object objScr, BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
         {
             return objScr.GetType().GetProperties(bindingAttr).ToDictionary
             (
@@ -209,5 +97,89 @@ namespace Nglib.APP.CODE
                 propInfo => propInfo.GetValue(objScr, null)
             );
         }
+
+
+
+        /// <summary>
+        ///     Obtenir la données et la convertir en string (SAFE)
+        /// </summary>
+        public static string GetString(object objSrc, string propertyName)
+        {
+            var obj = GetValue(objSrc, propertyName, true);
+            if (obj == null) return null;
+            return obj.ToString();
+        }
+
+
+
+
+
+
+        /// <summary>
+        ///     Permet de mettre à jours une veleur dans un objet
+        ///     Réalisera une conversion de la valeur si nécessaire
+        /// </summary>
+        public static void SetValue(object objDest, PropertyInfo propertyInfo, object value, object[] index = null)
+        {
+            if (objDest == null) throw new ArgumentNullException("objSrc");
+            if (propertyInfo == null) throw new ArgumentNullException("propertyInfo");
+            try
+            {
+                object realvalue = ConvertPlus.ChangeType(value, propertyInfo.PropertyType);
+                propertyInfo.SetValue(objDest, realvalue, index);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"SetValueReflexion({propertyInfo.Name}) {ex.Message}", ex);
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        ///     Permet de mettre à jours une valeur dans un objet
+        ///     Réalisera un conversion de la valeur si nécessaire
+        /// </summary>
+        public static void SetValue(object objDest, string propertyName, object value, object[] index = null)
+        {
+            if (objDest == null) throw new ArgumentNullException("objDest");
+            if (string.IsNullOrWhiteSpace(propertyName)) throw new ArgumentNullException("propertyName");
+            var prop = GetProperty(objDest, propertyName);
+            if (prop == null) throw new Exception($"Property {propertyName} not found in {objDest.GetType().Name}");
+            SetValue(objDest, prop, value, index);
+        }
+
+
+        /// <summary>
+        ///     Mettre à jours un objet à partir d'un dictionary
+        /// </summary>
+        public static void SetValues(object objDest, IDictionary<string, object> values)
+        {
+            if (objDest == null) throw new ArgumentNullException("objDest");
+            if (values == null) return;
+            try
+            {
+                var someObjectType = objDest.GetType();
+                var properties =
+                    someObjectType.GetProperties().Where(p => p.CanWrite).ToArray(); // !!! Filtrer les types impossibles
+
+                foreach (var proinfo in properties)
+                {
+                    var itemval = values.FirstOrDefault(d => proinfo.Name.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
+                    if (itemval.Key == null) continue;
+                    object realvalue = ConvertPlus.ChangeType(itemval.Value, proinfo.PropertyType);
+                    proinfo.SetValue(objDest, realvalue, null); //!!! améliorer : Gérer les cast automatiquement
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"SetValuesReflexion {ex.Message}", ex);
+            }
+        }
+
+
+
     }
 }

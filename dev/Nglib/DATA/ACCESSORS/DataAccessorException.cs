@@ -13,6 +13,7 @@ namespace Nglib.DATA.ACCESSORS
 
         public DataAccessorException(string message) : base(message)
         {
+              
         }
     }
 }

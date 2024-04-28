@@ -1,69 +1,39 @@
-﻿using System.Collections;
+﻿using Nglib.DATA.KEYVALUES;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Nglib.DATA.COLLECTIONS
 {
-    public class ListResult<T> : ICollection<T>, IEnumerable<T>
+
+
+    /// <summary>
+    /// Représente un résultat avec des informations supplémentaires
+    /// </summary>
+    [Obsolete("BETA")]
+    public class ListResult<T> : List<T> 
     {
+ 
         public ListResult()
+        {}
+
+        public ListResult(IEnumerable<T> orgnData) : base(orgnData)
+        {}
+
+
+        public BASICS.ResultInfoModel info { get; set; } = new BASICS.ResultInfoModel();
+         
+
+        public string ToJsonWithEnveloppe(JsonSerializerOptions serialopt=null)
         {
+            var objtoSerial = new { data = this, info = this.info };
+            if(serialopt==null) serialopt = new JsonSerializerOptions() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+            string json = JsonSerializer.Serialize(objtoSerial, objtoSerial.GetType(), serialopt);
+            return json;
         }
-
-        public ListResult(IEnumerable<T> orgnData)
-        {
-            if (orgnData != null) data.AddRange(orgnData);
-        }
-
-
-        public List<T> data { get; set; } = new();
-
-        public ResultInfos info { get; set; } = new();
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return data.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return data.GetEnumerator();
-        }
-
-        public int Count => data.Count;
-
-        public bool IsReadOnly => false;
-
-        public void Clear()
-        {
-            data.Clear();
-        }
-
-        public bool Contains(T item)
-        {
-            return data.Contains(item);
-        }
-
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            data.CopyTo(array, arrayIndex);
-        }
-
-        public bool Remove(T item)
-        {
-            return data.Remove(item);
-        }
-
-
-        public void Add(T item)
-        {
-            data.Add(item);
-        }
-
-        public void AddRange(IEnumerable<T> items)
-        {
-            data.AddRange(items);
-            //if(info.TotalResult==0)
-        }
+ 
 
         public static ListResult<T> FromList(IEnumerable<T> orgnData)
         {
@@ -71,16 +41,6 @@ namespace Nglib.DATA.COLLECTIONS
             return new ListResult<T>(orgnData);
         }
 
-        public List<T> ToList()
-        {
-            var retour = new List<T>(data);
-            return retour;
-        }
-
-        public override string ToString()
-        {
-            return data?.ToString();
-        }
 
 
         public static ListResult<T> PrepareForError(string errorMsg)
@@ -90,16 +50,6 @@ namespace Nglib.DATA.COLLECTIONS
             return retour;
         }
 
-        public class ResultInfos
-        {
-            public string ErrorMessage { get; set; }
-            public int TotalResult { get; set; }
-        }
-        //public static ListResult<object> PrepareForError(string errorMsg)
-        //{
-        //    var retour = new ListResult<object>();
-        //    retour.info.ErrorMessage = errorMsg;
-        //    return retour;
-        //}
     }
+ 
 }

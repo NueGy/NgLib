@@ -13,7 +13,7 @@ For the moment, the description and comments are in French.
 | Package | NuGet | Comments |
 | ------- | ------------ | ----------------- |
 | [Nglib](https://www.nuget.org/packages/Nglib/) | [![Nglib](https://img.shields.io/nuget/v/nglib.svg)](https://www.nuget.org/packages/Nglib/) [![Nglib](https://img.shields.io/nuget/dt/Nglib.svg)](https://www.nuget.org/packages/Nglib/) |  Abstractions, Basics Tools, No dependencies | 
-| [Nglib.Core](https://www.nuget.org/packages/Nglib.Core/) | [![Nglib](https://img.shields.io/nuget/v/nglib.Core.svg)](https://www.nuget.org/packages/Nglib.Core/) [![Nglib](https://img.shields.io/nuget/dt/Nglib.Core.svg)](https://www.nuget.org/packages/Nglib.Core/) | Mains components | 
+| [Nglib.Data](https://www.nuget.org/packages/Nglib.Data/) | [![Nglib](https://img.shields.io/nuget/v/nglib.Data.svg)](https://www.nuget.org/packages/Nglib.Data/) [![Nglib](https://img.shields.io/nuget/dt/Nglib.Data.svg)](https://www.nuget.org/packages/Nglib.Data/) | Mains components | 
 
 
 
@@ -29,7 +29,7 @@ Vous trouverez plus d'informations dans le wiki/code.
 ```
 Install-Package Nglib
 // OR
-Install-Package Nglib.Core
+Install-Package Nglib.Data
 ```
 
 # Documentation and links

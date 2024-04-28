@@ -10,3 +10,7 @@
 /dev/Nglib.Tests/bin
 /dev/Nglib.Core/obj
 /dev/Nglib.Core/bin
+/dev/Nglib.Data/obj
+/dev/Nglib.Data/bin
+/dev/Nglib.PublicTests/obj
+/dev/Nglib.PublicTests/bin

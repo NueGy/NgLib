@@ -17,6 +17,7 @@ namespace Nglib.FORMAT
     /// </summary>
     public static class StringTools
     {
+        public const string removeChars = "?&^$#@!<>’\'*�";// inclus les problèmes d'encodage
         public const string AllCharsConst = "azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN0123456789";
 
         private static int lastseed = 25;
@@ -104,36 +105,6 @@ namespace Nglib.FORMAT
         }
 
 
-        /// <summary>
-        ///     la chaine contient au moin un nombre
-        /// </summary>
-        public static bool HasNumeric(string input)
-        {
-            //Verify input
-            if (string.IsNullOrEmpty(input))
-                return false;
-
-            for (var i = 0; i < input.Length; i++)
-                if (char.IsNumber(input[i]))
-                    return true; //single numeric integer makes function true
-            return false;
-        }
-
-        /// <summary>
-        ///     La chaine est totalement numérique
-        /// </summary>
-        public static bool IsNumeric(string input)
-        {
-            //Verify input
-            if (string.IsNullOrEmpty(input))
-                return false;
-
-            for (var i = 0; i < input.Length; i++)
-                if (!char.IsNumber(input[i]))
-                    return false; //single non-numeric integer makes function false
-            return true;
-        }
-
 
         /// <summary>
         ///     Contient que des lettres et des nombres
@@ -170,9 +141,8 @@ namespace Nglib.FORMAT
         ///     Limiter la taille d'une chaine string + supprimer les retour chariot, ...
         ///     Gere meme si la taille de la chaine est plus petite que la limite
         /// </summary>
-        public static string Limit(string original, int num, bool cleanupstring = true)
+        public static string Limit(string original, int num)
         {
-            if (cleanupstring) original = CleanString(original); // on nétoie le string avant de le limiter
             if (original == null) return null;
             var nb = original.Length;
             if (nb > num) nb = num;
@@ -184,9 +154,6 @@ namespace Nglib.FORMAT
         /// <summary>
         ///     Permet de découper une chaine avec gestion du outRange
         /// </summary>
-        /// <param name="original"></param>
-        /// <param name="Position"></param>
-        /// <returns></returns>
         public static string SubstringSafe(string original, int Position)
         {
             var originalLength = original.Length;
@@ -198,38 +165,29 @@ namespace Nglib.FORMAT
         /// <summary>
         ///     Permet de découper une chaine avec gestion du outRange
         /// </summary>
-        /// <param name="original"></param>
-        /// <param name="Position"></param>
-        /// <param name="lenght"></param>
-        /// <returns></returns>
         public static string SubstringSafe(string original, int Position, int lenght)
         {
             var originalLength = original.Length;
             if (originalLength < Position) return string.Empty; // trop loin
             if (originalLength < lenght + Position) lenght = originalLength - Position; // pas assez de caractere
-
             original = original.Substring(Position, lenght);
             return original;
         }
 
 
         /// <summary>
-        ///     PadLeft/PadRight + Limit
+        ///     PadLeft pour les nombres
         /// </summary>
         /// <param name="value">valeur</param>
         /// <param name="totalWith">nombre de caracteres sur le champs</param>
-        /// <param name="numerique">champs numérique(gestion des zéros)</param>
-        public static string Complete(string value, int totalWith, bool numerique = true)
+        public static string PadNumeric(string value, int totalWith)
         {
             if (value == null) value = ""; // jamais null
+            value = value.Replace(" ", ""); // on supprime aussi les espaces (gardera les , et .)
             if (value.Length > totalWith)
-            {
                 return Limit(value, totalWith);
-            }
-
-            value = CleanString(value);
-            if (numerique) value = value.PadLeft(totalWith, '0'); // on ajoute les zero sur la gauche
-            else value = value.PadRight(totalWith, ' '); // on ajoute des blancs sur la droite
+            
+            value = value.PadLeft(totalWith, '0'); // on ajoute les zero sur la gauche
             return value;
         }
 
@@ -280,15 +238,16 @@ namespace Nglib.FORMAT
         /// <returns></returns>
         public static string CleanString(string orgnStr)
         {
-            if (string.IsNullOrWhiteSpace(orgnStr)) return null;
+            if(orgnStr==null) return null;
+            if (string.IsNullOrWhiteSpace(orgnStr)) return string.Empty;
             orgnStr = orgnStr.Trim().Replace("\r", " ").Replace("\n", "").Replace("\t", "");
-            const string removeChars = "?&^$#@!<>’\'*�";// inclus les problèmes d'encodage
+            
             foreach (char c in removeChars)
                 orgnStr = orgnStr.Replace(c.ToString(), string.Empty);
 
             // Améliorer en utilisant un regex ou  autre pour les perf
             //https://stackoverflow.com/questions/11395775/clean-the-string-is-there-any-better-way-of-doing-it
-            return orgnStr;
+            return orgnStr.Trim();
         }
 
 
@@ -302,5 +261,55 @@ namespace Nglib.FORMAT
             sb[pos] = c;
             return sb.ToString();
         }
+
+
+
+        /// <summary>
+        /// Ajouter une valeur à une position dans un StringBuilder
+        /// </summary>
+        public static void StringSetValuePosition(StringBuilder builder, int position, string value, int lenght=0)
+        {
+            if (builder == null) throw new ArgumentNullException("builder");
+            if (position < 1 || value == null) return; // ignore
+            if (lenght==0) lenght = value.Length; // on prend la taille de la valeur (si non spécifié)
+
+            position = position - 1; //Real position is 1 based
+            value = Limit(value, lenght);
+            value = value?.PadRight(lenght, ' ');
+
+            if (position >= builder.Length)
+            {
+                builder.Append(value);
+            }
+            else
+            {
+                builder.Remove(position, value.Length);
+                builder.Insert(position, value);
+            }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Permet de découper des valeurs: Separateur csv ';';
+        /// Pour la gestion des tags, vides interdit
+        /// </summary>
+        public static string[] SplitTag(string valuesstr, bool toUpper = true, bool neverNull=false)
+        {
+            if (valuesstr == null) return (neverNull) ? new string[0]:null;
+            if (string.IsNullOrWhiteSpace(valuesstr)) return new string[0];
+            string[] retour = valuesstr.Split(';', StringSplitOptions.None).ToArray();
+            retour = retour.Select(x => CleanString(x)).ToArray();
+            if(toUpper) retour = retour.Select(x => x.ToUpperInvariant()).ToArray();
+            return retour;
+        }
+
+
+
+
+
+
     }
 }

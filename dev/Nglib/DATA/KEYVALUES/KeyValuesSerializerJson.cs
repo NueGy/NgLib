@@ -248,7 +248,7 @@ namespace Nglib.DATA.KEYVALUES
 
         public string SerializeList<T>(ListResult<T> values) where T : KeyValues, new()
         {
-            if (values == null || values.data == null) return null;
+            if (values == null) return null;
             var options = new JsonWriterOptions { Indented = JsonWriterIndented };
             using (var stream = new MemoryStream())
             {
@@ -257,7 +257,7 @@ namespace Nglib.DATA.KEYVALUES
                     writer.WriteStartObject();
                     writer.WritePropertyName("data");
                     writer.WriteStartArray();
-                    foreach (var itemValues in values.data)
+                    foreach (var itemValues in values)
                     {
                         var dvalues = itemValues.GroupKeys();
                         writer.WriteStartObject();

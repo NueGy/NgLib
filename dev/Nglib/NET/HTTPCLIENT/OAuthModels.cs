@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Nglib.NET.HTTPCLIENT
 {
+    /// <summary>
+    /// Models Oauth2 pour sérialiation
+    /// </summary>
     public static class OAuthModels
     {
         //https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
@@ -63,19 +66,6 @@ namespace Nglib.NET.HTTPCLIENT
 
       
 
-        public static bool Validate(Oauth2TokenRequest model)
-        {
-            if (string.IsNullOrWhiteSpace(model?.grant_type)) throw new Exception("Oauth2TokenRequest.grant_type Empty");
-            model.grant_type = model.grant_type.ToLower().Trim();
-            if (model.grant_type.Equals("client_credentials"))
-            {
-                if (string.IsNullOrEmpty(model.client_id) || string.IsNullOrEmpty(model.client_secret)) throw new Exception("Oauth2TokenRequest.client_id/client_secret Empty for client_credentials");
-            }
-
-
-            return true;
-        }
-
         public static bool Validate(Oauth2TokenResponse model)
         {
             if (string.IsNullOrWhiteSpace(model?.access_token)) throw new Exception("Oauth2TokenResponse.access_token Empty");
@@ -90,11 +80,11 @@ namespace Nglib.NET.HTTPCLIENT
             {
                 if (string.IsNullOrEmpty(requestModel.grant_type)) return null;
                 var req = HTTPCLIENT.HttpClientTools.PrepareRequest(HttpMethod.Post, tokenEndpoint);
-                req.Content = HTTPCLIENT.HttpClientTools.PrepareJsonContent(requestModel);
+                HTTPCLIENT.HttpClientTools.SetContent(req, requestModel);
                 HttpClient client = new HttpClient();
                 var res = await client.SendAsync(req);
                 HTTPCLIENT.HttpClientTools.Validate(res);
-                var model = await HTTPCLIENT.HttpClientTools.ReadWithModelAsync<Oauth2TokenResponse>(res);
+                var model = await HTTPCLIENT.HttpClientTools.ReadAsync<Oauth2TokenResponse>(res);
                 return model;
             }
             catch (Exception rc)

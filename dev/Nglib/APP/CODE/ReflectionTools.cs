@@ -9,31 +9,40 @@ namespace Nglib.APP.CODE
     /// </summary>
     public static class ReflectionTools
     {
-        public static Type GetTypeByReflexion(string MyFullyQualifiedTypeName)
+        /// <summary>
+        ///    Obtient un type, IgnoreCase
+        /// </summary>
+        /// <param name="MyFullyQualifiedTypeName"></param>
+        /// <returns></returns>
+        public static Type GetType(string MyFullyQualifiedTypeName)
         {
             Type retour = null;
-            retour = Type.GetType(MyFullyQualifiedTypeName, false, true);
+            retour = Type.GetType(MyFullyQualifiedTypeName, false,true);
             return retour;
         }
 
-
-        public static T NewInstance<T>(Type type, params object[] constructorArgs)
+        /// <summary>
+        /// Create Instance of new object
+        /// </summary>
+        public static T CreateInstance<T>(Type exactType=null, params object[] constructorArgs)
         {
             try
             {
-                object objRetour = null;
+                if(exactType==null) exactType = typeof(T);
                 if (constructorArgs != null && constructorArgs.Length > 0)
-                    objRetour = Activator.CreateInstance(type, constructorArgs);
-                objRetour = Activator.CreateInstance(type);
-                return (T)objRetour;
+                    return (T)Activator.CreateInstance(exactType, constructorArgs);
+                return (T)Activator.CreateInstance(exactType);
             }
             catch (Exception ex)
             {
-                throw new Exception("ObjectNewInstance " + ex.Message + $"(type:{type.Name})", ex);
+                throw new Exception($"CreateInstance {ex.Message} (type:{typeof(T).Name})", ex);
             }
         }
 
-        public static object NewInstance(Type type, params object[] constructorArgs)
+        /// <summary>
+        /// Create Instance of new object
+        /// </summary>
+        public static object CreateInstance(Type type, params object[] constructorArgs)
         {
             try
             {
@@ -43,7 +52,7 @@ namespace Nglib.APP.CODE
             }
             catch (Exception ex)
             {
-                throw new Exception("ObjectNewInstance " + ex.Message + $"(type:{type.Name})", ex);
+                throw new Exception($"CreateInstance {ex.Message} (type:{type.Name})", ex);
             }
         }
 

@@ -11,8 +11,6 @@ namespace Nglib.DATA.ACCESSORS
         /// <summary>
         ///     Obtient la valeur Enum par default
         /// </summary>
-        /// <typeparam name="TEnum"></typeparam>
-        /// <returns></returns>
         public static TEnum GetEnumDefaultValue<TEnum>() where TEnum : struct
         {
             var t = typeof(TEnum);
@@ -38,5 +36,23 @@ namespace Nglib.DATA.ACCESSORS
 
             return retour;
         }
+
+        /// <summary>
+        /// Copier deux DataAccessors
+        /// </summary>
+        public static void CopyTo(this IDataAccessor source, IDataAccessor destination)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+            foreach (var key in source.ListFieldsKeys())
+            {
+                var obj = source.GetData(key, DataAccessorOptionEnum.None);
+                if (obj == null) continue;
+                destination.SetData(key, obj, DataAccessorOptionEnum.None);
+            }
+        }
+
+
+
     }
 }

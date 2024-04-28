@@ -15,30 +15,13 @@ namespace Nglib.FORMAT
     /// </summary>
     public static class DateTools
     {
-        /// <summary>
-        ///     Mois enum
-        /// </summary>
-        public enum MonthEnum
-        {
-            January = 1,
-            February = 2,
-            March = 3,
-            April = 4,
-            May = 5,
-            June = 6,
-            July = 7,
-            August = 8,
-            September = 9,
-            October = 10,
-            November = 11,
-            December = 12
-        }
+
 
 
         /// <summary>
         ///     Obtenir la différence entre 2 dates en chaine simplifiée ( 4 Hr , 26 Sec , ...)
         /// </summary>
-        public static string StringDateDelay(DateTime? date1, DateTime? date2)
+        public static string ToStringDateDelay(DateTime? date1, DateTime? date2)
         {
             if (!date1.HasValue || !date2.HasValue) return string.Empty;
             var next = (int)(date2.Value - date1.Value).TotalSeconds;
@@ -56,7 +39,10 @@ namespace Nglib.FORMAT
             return isneg + next / 86000 + " Days";
         }
 
-        public static string StringDateDay(DateTime date1, string dateFormat = "dd/MM/yyyy")
+        /// <summary>
+        /// Si jour même, affiche l'heure, sinon la date
+        /// </summary>
+        public static string ToStringDateOrTime(DateTime date1, string dateFormat = "dd/MM/yyyy")
         {
             if (date1.Date == DateTime.Now.Date)
                 return date1.ToString("HH:mm:ss");
@@ -67,12 +53,7 @@ namespace Nglib.FORMAT
         /// <summary>
         ///     Permet d'obtenir la prochaine date avec gestion des jours interdits (Jours fériés)
         /// </summary>
-        /// <param name="startDate"></param>
-        /// <param name="addDays"></param>
-        /// <param name="excludesDates"></param>
-        /// <param name="excludesDays"></param>
-        /// <returns></returns>
-        public static DateTime NextDateWithExcludes(DateTime startDate, int addDays = 1,
+        public static DateTime AddDaysWithExcludes(DateTime startDate, int addDays = 1,
             List<DateTime> excludesDates = null, List<DayOfWeek> excludesDays = null)
         {
             var lastDate = startDate;
@@ -94,7 +75,7 @@ namespace Nglib.FORMAT
         /// </summary>
         /// <param name="unixTimeStamp"></param>
         /// <returns></returns>
-        public static DateTime TimeStampToDateTime(double unixTimeStamp, bool UseLocalTime = false)
+        public static DateTime TimeStampToDateTime(long unixTimeStamp, bool UseLocalTime = false)
         {
             // Unix timestamp is seconds past epoch
             var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
@@ -133,6 +114,7 @@ namespace Nglib.FORMAT
                 if (datestr.Length != 8) throw new Exception("invalidString for 8Chars Date");
                 return new DateTime(Convert.ToInt32(datestr.Substring(0, 4)), Convert.ToInt32(datestr.Substring(4, 2)),
                     Convert.ToInt32(datestr.Substring(6, 2)));
+                //if (retour.Year < 2000 && retour.Year > 2099) throw new Exception("date year invalide");
             }
             catch (Exception ex)
             {
@@ -165,32 +147,6 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Obtient le trimestre
-        /// </summary>
-        /// <param name="date"></param>
-        /// <returns></returns>
-        public static int GetQuarterOfDate(DateTime date)
-        {
-            switch (date.Month)
-            {
-                case 1: return 1;
-                case 2: return 1;
-                case 3: return 1;
-                case 4: return 2;
-                case 5: return 2;
-                case 6: return 2;
-                case 7: return 3;
-                case 8: return 3;
-                case 9: return 3;
-                case 10: return 4;
-                case 11: return 4;
-                case 12: return 4;
-                default: return 0;
-            }
-        }
-
-
-        /// <summary>
         ///     Permet d'obtenir toutes les jounrées dans une période
         /// </summary>
         /// <param name="dateStart">Date de début incluse</param>
@@ -212,38 +168,92 @@ namespace Nglib.FORMAT
         }
 
 
-        /// <summary>
-        ///     Gets the end of week.
-        /// </summary>
-        /// <param name="input">The input date.</param>
-        /// <returns>Returns end of week date</returns>
-        public static DateTime GetEndOfWeek(DateTime input)
-        {
-            var dayOfWeek = Convert.ToInt32(input.DayOfWeek, CultureInfo.InvariantCulture);
-            return input.AddDays(6 - dayOfWeek);
-        }
-
+ 
+   
 
         /// <summary>
-        ///     Gets the start of week.
+        /// Obtenir une Date en fonction de la valeur
         /// </summary>
-        /// <param name="input">The input date.</param>
-        /// <returns>Returns start of supplied week</returns>
-        public static DateTime GetStartOfWeek(DateTime input)
-        {
-            var dayOfWeek = Convert.ToInt32(input.DayOfWeek, CultureInfo.InvariantCulture);
-            return input.AddDays(-1 * dayOfWeek);
-        }
-
-
-        /// <summary>
-        ///     Obtient le dernier jour du mois
-        /// </summary>
-        /// <param name="input"></param>
+        /// <param name="date"></param>
+        /// <param name="valueOfDate"></param>
         /// <returns></returns>
-        public static DateTime GetEndOfMounth(DateTime input)
+        public static DateTime GetPartOfDate(DateTime date, ValueOfDateEnum valueOfDate)
         {
-            return new DateTime(input.Year, input.Month, DateTime.DaysInMonth(input.Year, input.Month));
+            switch (valueOfDate)
+            {
+                case ValueOfDateEnum.LastDayOfMonth:
+                    return new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
+                case ValueOfDateEnum.LastDayOfYear:
+                    return new DateTime(date.Year, 12, 31);
+                case ValueOfDateEnum.FirstSundayOfWeek:
+                    return date.AddDays(-1 * Convert.ToInt32(date.DayOfWeek, CultureInfo.InvariantCulture));
+                    case ValueOfDateEnum.FirstDayOfWeek:
+                    return date.AddDays(-1 * (Convert.ToInt32(date.DayOfWeek, CultureInfo.InvariantCulture)-1));
+                case ValueOfDateEnum.LastDayOfWeek:
+                    return date.AddDays(7 - Convert.ToInt32(date.DayOfWeek, CultureInfo.InvariantCulture));
+                case ValueOfDateEnum.LastSaturdayOfWeek:
+                    return date.AddDays(6 - Convert.ToInt32(date.DayOfWeek, CultureInfo.InvariantCulture));
+                case ValueOfDateEnum.FirstDayOfQuarter:
+                    return new DateTime(date.Year, (GetQuarterOfDate(date) - 1) * 3 + 1, 1);
+                case ValueOfDateEnum.LastDayOfQuarter:
+                    return new DateTime(date.Year, (GetQuarterOfDate(date) - 1) * 3 + 3, 1).AddMonths(1).AddDays(-1);
+                default:
+                    return date;
+            }
+        }
+
+
+
+        /// <summary>
+        ///     Obtient le trimestre
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public static int GetQuarterOfDate(DateTime date) =>  ((date.Month + 2) / 3);
+    
+
+
+        public enum ValueOfDateEnum
+        {
+            /// <summary>
+            /// Obtenir le premier jour de la semaine Française
+            /// </summary>
+            FirstDayOfWeek,
+
+            /// <summary>
+            /// Obtenir le premier jour de la semaine Américaine
+            /// </summary>
+            FirstSundayOfWeek,
+
+            /// <summary>
+            /// Obtenir le dernier jour de la semaine
+            /// </summary>
+            LastDayOfWeek,
+
+            /// <summary>
+            /// Obtenir le dernier jour de la semaine Américaine
+            /// </summary>
+            LastSaturdayOfWeek,
+
+            /// <summary>
+            /// Obtenir le dernier jour du mois
+            /// </summary>
+            LastDayOfMonth,
+
+            /// <summary>
+            /// Obtenir le dernier jour de l'année
+            /// </summary>
+            LastDayOfYear,
+
+            /// <summary>
+            /// Obtenir le premier jour du trimestre
+            /// </summary>
+            FirstDayOfQuarter,
+
+            /// <summary>
+            /// Obtenir le dernier jour du trimestre
+            /// </summary>
+            LastDayOfQuarter
         }
     }
 }

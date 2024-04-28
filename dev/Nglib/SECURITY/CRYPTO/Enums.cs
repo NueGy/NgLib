@@ -12,7 +12,7 @@ namespace Nglib.SECURITY.CRYPTO
 
 
     /// <summary>
-    /// Liste des hash disponibles
+    /// Liste des méthodes de cryptages disponibles
     /// </summary>
     public enum CryptoModeEnum { AES256, RSA2048 }
 

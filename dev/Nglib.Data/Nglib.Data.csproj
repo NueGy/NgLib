@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>Nglib</RootNamespace>
+
+    <!-- PACKAGE PUBLIC-->
+    <Version>1.1.6-beta</Version>
+    <PackageId>Nglib.Data</PackageId>
+	  <Authors>Nuegy SARL</Authors>
+    <Description>Dataset, DataPO, DataConnector SQL, Dev components.</Description>
+    <Copyright></Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl></PackageProjectUrl>
+	  <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
+    <PackageTags>Nglib</PackageTags>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>false</Optimize>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nglib\Nglib.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>

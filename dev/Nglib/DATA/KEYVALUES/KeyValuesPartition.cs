@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace Nglib.DATA.KEYVALUES
 {
+    [Obsolete("BETA")]
     public class KeyValuesPartition<Tval> : IList<Tval> where Tval : KeyValues, new()
     {
         public KeyValuesPartition(KeyValues originalArray)

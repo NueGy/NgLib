@@ -4,8 +4,9 @@ using System.Net.Http;
 namespace Nglib.NET.HTTPCLIENT
 {
     /// <summary>
-    ///     Contient tous le nécessaires pour traiter un api distant
+    ///     Contient tous le nécessaires pour traiter un api distant et renouvler les tokens
     /// </summary>
+    [Obsolete("Use HttpClientTokenHandler, Deleted in next version")]
     public interface IHttpClientContext
     {
         /// <summary>

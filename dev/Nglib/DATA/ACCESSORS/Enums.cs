@@ -34,7 +34,7 @@ namespace Nglib.DATA.ACCESSORS
         Safe = 0x02,
 
         /// <summary>
-        ///     Interdit le remplacement d'une valeur si elle exist déja
+        ///     Interdit le remplacement d'une valeur si elle existe déja
         /// </summary>
         NotReplace = 0x04,
 
@@ -54,13 +54,21 @@ namespace Nglib.DATA.ACCESSORS
         IgnoreChange = 0x32,
 
         /// <summary>
-        ///     Permet l'utilisation ou la mise en cache
+        ///     Permet l'utilisation d'un cache en lecture
         /// </summary>
         UseCache = 0x64,
 
         /// <summary>
         ///     permet de convertir la données avec des convertisseur amélioré (get only)
         /// </summary>
-        AdvancedConverter = 0x128
+        [Obsolete("DevSoon")] AdvancedConverter = 0x128,
+
+        /// <summary>
+        /// Default Parameter = NONE
+        /// </summary>
+        Default = None,
+
+
+
     }
 }

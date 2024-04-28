@@ -24,9 +24,9 @@ namespace Nglib.FILES.SERIAL
          
 
         /// <summary>
-        /// Serialisation Simple sans utilisation de DLL exterieure
+        /// Sérialisation Simple sans utilisation de DLL extérieure
         /// </summary>
-        [Obsolete("Use JSON.NET",false)]
+        [Obsolete("Use Serialize", false)]
         public static string SerializeDictionaryValues(Dictionary<string, object> datas)
         {
             List<string> entries = new List<string>();
@@ -43,7 +43,10 @@ namespace Nglib.FILES.SERIAL
 
 
 
-    
+        /// <summary>
+        /// DeSérialisation Simple sans utilisation de DLL extérieure
+        /// </summary>
+        [Obsolete("Use Serialize", false)]
         public static Dictionary<string, object> DeSerializeDictionaryValues(string json)
         {
             Dictionary<string, object> datas = new Dictionary<string, object>();
@@ -64,7 +67,11 @@ namespace Nglib.FILES.SERIAL
         }
       
 
-
+        /// <summary>
+        /// Indentation du JSON
+        /// </summary>
+        /// <param name="unPrettyJson"></param>
+        /// <returns></returns>
         public static string PrettyJson(string unPrettyJson)
         {
             if (string.IsNullOrWhiteSpace(unPrettyJson)) return null;

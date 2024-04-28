@@ -8,6 +8,7 @@ using Nglib.DATA.BASICS;
 using Nglib.DATA.COLLECTIONS;
 using Nglib.DATA.KEYVALUES;
 using Nglib.NET.HTTPCLIENT;
+using Nglib.NET.HTTPCLIENT.WRAPPER;
 
 namespace Nglib.DATA.DATAMODEL
 {
@@ -17,14 +18,36 @@ namespace Nglib.DATA.DATAMODEL
     /// <typeparam name="TApiModel"></typeparam>
     public class DataModelApiWrapper<TApiModel> : BaseApiWrapper where TApiModel : IModel, new()
     {
-        public DataModelApiWrapper(IHttpClientContext apiAuthContext, string baseurl = null) : base(apiAuthContext,
-            baseurl)
-        {
-            ModelConfig = AttributesTools.FindObjectAttribute<DataModelConfigAttribute>(typeof(TApiModel));
+        //[Obsolete("Deleted in next version",true)]
+        //public DataModelApiWrapper(IHttpClientContext apiAuthContext, string baseurl = null) : base(apiAuthContext,
+        //    baseurl)
+        //{
+        //    ModelConfig = AttributesTools.GetAttribute<DataModelConfigAttribute>(typeof(TApiModel));
 
-            if (string.IsNullOrWhiteSpace(BasePartUrl) && ModelConfig != null)
-                BasePartUrl = ModelConfig.ApiPartUrl; // base url défini en attribute
+        //    if (string.IsNullOrWhiteSpace(BasePartUrl) && ModelConfig != null)
+        //        BasePartUrl = ModelConfig.ApiPartUrl; // base url défini en attribute
+        //}
+
+        /// <summary>
+        /// Représente la partie de l'url qui désigne le endpoint de l'api
+        /// </summary>
+        public string SubPartUrl { get; set; }
+
+        /// <summary>
+        /// Wrapper pour la manipulation des datamodels par API
+        /// </summary>
+        /// <param name="client">client http</param>
+        /// <param name="subUrl">exemple /api/monservice/ </param>
+        public DataModelApiWrapper(HttpClient client, string subUrl = null) : base(client)
+        {
+            this.ModelConfig = AttributesTools.GetAttribute<DataModelConfigAttribute>(typeof(TApiModel));
+            this.SubPartUrl = subUrl;
+            if (string.IsNullOrWhiteSpace(this.SubPartUrl) && ModelConfig != null)
+                this.SubPartUrl = ModelConfig.ApiPartUrl; // base url défini en attribute
+            else this.SubPartUrl = subUrl;
+
         }
+
 
 
         /// <summary>
@@ -45,13 +68,13 @@ namespace Nglib.DATA.DATAMODEL
         {
             try
             {
-                var parturl = BasePartUrl + "/";
-                var querydatas = formModel.PrepareUrlQueryContent();
-                if (!string.IsNullOrEmpty(querydatas)) parturl += "?" + querydatas;
+                var parturl = SubPartUrl + "/";
+ 
 
 
                 var reqm = PrepareRequest(HttpMethod.Get, parturl);
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                HttpClientTools.SetContent(reqm, formModel);    
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
                 var json = await resm.Content.ReadAsStringAsync();
                 ListResult<TApiModel> retour = null;
@@ -84,8 +107,8 @@ namespace Nglib.DATA.DATAMODEL
         {
             try
             {
-                var reqm = PrepareRequest(HttpMethod.Get, BasePartUrl + $"?LimitResults={LimitResults}");
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var reqm = PrepareRequest(HttpMethod.Get, SubPartUrl + $"?LimitResults={LimitResults}");
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
                 var json = await resm.Content.ReadAsStringAsync();
                 ListResult<TApiModel> retour = null;
@@ -121,10 +144,10 @@ namespace Nglib.DATA.DATAMODEL
         {
             try
             {
-                var parturl = BasePartUrl + "/search";
+                var parturl = SubPartUrl + "/search";
                 var reqm = PrepareRequest(HttpMethod.Post, parturl);
-                reqm.Content = HttpClientTools.PrepareJsonContent(formModel);
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                HttpClientTools.SetContent(reqm, formModel);
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
                 var json = await resm.Content.ReadAsStringAsync();
                 ListResult<TApiModel> retour = null;
@@ -160,8 +183,8 @@ namespace Nglib.DATA.DATAMODEL
             if (string.IsNullOrWhiteSpace(id)) return default;
             try
             {
-                var reqm = PrepareRequest(HttpMethod.Get, BasePartUrl + $"/{id}");
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var reqm = PrepareRequest(HttpMethod.Get, SubPartUrl + $"/{id}");
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
                 var json = await resm.Content.ReadAsStringAsync();
                 TApiModel retour;
@@ -194,19 +217,19 @@ namespace Nglib.DATA.DATAMODEL
         {
             try
             {
-                var reqm = PrepareRequest(HttpMethod.Post, BasePartUrl);
+                var reqm = PrepareRequest(HttpMethod.Post, SubPartUrl);
                 if (typeof(KeyValues).IsAssignableFrom(typeof(TApiModel)))
                 {
                     var kserializer = new KeyValuesSerializerJson();
                     var bodyjsoncontent = kserializer.Serialize(model as KeyValues);
-                    reqm.Content = HttpClientTools.PrepareJsonContent(bodyjsoncontent);
+                    HttpClientTools.SetContent(reqm, bodyjsoncontent);
                 }
                 else
                 {
-                    reqm.Content = HttpClientTools.PrepareJsonContent(model);
+                    HttpClientTools.SetContent(reqm, model);
                 }
 
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
                 var json = await resm.Content.ReadAsStringAsync();
                 TApiModel retour;
@@ -239,19 +262,19 @@ namespace Nglib.DATA.DATAMODEL
         {
             try
             {
-                var reqm = PrepareRequest(HttpMethod.Put, BasePartUrl + $"/{id}");
+                var reqm = PrepareRequest(HttpMethod.Put, SubPartUrl + $"/{id}");
                 if (typeof(KeyValues).IsAssignableFrom(typeof(TApiModel)))
                 {
                     var kserializer = new KeyValuesSerializerJson();
                     var bodyjsoncontent = kserializer.Serialize(model as KeyValues);
-                    reqm.Content = HttpClientTools.PrepareJsonContent(bodyjsoncontent);
+                    HttpClientTools.SetContent(reqm, bodyjsoncontent);
                 }
                 else
                 {
-                    reqm.Content = HttpClientTools.PrepareJsonContent(model);
+                    HttpClientTools.SetContent(reqm, model);
                 }
 
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
             }
             catch (Exception ex)
@@ -270,8 +293,8 @@ namespace Nglib.DATA.DATAMODEL
         {
             try
             {
-                var reqm = PrepareRequest(HttpMethod.Delete, BasePartUrl + $"/{id}");
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var reqm = PrepareRequest(HttpMethod.Delete, SubPartUrl + $"/{id}");
+                var resm = await this.HttpClient.SendAsync(reqm);
                 if (resm.IsSuccessStatusCode) return true;
                 return false;
             }
@@ -292,8 +315,8 @@ namespace Nglib.DATA.DATAMODEL
             if (string.IsNullOrWhiteSpace(id)) return default;
             try
             {
-                var reqm = PrepareRequest(HttpMethod.Get, BasePartUrl + $"/{id}/Edit");
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var reqm = PrepareRequest(HttpMethod.Get, SubPartUrl + $"/{id}/Edit");
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
                 var json = await resm.Content.ReadAsStringAsync();
                 var retour = new DataModel<TApiModel>();
@@ -332,21 +355,21 @@ namespace Nglib.DATA.DATAMODEL
             {
                 if (modelcomplex == null || modelcomplex.Model == null) return;
                 // ajouter la gestion des keyvalue
-                var reqm = PrepareRequest(HttpMethod.Put, BasePartUrl + $"/{id}/Edit");
+                var reqm = PrepareRequest(HttpMethod.Put, SubPartUrl + $"/{id}/Edit");
                 if (typeof(KeyValues).IsAssignableFrom(typeof(TApiModel)))
                 {
                     //Nglib.DATA.KEYVALUES.KeyValuesSerializerJson kserializer = new DATA.KEYVALUES.KeyValuesSerializerJson();
                     //string bodyjsoncontent = kserializer.Serialize(modelcomplex as Nglib.DATA.KEYVALUES.KeyValues);
                     var nmodel = new DataModel<TApiModel>
                         { FormValues = modelcomplex.FormValues }; // !!! triche pour ne pas avoir a gérer le keyvalues
-                    reqm.Content = HttpClientTools.PrepareJsonContent(nmodel);
+                    HttpClientTools.SetContent(reqm, nmodel);
                 }
                 else
                 {
-                    reqm.Content = HttpClientTools.PrepareJsonContent(modelcomplex);
+                    HttpClientTools.SetContent(reqm, modelcomplex);
                 }
 
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
             }
             catch (Exception ex)
@@ -360,8 +383,8 @@ namespace Nglib.DATA.DATAMODEL
         {
             try
             {
-                var reqm = PrepareRequest(HttpMethod.Get, BasePartUrl + $"/{id}/infos");
-                var resm = await apiAuthContext.ExecuteAsync(reqm);
+                var reqm = PrepareRequest(HttpMethod.Get, SubPartUrl + $"/{id}/infos");
+                var resm = await this.HttpClient.SendAsync(reqm);
                 resm.Validate();
                 var json = await resm.Content.ReadAsStringAsync();
                 var retour = JsonSerializer.Deserialize<List<ModelValue>>(json, DefaultJsonSerializerOptions());

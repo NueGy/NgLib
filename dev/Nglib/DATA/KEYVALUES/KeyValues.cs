@@ -6,6 +6,7 @@ using Nglib.DATA.ACCESSORS;
 
 namespace Nglib.DATA.KEYVALUES
 {
+    [Obsolete("BETA")]
     public class KeyValues : IkeyValues
     {
         private List<KeyValue> datas;

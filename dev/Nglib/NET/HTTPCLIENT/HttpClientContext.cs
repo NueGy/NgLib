@@ -3,6 +3,10 @@ using System.Net.Http;
 
 namespace Nglib.NET.HTTPCLIENT
 {
+    /// <summary>
+    /// Utilisation simple d'un IHttpClientContext
+    /// </summary>
+    [Obsolete("Use HttpClientTokenHandler, Deleted in next version")]
     public class HttpClientContext : IHttpClientContext
     {
         public HttpClient Client { get; set; }

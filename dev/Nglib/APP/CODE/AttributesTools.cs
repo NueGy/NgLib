@@ -6,91 +6,25 @@ using System.Reflection;
 namespace Nglib.APP.CODE
 {
     /// <summary>
-    ///     Outils pour la manipulation d'attribut
+    ///     Outils pour la manipulation d'attributs
     /// </summary>
     public class AttributesTools
     {
-        //public static List<System.Attribute> GetCustomAttributes(PropertyInfo property, Type attributeTypeFilter = null)
-        //{
-        //    if (property == null) return null;
-        //    List<System.Attribute> propAttributes = property.GetCustomAttributes(true).Cast<System.Attribute>().ToList();
-        //    if (attributeTypeFilter != null) propAttributes = propAttributes.Where(at => (at.GetType().Equals(attributeTypeFilter))).ToList();
-        //    return propAttributes;
-        //}
 
 
-        ///// <summary>
-        /////     Permet d'obtenir toute les descriptions sur une classe
-        ///// </summary>
-        ///// <param name="objClassType"></param>
-        ///// <returns></returns>
-        //public static Dictionary<string, string> GetPropertiesDescriptions(Type objClassType)
-        //{
-        //    var retour = new Dictionary<string, string>();
-        //    foreach (var property in objClassType.GetProperties())
-        //    {
-        //        var descr = property.GetCustomAttribute(typeof(DescriptionAttribute));
-        //        var descrtxt = descr != null ? ((DescriptionAttribute)descr).Description : null;
-        //        retour.Add(property.Name, descrtxt);
-        //    }
-
-        //    return retour;
-        //}
-
-        public static Dictionary<MethodInfo, Tattribute> FindMethodsAttribute<Tattribute>(object model)
-            where Tattribute : Attribute
-        {
-            if (model == null) return null;
-            var modeltype = model.GetType();
-            var attributetype = typeof(Tattribute);
-            var retour = new Dictionary<MethodInfo, Tattribute>();
-            foreach (var property in modeltype.GetMethods())
-            {
-                var attr = property.GetCustomAttribute(attributetype) as Tattribute;
-                if (attr == null) continue;
-                retour.Add(property, attr);
-            }
-
-            return retour;
-        }
-
-
-        // Vérifier ???
-        internal static string GetStringFromAttribute(PropertyInfo property, Type typeAttributeWant,
-            string valueNameWant)
-        {
-            var attribute = property.GetCustomAttributes(typeAttributeWant).FirstOrDefault();
-            if (attribute == null) return null;
-            return PropertiesTools.GetStringReflexion(attribute, valueNameWant);
-        }
-
-
-        public static Attribute FindObjectAttribute(object objClass, Type typeAttributeWant)
+        /// <summary>
+        /// Obtenir un attribut depuis un objet
+        /// </summary>
+        public static Tattribute GetAttribute<Tattribute>(object objClass) where Tattribute : Attribute
         {
             if (objClass == null) return null;
-            var attributes = objClass.GetType().GetCustomAttributes().ToList();
-            ;
-            if (attributes == null) return null;
-            return attributes.FirstOrDefault(at => at.GetType().Equals(typeAttributeWant));
+            return GetAttribute<Tattribute>(objClass.GetType());
         }
 
-        public static Attribute FindObjectAttribute(Type objClassType, Type typeAttributeWant)
-        {
-            if (objClassType == null) return null;
-            var attributes = objClassType.GetCustomAttributes().ToList();
-            ;
-            if (attributes == null) return null;
-            return attributes.FirstOrDefault(at => at.GetType().Equals(typeAttributeWant));
-        }
-
-
-        public static Tattribute FindObjectAttribute<Tattribute>(object objClass) where Tattribute : Attribute
-        {
-            if (objClass == null) return null;
-            return FindObjectAttribute<Tattribute>(objClass.GetType());
-        }
-
-        public static Tattribute FindObjectAttribute<Tattribute>(Type objClassType) where Tattribute : Attribute
+        /// <summary>
+        /// Obtenir un attribut depuis une classe
+        /// </summary>
+        public static Tattribute GetAttribute<Tattribute>(Type objClassType) where Tattribute : Attribute
         {
             if (objClassType == null) return null;
             var attributes = objClassType.GetCustomAttributes().ToList();
@@ -100,12 +34,87 @@ namespace Nglib.APP.CODE
             return attributes.FirstOrDefault(at => at.GetType().Equals(typeAttributeWant)) as Tattribute;
         }
 
+        /// <summary>
+        /// Obtenir un attribut depuis une classe
+        /// </summary>
+        public static Attribute GetAttribute(Type objClassType, Type typeAttributeWant)
+        {
+            if (objClassType == null) return null;
+            var attributes = objClassType.GetCustomAttributes().ToList();
+            ;
+            if (attributes == null) return null;
+            return attributes.FirstOrDefault(at => at.GetType().Equals(typeAttributeWant));
+        }
 
-        public static Dictionary<string, Tuple<Tattribute, object>>
-            FindPropertiesValueAttribute<Tattribute>(object model) where Tattribute : Attribute
+
+        /// <summary>
+        /// Liste des membres d'une classe/type avec cet attribut
+        /// </summary>
+        public static IDictionary<MemberInfo, Tattribute> GetMembersWithAttribute<Tattribute>(Type modeltype, MemberTypes memberTypes = MemberTypes.All)
+         where Tattribute : Attribute
+        {
+            if (modeltype == null) return null;
+            var attributetype = typeof(Tattribute);
+            var retour = new Dictionary<MemberInfo, Tattribute>();
+            foreach (var property in modeltype.GetMembers().Where(m=> memberTypes.HasFlag(m.MemberType)))
+            {
+                var attr = property.GetCustomAttribute(attributetype) as Tattribute;
+                if (attr == null) continue;
+                retour.Add(property, attr);
+            }
+            return retour;
+        }
+
+
+        /// <summary>
+        /// Liste des méthodes d'une classe avec cet attribut
+        /// </summary>
+        public static Dictionary<MethodInfo, Tattribute> GetMethodsWithAttribute<Tattribute>(Type modeltype)
+            where Tattribute : Attribute
+            //=> GetMembersAttributes<Tattribute>(modeltype, MemberTypes.Method).ToDictionary(d=> d.Key as MethodInfo, d=> d.Value);
+        {
+            if (modeltype == null) return null;
+            var attributetype = typeof(Tattribute);
+            var retour = new Dictionary<MethodInfo, Tattribute>();
+            foreach (var property in modeltype.GetMethods())
+            {
+                var attr = property.GetCustomAttribute(attributetype) as Tattribute;
+                if (attr == null) continue;
+                retour.Add(property, attr);
+            }
+            return retour;
+        }
+
+
+
+        /// <summary>
+        /// Liste des propriétés d'une classe avec cet attribut
+        /// </summary>
+        public static Dictionary<PropertyInfo,Tattribute> GetPropertiesWithAttribute<Tattribute>(Type modeltype) where Tattribute : Attribute
+        {
+            if (modeltype == null) return null;
+            var retour = new Dictionary<PropertyInfo, Tattribute>();
+            var attributetype = typeof(Tattribute);
+            foreach (var property in modeltype.GetProperties())
+            {
+                var attr = property.GetCustomAttribute(attributetype) as Tattribute;
+                if (attr == null) continue;
+                retour.Add( property,attr);
+            }
+            return retour;
+        }
+
+
+
+
+
+        /// <summary>
+        /// Liste des valeurs des propriétés avec cet attribut
+        /// </summary>
+        public static Dictionary<Tattribute, object> GetValuesWithAttribute<Tattribute>(object model) where Tattribute : Attribute
         {
             if (model == null) return null;
-            var retour = new Dictionary<string, Tuple<Tattribute, object>>();
+            var retour = new Dictionary<Tattribute, object>();
             var modeltype = model.GetType();
             var attributetype = typeof(Tattribute);
             foreach (var property in modeltype.GetProperties())
@@ -113,40 +122,70 @@ namespace Nglib.APP.CODE
                 var attr = property.GetCustomAttribute(attributetype) as Tattribute;
                 if (attr == null) continue;
                 var val = property.GetValue(model, null);
-                retour.Add(property.Name, new Tuple<Tattribute, object>(attr, val));
+                retour.Add(attr, val);
             }
-
             return retour;
         }
 
 
+
+
+
+
+
+
+
+   
+
+
         /// <summary>
-        ///     Lister toutes les class avec cet attribut
+        ///     Lister tous les types avec cet attribut sur toutes les assemblies dans CurrentDomain
         /// </summary>
-        /// <typeparam name="Tattribute"></typeparam>
-        /// <returns></returns>
-        public static Dictionary<Type, Tattribute> ListClassWithAttribute<Tattribute>(string typeNamePrefix = null)
+        public static Dictionary<Type, Tattribute> GetTypesWithAttribute<Tattribute>(string typeNamePrefix = null)
             where Tattribute : Attribute
         {
-            try
-            {
-                var typeTattribute = typeof(Tattribute);
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
-
-
-                var alltypes = assemblies.SelectMany(assembly => assembly.GetTypes().Where(type => type.IsClass))
-                    .ToList();
-                if (!string.IsNullOrEmpty(typeNamePrefix))
-                    alltypes = alltypes.Where(a => a.FullName.StartsWith(typeNamePrefix)).ToList();
-                var seltypes = alltypes.Where(type => type.IsDefined(typeTattribute, false));
-                return seltypes.Distinct().ToDictionary(type => type, type => type.GetCustomAttribute<Tattribute>());
-                //var seltypes = alltypes.Distinct().ToDictionary(type => type, type => type.GetCustomAttribute<Tattribute>());//alltypes.Where(type => type.is(typeTattribute, true));
-                //return seltypes.Where(t=> t.Value!=null).ToDictionary(t=> t.Key, t=> t.Value);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("ListClassWithAttribute " + ex.Message, ex);
-            }
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
+            return assemblies.SelectMany(assembly => GetTypesWithAttribute<Tattribute>(assembly, typeNamePrefix)).ToDictionary(d => d.Key, d => d.Value);
         }
+
+        /// <summary>
+        ///     Lister tous les types avec cet attribut sur une assembly
+        /// </summary>
+        public static Dictionary<Type, Tattribute> GetTypesWithAttribute<Tattribute>(Assembly assembly, string typeNamePrefix = null)
+             where Tattribute : Attribute
+        {
+            if (assembly == null) throw new ArgumentNullException("assembly");
+            var typeTattribute = typeof(Tattribute);
+            var alltypes = assembly.GetTypes().Where(type => type.IsClass).ToList();
+            if (!string.IsNullOrEmpty(typeNamePrefix))
+                alltypes = alltypes.Where(a => a.FullName.StartsWith(typeNamePrefix)).ToList();
+            var seltypes = alltypes.Where(type => type.IsDefined(typeTattribute, false));
+            return seltypes.Distinct().ToDictionary(type => type, type => type.GetCustomAttribute<Tattribute>());
+        }
+
+
+
+
+
+
+
+
+        // Vérifier ??? to delete
+        [Obsolete("Use PropertiesTools.GetString instead")]
+        internal static string GetStringFromAttribute(PropertyInfo property, Type typeAttributeWant,
+            string valueNameWant)
+        {
+            var attribute = property.GetCustomAttributes(typeAttributeWant).FirstOrDefault();
+            if (attribute == null) return null;
+            return PropertiesTools.GetString(attribute, valueNameWant);
+        }
+
+
+
+
+
+
+
+
     }
 }
