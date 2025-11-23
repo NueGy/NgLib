@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -902,7 +896,7 @@ namespace Nglib.FORMAT.MORE
         /// <param name="input">The input.</param>
         /// <param name="maximumAllowed">The number of repeats allowable (minimum value 1).</param>
         /// <returns>
-        ///     <c>true</c> if [has repeated characters] [the specified input]; otherwise, <c>false</c>.
+        /// <c>true</c> if [has repeated characters] [the specified input]; otherwise, <c>false</c>.
         /// </returns>
         public static bool HasRepeatedCharacters(string input, int maximumAllowed)
         {

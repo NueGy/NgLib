@@ -14,7 +14,7 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Valider une signature HMACSHA256 avec expiration (SAFE)
+        /// Valider une signature HMACSHA256 avec expiration (SAFE)
         /// </summary>
         [Obsolete("NonTeste")]
         public static bool StringSignValidate(string fullidwithkey, string signkey)
@@ -48,7 +48,7 @@ namespace Nglib.FORMAT
         }
 
         /// <summary>
-        ///     Ajoute une signature ([...].Sxxxxxx) à une chaine de caractères.
+        /// Ajoute une signature ([...].Sxxxxxx) à une chaine de caractères.
         /// </summary>
         public static string StringSignGenerate(string fullid, string signkey, DateTime? expiredate = null)
         {

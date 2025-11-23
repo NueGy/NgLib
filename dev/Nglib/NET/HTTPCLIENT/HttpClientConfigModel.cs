@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 namespace Nglib.NET.HTTPCLIENT
 {
     /// <summary>
-    /// permet de définir le type d'authentification
-    /// Use with HttpClientTools.CreateHttpClient()
+    /// Defines the authentication type configuration. Use with HttpClientTools.CreateHttpClient()
     /// </summary>
     public class HttpClientConfigModel
     {
@@ -29,59 +28,58 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Texte libre
+        /// Free text
         /// </summary>
         public string ClientName { get; set; }
 
         /// <summary>
-        /// Url de base
+        /// Base URL
         /// </summary>
         public string BaseUrl { get; set; }
 
         /// <summary>
-        /// Méthode d'authentification
+        /// Authentication method
         /// </summary>
         public TokenAuthTypeEnum AuthType { get; set; }
 
         /// <summary>
-        /// Username de l'utilisateur
+        /// Username
         /// </summary>
         public string Username { get; set; }
 
         /// <summary>
-        /// Password de l'utilisateur
+        /// Password
         /// </summary>
         public string Password { get; set; }
  
         /// <summary>
-        /// ClientId
+        /// Client ID
         /// </summary>
         public string ClientId { get; set; }
         /// <summary>
-        /// ClientSecret
+        /// Client Secret
         /// </summary>
         public string ClientSecret { get; set; }
 
         /// <summary>
-        /// Url de l'endpoint de l'authentification
+        /// Authentication endpoint URL
         /// </summary>
         public string TokenEndpointUrl { get; set; }
 
 
         /// <summary>
-        /// Token pré-défini (use with AuthType=none)
+        /// Pre-defined token (use with AuthType=none)
         /// </summary>
         public string FixedToken { get; set; }
 
         /// <summary>
-        /// Options supplémentaires 
+        /// Additional options
         /// </summary>
         public Dictionary<string, string> MoreParameters { get; set; }
 
 
         /// <summary>
-        /// Définir un proxy (Only if not use inner handler)
-        /// exemple: http://proxy:8080
+        /// Define a proxy (Only if not using inner handler). Example: http://proxy:8080
         /// </summary>
         public string ProxyUrl { get; set; }
 
@@ -90,13 +88,12 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Désactiver la validation SSL (Only if not use inner handler)
-        /// httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        /// Disable SSL validation (Only if not using inner handler). Sets: httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         /// </summary>
         public bool DisableSslValidation { get; set; }
 
         /// <summary>
-        /// handler should follow redirection Responses
+        /// Handler should follow redirection responses
         /// </summary>
         public bool DisableAutoRedirect { get; set; }
 

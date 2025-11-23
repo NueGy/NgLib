@@ -1,15 +1,12 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using Nglib.DATA.COLLECTIONS;
+﻿using Nglib.DATA.COLLECTIONS;
+using Nglib.DATA.CONNECTOR.QUERYBUILDER;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Nglib.DATA.CONNECTOR
@@ -19,54 +16,20 @@ namespace Nglib.DATA.CONNECTOR
     /// Un dataConnector générique (multiengine) respectant le standard SQL (basé sur postgres)
     /// Accès aux drivers/dll par reflexion, cela permet de ne pas avoir à référencer toutes les DLL
     /// </summary>
-    public class ConnectorGeneric  : IDataConnector, IDisposable
+    public class ConnectorGeneric : DataConnectorBase
     {
-        private long _CountRequests = 0;
-        protected System.Threading.Mutex OpenedMutex = new System.Threading.Mutex(); // permet que le connecteur soit utilisé par plusieurs threads
-        protected int _OpenedMutexCount = 0;
-        protected System.Threading.Mutex QueryMutex = new System.Threading.Mutex(); // permet que le connecteur soit utilisé par plusieurs threads meme si MultiThreadingSafe=false
-        protected string ConnectionString = null;
-        protected System.Data.IDbConnection connection = null;
-        protected System.Data.IDbTransaction transaction = null;
-        bool keepOpenMode { get; set; }
+        /// <summary>
+        /// Cache thread-safe des types IDbConnection pour éviter la réflexion répétée
+        /// </summary>
+        private static readonly ConcurrentDictionary<ConnectorConstants.ConnectorEngineEnum, Type> _connectionTypeCache 
+            = new ConcurrentDictionary<ConnectorConstants.ConnectorEngineEnum, Type>();
 
         /// <summary>
-        /// Un seul thread pourra ouvrir la connection simultanément (default true)
+        /// Cache thread-safe des types IDataAdapter pour éviter la réflexion répétée
         /// </summary>
-        public bool MultiThreadingSafe { get; set; }
+        private static readonly ConcurrentDictionary<ConnectorConstants.ConnectorEngineEnum, Type> _adapterTypeCache 
+            = new ConcurrentDictionary<ConnectorConstants.ConnectorEngineEnum, Type>();
 
-
-        /// <summary>
-        /// Time out strandard
-        /// </summary>
-        public int DefaultTimeOut = 60;
-
-        /// <summary>
-        /// Nom du moteur SGBD
-        /// </summary>
-        public string EngineName { get; private set; }
-
-        /// <summary>
-        /// Nom du connecteur
-        /// </summary>
-        public string ConnectorName { get; set; }
-
-        /// <summary>
-        /// Le connecteur est en mode readOnly
-        /// </summary>
-        public bool ReadOnly { get; set; }
-
-
-
-        /// <summary>
-        /// Event après l'éxecution
-        /// </summary>
-        public event QueryCompletedHandler QueryCompleted;
-
-        /// <summary>
-        /// Event avant l'éxecution
-        /// </summary>
-        public event QueryCompletedHandler QueryBegin;
 
         /// <summary>
         /// Connecteur SGBD Générique
@@ -76,197 +39,191 @@ namespace Nglib.DATA.CONNECTOR
             this.MultiThreadingSafe = true;
         }
 
-
+        /// <summary>
+        /// Constructeur avec une connexion existante
+        /// </summary>
         public ConnectorGeneric(System.Data.IDbConnection OriginDbConnection)
         {
             this.MultiThreadingSafe = true;
             this.connection = OriginDbConnection;
         }
 
-
-        public IDbConnection GetDbConnection()
-        {
-           return this.connection;
-        }
-
-
-        #region transaction et ouverture
-
-
-
-
-
+        #region Factories Dynamiques
 
         /// <summary>
-        /// Définir la chaine de connexion
-        /// instanciation du  IDbConnection
+        /// Crée une connexion IDbConnection en fonction du moteur SGBD (via réflexion)
         /// </summary>
-        /// <param name="connectionString"></param>
-        /// <param name="defaultEngine"></param>
-        public void SetConnectionString(string connectionString, string defaultEngine)
+        protected override System.Data.IDbConnection CreateConnection()
         {
-            //NpgsqlConnectionStringBuilder nchainbuild = new NpgsqlConnectionStringBuilder(this.ConnectionString);
-            //this.ConnectionString = nchainbuild.ToString();
+            ConnectorConstants.ConnectorEngineEnum engine = ConnectorTools.ParseEngineName(this.EngineName);
+            if (engine == ConnectorConstants.ConnectorEngineEnum.NA) 
+                throw new ArgumentException("EngineName empty or not recognized", nameof(EngineName));
+
+            // Récupération du type avec cache thread-safe
+            Type connectionType = _connectionTypeCache.GetOrAdd(engine, key => 
+            {
+                Type foundType = null;
+
+                if (key == ConnectorConstants.ConnectorEngineEnum.MSSQL)
+                {
+                    // Essayer d'abord Microsoft.Data.SqlClient (recommandé pour .NET moderne)
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient");
+                    // Fallback sur System.Data.SqlClient si Microsoft.Data.SqlClient n'est pas disponible
+                    if (foundType == null) foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.SqlClient.SqlConnection, System.Data");
+                    if (foundType == null) foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.POSTGRESQL)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("Npgsql.NpgsqlConnection, Npgsql");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.SQLITE)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.SQLite.SQLiteConnection, System.Data.SQLite");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.ORACLE)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OracleClient.OracleConnection, System.Data.OracleClient");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.ACCESS)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OleDb.OleDbConnection, System.Data");
+                    if (foundType == null) foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OleDb.OleDbConnection, System.Data.OleDb");
+                    if (foundType == null) foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OleDb.OleDbConnection, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+                }
+                else
+                {
+                    throw new InvalidOperationException($"EngineName not found (IDbConnection): {key}");
+                }
+
+                if (foundType == null)
+                    throw new InvalidOperationException(
+                        $"Engine/DLL IDbConnection for {EngineName} not found. Please include DLL for this engine in your project");
+
+                return foundType;
+            });
+
+            return Nglib.APP.CODE.ReflectionTools.CreateInstance<System.Data.IDbConnection>(connectionType);
+        }
+
+        /// <summary>
+        /// Crée un paramètre IDataParameter avec nom et valeur
+        /// </summary>
+        /// <param name="name">Nom du paramètre (sans @)</param>
+        /// <param name="value">Valeur du paramètre</param>
+        /// <returns>IDbDataParameter créé</returns>
+        protected override IDbDataParameter CreateParameter(string name, object value)
+        {
+            if (connection == null) throw new InvalidOperationException("Connection not initialized");
             
-            if (this.connection != null) throw new Exception("Connector already in use");
-            this.ConnectionString = connectionString;
-            this.EngineName = defaultEngine;
-
-            if (string.IsNullOrWhiteSpace(this.ConnectionString)) throw new Exception("Sql connexion string empty");
-
-            //https://www.npgsql.org/doc/connection-string-parameters.html
-            System.Data.Common.DbConnectionStringBuilder dbConnectionStringBuilder = null;
-            // Factorisation du connecteur SGBD
-
-            this.connection = this.ConnectionFactory();
-            this.connection.ConnectionString = this.ConnectionString;
-            //if (connection == null) throw new Exception();
-
-
+            using (var cmd = connection.CreateCommand())
+            {
+                IDataParameter param = cmd.CreateParameter();
+                param.ParameterName = "@" + name;
+                param.Value = value ?? DBNull.Value;
+                
+                // Détection du type XML pour PostgreSQL
+                if (ConnectorTools.ParseEngineName(this.EngineName) == ConnectorConstants.ConnectorEngineEnum.POSTGRESQL)
+                {
+                    if (value != null && value is string && ((string)value).StartsWith("<?xml", StringComparison.OrdinalIgnoreCase))
+                        param.DbType = DbType.Xml;
+                }
+                
+                return (IDbDataParameter)param;
+            }
         }
 
 
 
-
+        /// <summary>
+        /// Crée un QueryBuilder spécifique au moteur de base de données
+        /// </summary>
+        /// <returns>Instance de QueryBuilder configurée pour le moteur actuel (PostgreSQL par défaut)</returns>
+        public override IQueryBuilder CreateQueryBuilder()
+        {
+            return QUERYBUILDER.QueryBuilderTools.CreateQueryBuilder(this.EngineName ?? "postgresql");
+        }
 
         /// <summary>
-        /// Ouverture de la connection, (que si nécessaire)
-        /// Mutex pour faire attendre les threads
+        /// Clone le connecteur
         /// </summary>
-        /// <param name="keepOpen">Garder la connexion ouverte après la première requette et après les commit/rollback transaction (penser à la fermer)</param>
-        /// <returns></returns>
-        public bool Open(bool keepOpen = false)
+        public override object Clone()
         {
-            try
-            {
-                if (connection == null) throw new Exception("IDbConnection not init (please use SetConnectionString(string,string))");
+            IDataConnector dataConnectorClone = new ConnectorGeneric();
+            dataConnectorClone.SetConnectionString(this.ConnectionString, this.EngineName);
+            return dataConnectorClone;
+        }
 
-                if (MultiThreadingSafe)
+        #endregion
+
+        #region Factory IDataAdapter (spécifique à ConnectorGeneric)
+
+        /// <summary>
+        /// Factory IDataAdapter avec cache pour optimiser les performances
+        /// </summary>
+        /// <param name="cmd">Commande SQL à associer à l'adapter</param>
+        /// <returns>Instance de IDataAdapter</returns>
+        /// <exception cref="InvalidOperationException">Si la DLL du moteur n'est pas trouvée</exception>
+        protected virtual System.Data.IDataAdapter CreateDataAdapter(System.Data.IDbCommand cmd)
+        {
+
+            ConnectorConstants.ConnectorEngineEnum engine = ConnectorTools.ParseEngineName(this.EngineName);
+
+            // Récupération du type avec cache thread-safe
+            Type adapterType = _adapterTypeCache.GetOrAdd(engine, key =>
+            {
+                Type foundType = null;
+
+                if (key == ConnectorConstants.ConnectorEngineEnum.MSSQL)
                 {
-                    // Il ne peus y avoir qu'un seul thread sur une connection, sera fermer lors du close
-                    this.OpenedMutex.WaitOne(); //  (normalement quand le meme thread qui la ouvert repassera dessu, il n'aura pas besoin d'attendre)
-                    _OpenedMutexCount++; // Il faut compter le nombre de fois ou le thread passe dessu pour faire autant de release
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.SqlClient.SqlDataAdapter, System.Data");
+                    if (foundType == null) foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.SqlClient.SqlDataAdapter, System.Data.SqlClient");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.POSTGRESQL)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("Npgsql.NpgsqlDataAdapter, Npgsql");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.SQLITE)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.SQLite.SQLiteDataAdapter, System.Data.SQLite");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.ORACLE)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OracleClient.OracleDataAdapter, System.Data.OracleClient");
+                }
+                else if (key == ConnectorConstants.ConnectorEngineEnum.ACCESS)
+                {
+                    foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OleDb.OleDbDataAdapter, System.Data");
+                    if (foundType == null) foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OleDb.OleDbDataAdapter, System.Data.OleDb");
+                    if (foundType == null) foundType = Nglib.APP.CODE.ReflectionTools.GetType("System.Data.OleDb.OleDbDataAdapter, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
                 }
 
-                // ouverture de la connection nécessare
-                if (this.connection.State==ConnectionState.Closed || this.connection.State==ConnectionState.Broken)
-                {
-                    this.connection.Open();
-                    this.keepOpenMode = keepOpen; // ordonnera de garder la connection ouverte
-                    return true;
-                }
-                else return false;
-                    
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(string.Format("Connector.Open {0}",ex.Message),ex);
-            }
-        }
+                if (foundType == null)
+                    throw new InvalidOperationException(
+                        $"Engine/DLL IDataAdapter for {EngineName} not found. Please include DLL for this engine in your project");
 
+                return foundType;
+            });
 
-        /// <summary>
-        /// Fermeture de la connection (SAFE)
-        /// </summary>
-        /// <returns></returns>
-        public virtual bool Close(bool safe=true)
-        {
-            try
-            {
-                if (this.connection == null) return false; // ok n'a jamais ete initialisé
-                if (this.transaction != null) this.RollBackTransaction(true);
-                this.keepOpenMode = false; // on annule ce paramètre, le choix reviendra à la prochaine ouverture open(true)
-                this.connection.Close();
-
-
-                if (this.MultiThreadingSafe) { for (int i = 0; i < _OpenedMutexCount; i++) this.OpenedMutex.ReleaseMutex(); _OpenedMutexCount = 0; }   // A ete ouverte lors du Open()  this.OpenedMutex.ReleaseMutex(); 
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                if (safe) return false;
-                else throw new Exception(string.Format("Connector.Close {0}", ex.Message), ex);
-            }
+            System.Data.IDbDataAdapter adapter = Nglib.APP.CODE.ReflectionTools.CreateInstance<System.Data.IDbDataAdapter>(adapterType);
+            adapter.SelectCommand = cmd;
+            return adapter;
         }
 
         /// <summary>
-        /// Ouverture d'une nouvelle transaction SQL (1 par connector)
+        /// Efface le cache des types (utile pour tests ou rechargement dynamique de DLL)
         /// </summary>
-        /// <param name="transactionName"></param>
-        /// <returns></returns>
-        public virtual bool BeginTransaction(string transactionName = null)
+        public static void ClearTypeCache()
         {
-            if (this.transaction != null) return false; // une seule transaction par connecteur
-            this.Open(); // ouverture si nécessaire
-            try
-            {
-                this.transaction = this.connection.BeginTransaction();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                 throw new Exception(string.Format("Connector.BeginTransaction {0}", ex.Message), ex);
-            }
+            _connectionTypeCache.Clear();
+            _adapterTypeCache.Clear();
         }
 
-        /// <summary>
-        /// annulation sql, fermera la connexion si keepOpenMode=false
-        /// </summary>
-        /// <param name="transactionName"></param>
-        /// <returns></returns>
-        public virtual bool RollBackTransaction(bool safe=false)
-        {
-            if (this.transaction == null) return false; // Il n'y as rien à fermer
-            this.Open(); // Ne sert pas à l'ouverture mais bloquera le thread si il n'est pas concerné
-            try
-            {
-                if (this.transaction != null) // on revérifie que la transaction est pas null, car à la libération du mutex dans Open la transaction est peut être passée null
-                {
-                    this.transaction.Rollback();
-                    this.transaction.Dispose();
-                    this.transaction = null;
-                }
-  
-                if (!this.keepOpenMode) this.Close(safe);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                if (safe) return false;
-                throw new Exception(string.Format("Connector.RollBackTransaction {0}", ex.Message), ex);
-            }
-        }
-
-
-        /// <summary>
-        /// Valider la transaction
-        /// </summary>
-        /// <param name="safe"></param>
-        /// <returns></returns>
-        public virtual bool CommitTransaction()
-        {
-            if (this.transaction == null) return false; // Il n'y as rien à fermer
-            this.Open(); // Ne sert pas à l'ouverture mais bloquera le thread si il n'est pas concerné
-            try
-            {
-                if (this.transaction != null) // on revérifie que la transaction est pas null, car à la libération du mutex dans Open la transaction est peut être passée null
-                {
-                    this.transaction.Commit();
-                    this.transaction.Dispose();
-                    this.transaction = null;
-                }
-                if (!this.keepOpenMode) this.Close();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(string.Format("Connector.CommitTransaction {0}", ex.Message), ex);
-            }
-        }
+        #endregion
 
 
 
+
+        #region Command Initialization (Spécifique à ConnectorGeneric)
 
         /// <summary>
         /// Initialisation de la commande, sql et params
@@ -284,25 +241,25 @@ namespace Nglib.DATA.CONNECTOR
                 cmd.CommandTimeout = this.DefaultTimeOut; // ajoute un timeout, mais ne fonctionne pas toujours !!!
 
                 // Ajoute la commande SQL
-                if (CONNECTOR.SqlTools.IsSQLQuery(query.sqlQuery)) cmd.CommandType = System.Data.CommandType.Text;
+                if (CONNECTOR.SqlTools.IsSQLQuery(query.SqlQuery)) cmd.CommandType = System.Data.CommandType.Text;
                 else cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                cmd.CommandText = query.sqlQuery;
+                cmd.CommandText = query.SqlQuery;
 
 
-                if (query.parameters != null)
+                if (query.Parameters != null)
                 {
                     // identifie les param nécessaires dans la requettes (pour ne pas envoyer sur le réseaux des parametres innutiles)
                     List<string> keyFilterIsNecessary = new List<string>();
                     if (cmd.CommandType == CommandType.StoredProcedure || cmd.CommandType == CommandType.TableDirect)  // Si procstock on prend tous les arguments
-                        keyFilterIsNecessary = query.parameters.Keys.ToList();
+                        keyFilterIsNecessary = query.Parameters.Keys.ToList();
                     else if (cmd.CommandType == CommandType.Text) // sinon on prend que les clef utiles
-                        foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(query.sqlQuery.ToLower() + " ", "(\\@\\w+)"))
+                        foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(query.SqlQuery.ToLower() + " ", "(\\@\\w+)"))
                             keyFilterIsNecessary.Add(match.Groups[1].Value.Replace("@",""));
 
 
                     // Ajoute les paramètres
-                    foreach (string fieldKey in query.parameters.Keys.Where(k => keyFilterIsNecessary.Contains(k, true)))
-                        this.InitCommandSetParameter(query, cmd, fieldKey, query.parameters[fieldKey]);
+                    foreach (string fieldKey in query.Parameters.Keys.Where(k => keyFilterIsNecessary.Contains(k, true)))
+                        this.InitCommandSetParameter(query, cmd, fieldKey, query.Parameters[fieldKey]);
                 }
                  
                     
@@ -325,7 +282,7 @@ namespace Nglib.DATA.CONNECTOR
             sqlparam.Value = parameterValue;
 
             // Détection du type
-            if (ConnectorTools.FindEngine(this.EngineName) == ConnectorConstants.ConnectorEngineEnum.POSTGRESQL)
+            if (ConnectorTools.ParseEngineName(this.EngineName) == ConnectorConstants.ConnectorEngineEnum.POSTGRESQL)
             {
                 // !!! A revoir
                 //https://github.com/npgsql/Npgsql/issues/177
@@ -336,96 +293,50 @@ namespace Nglib.DATA.CONNECTOR
             cmd.Parameters.Add(sqlparam);
         }
 
-
-
-
-
-        /// <summary>
-        /// Clonner
-        /// </summary>
-        /// <returns></returns>
-        public virtual object Clone()
-        {
-            IDataConnector dataConnectorClone = new ConnectorGeneric();
-            dataConnectorClone.SetConnectionString(this.ConnectionString, this.EngineName);
-            return dataConnectorClone;
-        }
-
-
-        /// <summary>
-        /// Fermerture
-        /// </summary>
-        public void Dispose()
-        {
-            this.Close(true);
-            if (this.connection != null)
-                this.connection.Dispose();
-        }
-
-
-        /// <summary>
-        /// retry si nécessaire
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="queryContext"></param>
-        protected virtual bool Canretry(Exception e, QueryContext queryContext)
-        {
-            /*
-            if (fiable && transac == null && !retentebug && retrypossible(e.Message)) //si erreur de base on retente
-            {
-                retentebug = true;
-                System.Threading.Thread.Sleep(9000); //après une petite pause biensur
-                return query(sql, paramvalues);
-                return false;
-            }
-            else */
-            return false;
-        }
-
-
-
         #endregion
 
-
-
-        #region Querrys
-
-
-
-
+        #region Query Methods Override (Implémentation abstraite)
 
         // ****** SCALLAR *****
 
-        public async Task<object> QueryScalarAsync(QueryContext queryContext)
+        /// <summary>
+        /// Exécution d'une requête scalaire (retourne une seule valeur)
+        /// </summary>
+        /// <param name="queryContext">Contexte de la requête SQL</param>
+        /// <returns>Valeur scalaire retournée par la requête</returns>
+        public override async Task<object> QueryScalarAsync(QueryContext queryContext)
         {
             try
             {
                 queryContext.Validate();
                 queryContext.watchAll.Start();
-                if (QueryBegin != null) this.QueryBegin(queryContext);
+                OnQueryBegin(queryContext);
+                
                 this.Open(false); // ouvre la connection si nécessaire (sera refermé juste après)
-                while (true) // on se limite à 3 tentatives (gérer dans la methode ExceptionSQL)
+
+                try
                 {
-                    queryContext.QueryTry++;
-                    try
-                    {
-                        this.QueryMutex.WaitOne();
-                        queryContext.ExecuteDate = DateTime.Now;
-                        queryContext.watchExecute.Restart();
-                        object ret = QueryScalarExec(queryContext);
-                        queryContext.watchExecute.Stop();
-                        return ret;
-                    }
-                    catch (Exception e)
-                    {
-                        queryContext.watchExecute.Stop();
-                        queryContext.error = e.Message;
-                        if(!Canretry(e, queryContext)) throw; // vérifier si il est possible de retenter
-                    }
-                    finally
-                    {
-                        this.QueryMutex.ReleaseMutex();
-                    }
+                    AcquireQueryLock(); // Synchronisation thread-safe
+                    queryContext.ExecuteDate = DateTime.Now;
+                    queryContext.watchExecute.Restart();
+                    
+                    object ret = QueryScalarExec(queryContext);
+                    
+                    queryContext.watchExecute.Stop();
+                    IncrementRequestCount(); // Compteur thread-safe
+                    
+                    return ret;
+                }
+                catch (Exception e)
+                {
+                    queryContext.watchExecute.Stop();
+                    queryContext.Error = e.Message;
+                    throw;
+                }
+                finally
+                {
+                    ReleaseQueryLock(); // Libère le mutex
+                    OnQueryCompleted(queryContext); // Event après exécution
                 }
             }
             catch(ConnectorException)
@@ -438,13 +349,17 @@ namespace Nglib.DATA.CONNECTOR
             }
             finally
             {
-                if (this.transaction == null && !this.keepOpenMode) // on ferme que si on n'est pas dans une transaction et que le développeur n'a pas explicitement ouvert lui même la connection
+                if (this.transaction == null && !this.keepOpenMode) // on ferme que si on n'est pas dans une transaction
                     this.Close();
                 queryContext.watchAll.Stop();
-                if (this.QueryCompleted != null) this.QueryCompleted(queryContext);
             }
         }
 
+        /// <summary>
+        /// Exécution interne de la requête scalaire
+        /// </summary>
+        /// <param name="query">Contexte de requête</param>
+        /// <returns>Valeur scalaire</returns>
         protected virtual object QueryScalarExec(QueryContext query)
         {
             using (System.Data.IDbCommand cmd = this.InitCommand(query))
@@ -456,36 +371,44 @@ namespace Nglib.DATA.CONNECTOR
 
 
 
-        public async Task<System.Data.DataSet> QueryDataSetAsync(QueryContext queryContext)
+        /// <summary>
+        /// Exécution d'une requête SQL avec retour de DataSet
+        /// </summary>
+        /// <param name="queryContext">Contexte de la requête SQL</param>
+        /// <returns>DataSet contenant les résultats</returns>
+        public override async Task<System.Data.DataSet> QueryDataSetAsync(QueryContext queryContext)
         {
             try
             {
                 queryContext.Validate();
                 queryContext.watchAll.Start();
-                if(QueryBegin!=null) this.QueryBegin(queryContext);
+                OnQueryBegin(queryContext);
+                
                 this.Open(false); // ouvre la connection si nécessaire (sera refermé juste après)
-                while (true) // on se limite à 3 tentatives (gérer dans la methode ExceptionSQL)
+
+                try
                 {
-                    queryContext.QueryTry++;
-                    try
-                    {
-                        this.QueryMutex.WaitOne();
-                        queryContext.ExecuteDate = DateTime.Now;
-                        queryContext.watchExecute.Restart();
-                        System.Data.DataSet ret = QueryDataSetExec(queryContext);
-                        queryContext.watchExecute.Stop();
-                        return ret;
-                    }
-                    catch (Exception e)
-                    {
-                        queryContext.watchExecute.Stop();
-                        queryContext.error = e.Message;
-                        if (!Canretry(e, queryContext)) throw; // vérifier si il est possible de retenter
-                    }
-                    finally
-                    {
-                        this.QueryMutex.ReleaseMutex();
-                    }
+                    AcquireQueryLock(); // Synchronisation thread-safe
+                    queryContext.ExecuteDate = DateTime.Now;
+                    queryContext.watchExecute.Restart();
+                    
+                    System.Data.DataSet ret = QueryDataSetExec(queryContext);
+                    
+                    queryContext.watchExecute.Stop();
+                    IncrementRequestCount(); // Compteur thread-safe
+                    
+                    return ret;
+                }
+                catch (Exception e)
+                {
+                    queryContext.watchExecute.Stop();
+                    queryContext.Error = e.Message;
+                    throw;
+                }
+                finally
+                {
+                    ReleaseQueryLock(); // Libère le mutex
+                    OnQueryCompleted(queryContext); // Event après exécution
                 }
             }
             catch (ConnectorException)
@@ -498,20 +421,23 @@ namespace Nglib.DATA.CONNECTOR
             }
             finally
             {
-                if (this.transaction == null && !this.keepOpenMode) // on ferme que si on n'est pas dans une transaction et que le développeur n'a pas explicitement ouvert lui même la connection
+                if (this.transaction == null && !this.keepOpenMode) // on ferme que si on n'est pas dans une transaction
                     this.Close();
                 queryContext.watchAll.Stop();
-                if (this.QueryCompleted != null) this.QueryCompleted(queryContext);
             }
         }
 
-
+        /// <summary>
+        /// Exécution interne de la requête DataSet
+        /// </summary>
+        /// <param name="query">Contexte de requête</param>
+        /// <returns>DataSet avec les résultats</returns>
         protected virtual DataSet QueryDataSetExec(QueryContext query)
         {
             System.Data.DataSet ret = new DataSet();
             using (System.Data.IDbCommand cmd = this.InitCommand(query))
             {
-                System.Data.IDataAdapter reader = DataAdapterFactory(cmd);
+                System.Data.IDataAdapter reader = CreateDataAdapter(cmd);
                 reader.Fill(ret);
                 // !!! tester performance entre un dataadaptater et un simple datareader
             }
@@ -519,33 +445,24 @@ namespace Nglib.DATA.CONNECTOR
         }
 
 
-        protected virtual System.Data.IDataAdapter DataAdapterFactory(IDbCommand cmd)
-        {
-            return ConnectorTools.DataAdapterFactory(this.EngineName, cmd);
-        }
-
-        protected virtual System.Data.IDbConnection ConnectionFactory()
-        {
-            return ConnectorTools.ConnectionFactory(this.EngineName);
-        }
-
+ 
+ 
 
         /// <summary>
-        /// Insertion  table (Insert Optimsé en insertion multirows)
+        /// Insertion table (Insert optimisé en insertion multirows)
         /// </summary>
-        /// <param name="connector"></param>
-        /// <param name="dataTable"></param>
-        /// <param name="SpecialTimeOut"></param>
-        /// <param name="AutoIncrementColumn"></param>
-        /// <returns></returns>
-        public async Task<List<long>> InsertTableAsync( System.Data.DataTable dataTable, int SpecialTimeOut = 600, string AutoIncrementColumn = null)
+        /// <param name="dataTable">Table de données à insérer</param>
+        /// <param name="SpecialTimeOut">Timeout spécifique</param>
+        /// <param name="AutoIncrementColumn">Colonne auto-incrémentée</param>
+        /// <returns>Liste des IDs insérés</returns>
+        public override async Task<List<long>> InsertTableAsync(System.Data.DataTable dataTable, int SpecialTimeOut = 600, string AutoIncrementColumn = null)
         {
             List<System.Data.DataTable> tablesSpliteds = DataSetTools.DataTableSplit(dataTable, 50); // Découpe 50 lignes par 50 lignes
             bool UseTransaction = true;
             List<long> retourIncremented = new List<long>();
             try
             {
-                UseTransaction = this.BeginTransaction("t1");
+                UseTransaction = this.BeginTransaction();
                 int count = 0;
                 foreach (System.Data.DataTable tabl in tablesSpliteds) // list
                 {
@@ -563,7 +480,7 @@ namespace Nglib.DATA.CONNECTOR
             {
                 //Console.WriteLine("Exeption " + ex.Message);
                 if (UseTransaction) this.RollBackTransaction();
-                throw ex;
+                throw;
             }
             finally
             {
@@ -573,19 +490,18 @@ namespace Nglib.DATA.CONNECTOR
 
 
         /// <summary>
-        /// Insertion
+        /// Insertion interne par batch
         /// </summary>
-        /// <param name="connector"></param>
-        /// <param name="subtabl"></param>
-        /// <param name="SpecialTimeOut"></param>
-        /// <param name="AutoIncrementColumn"></param>
-        /// <returns></returns>
+        /// <param name="subtabl">Table à insérer</param>
+        /// <param name="SpecialTimeOut">Timeout spécifique</param>
+        /// <param name="AutoIncrementColumn">Colonne auto-incrémentée</param>
+        /// <returns>Liste des IDs insérés</returns>
         private List<long> InsertTableSub(System.Data.DataTable subtabl, int SpecialTimeOut = 600, string AutoIncrementColumn = null)
         {
             //Obtien le SQL
             var sqlAndDatas = SqlTools.GenerateSqlMultiInsert(subtabl);
             string sql = sqlAndDatas.Item1;
-            ConnectorConstants.ConnectorEngineEnum connectorEngine = ConnectorTools.FindEngine(this.EngineName);
+            ConnectorConstants.ConnectorEngineEnum connectorEngine = ConnectorTools.ParseEngineName(this.EngineName);
 
             // Complete la requette pour obtenir les id du champs auto incrémenté (en un seul appel SQL)
             if (!string.IsNullOrWhiteSpace(AutoIncrementColumn))
@@ -630,16 +546,9 @@ namespace Nglib.DATA.CONNECTOR
                         retourIncremented.Add(lastid-(totalrow-1)+i);
 
                 }
-
-
             }
             return retourIncremented;
         }
-
-
-
-
-
 
         #endregion
 

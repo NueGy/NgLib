@@ -2,20 +2,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Nglib.DATA.KEYVALUES;
 using Nglib.FORMAT;
 
 namespace Nglib.APP.CODE
 {
     /// <summary>
-    ///     Manipulation de valeurs dans un objet
+    /// Tools for manipulating object properties and fields using reflection.
+    /// <para>Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_appcode"/></para>
     /// </summary>
     public static class PropertiesTools
     {
         /// <summary>
-        ///     Obtient toutes les propriétés(Accesseurs) déclarées
+        /// Gets all declared properties (accessors) of a type.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="potype">The type to inspect</param>
+        /// <param name="OnlyPublic">If true, returns only public properties</param>
+        /// <returns>Array of PropertyInfo</returns>
         public static PropertyInfo[] GetProperties(Type potype, bool OnlyPublic = true)
         {
             if(potype == null) return null;
@@ -27,8 +29,11 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Obtient la property(Accesseurs) d'un objet
+        /// Gets the property (accessor) of an object by name (case-insensitive).
         /// </summary>
+        /// <param name="objSrc">The source object</param>
+        /// <param name="propertyName">The property name</param>
+        /// <returns>PropertyInfo or null if not found</returns>
         public static PropertyInfo GetProperty(object objSrc, string propertyName)
         {
             if (objSrc == null || string.IsNullOrWhiteSpace(propertyName)) return null;
@@ -43,8 +48,11 @@ namespace Nglib.APP.CODE
         }
 
         /// <summary>
-        ///     Obtient la property(Variable) d'un objet
+        /// Gets the field (variable) of an object by name (case-insensitive).
         /// </summary>
+        /// <param name="objSrc">The source object</param>
+        /// <param name="memberName">The field name</param>
+        /// <returns>FieldInfo or null if not found</returns>
         public static FieldInfo GetField(object objSrc, string memberName)
         {
             BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
@@ -61,8 +69,12 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Obtenir la données dans un objet, Meme si private
+        /// Gets the value from an object property or field, even if private.
         /// </summary>
+        /// <param name="objSrc">The source object</param>
+        /// <param name="propertyName">The property or field name</param>
+        /// <param name="safe">If true, returns null instead of throwing exceptions</param>
+        /// <returns>The property/field value</returns>
         public static object GetValue(object objSrc, string propertyName, bool safe = false)
         {
             if (objSrc == null)
@@ -87,8 +99,11 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Obtenir les données d'un objet dans un dictionary
+        /// Gets all properties and their values from an object as a dictionary.
         /// </summary>
+        /// <param name="objScr">The source object</param>
+        /// <param name="bindingAttr">Binding flags to filter properties</param>
+        /// <returns>Dictionary with property names as keys and values as objects</returns>
         public static Dictionary<string, object> GetValues(object objScr, BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
         {
             return objScr.GetType().GetProperties(bindingAttr).ToDictionary
@@ -101,8 +116,11 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Obtenir la données et la convertir en string (SAFE)
+        /// Gets the value from an object and converts it to string (SAFE mode).
         /// </summary>
+        /// <param name="objSrc">The source object</param>
+        /// <param name="propertyName">The property name</param>
+        /// <returns>String representation of the value or null</returns>
         public static string GetString(object objSrc, string propertyName)
         {
             var obj = GetValue(objSrc, propertyName, true);
@@ -116,16 +134,19 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Permet de mettre à jours une veleur dans un objet
-        ///     Réalisera une conversion de la valeur si nécessaire
+        /// Updates a property value in an object with automatic type conversion.
         /// </summary>
+        /// <param name="objDest">The destination object</param>
+        /// <param name="propertyInfo">The PropertyInfo to update</param>
+        /// <param name="value">The new value</param>
+        /// <param name="index">Optional index parameters</param>
         public static void SetValue(object objDest, PropertyInfo propertyInfo, object value, object[] index = null)
         {
             if (objDest == null) throw new ArgumentNullException("objSrc");
             if (propertyInfo == null) throw new ArgumentNullException("propertyInfo");
             try
             {
-                object realvalue = ConvertPlus.ChangeType(value, propertyInfo.PropertyType);
+                object realvalue = ConvertTools.ChangeType(value, propertyInfo.PropertyType);
                 propertyInfo.SetValue(objDest, realvalue, index);
             }
             catch (Exception ex)
@@ -139,9 +160,12 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Permet de mettre à jours une valeur dans un objet
-        ///     Réalisera un conversion de la valeur si nécessaire
+        /// Updates a property value in an object by name with automatic type conversion.
         /// </summary>
+        /// <param name="objDest">The destination object</param>
+        /// <param name="propertyName">The property name</param>
+        /// <param name="value">The new value</param>
+        /// <param name="index">Optional index parameters</param>
         public static void SetValue(object objDest, string propertyName, object value, object[] index = null)
         {
             if (objDest == null) throw new ArgumentNullException("objDest");
@@ -153,8 +177,10 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Mettre à jours un objet à partir d'un dictionary
+        /// Updates an object from a dictionary with automatic type conversion.
         /// </summary>
+        /// <param name="objDest">The destination object to update</param>
+        /// <param name="values">Dictionary containing property names and values</param>
         public static void SetValues(object objDest, IDictionary<string, object> values)
         {
             if (objDest == null) throw new ArgumentNullException("objDest");
@@ -169,7 +195,7 @@ namespace Nglib.APP.CODE
                 {
                     var itemval = values.FirstOrDefault(d => proinfo.Name.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
                     if (itemval.Key == null) continue;
-                    object realvalue = ConvertPlus.ChangeType(itemval.Value, proinfo.PropertyType);
+                    object realvalue = ConvertTools.ChangeType(itemval.Value, proinfo.PropertyType);
                     proinfo.SetValue(objDest, realvalue, null); //!!! améliorer : Gérer les cast automatiquement
                 }
             }

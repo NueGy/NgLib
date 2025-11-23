@@ -26,7 +26,8 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Enregistre la liste dans un fichier config xml
         /// </summary>
-        /// <param name="fichierXML"></param>
+        /// <param name="datavalue">Les données à serializer</param>
+        /// <param name="fichierXML">Chemin du fichier XML</param>
         public void SerializeToFile(ParamValues datavalue, string fichierXML)
         {
             try
@@ -58,7 +59,8 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Enregistre la liste dans un fichier config xml
         /// </summary>
-        /// <param name="fichierXML"></param>
+        /// <param name="datavalue">Les données à serializer</param>
+        /// <returns>Chaine XML</returns>
         public string Serialize(ParamValues datavalue)
         {
             string fluxxml = ""; //chaine xml final
@@ -244,7 +246,9 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Datavalue fromc onfig flux string xml
         /// </summary>
-        /// <param name="fichierXML"></param>
+        /// <param name="fluxstring">Flux XML à désérialiser</param>
+        /// <param name="retour">Objet ParamValues à remplir (optionnel)</param>
+        /// <returns>ParamValues désérialisé</returns>
         public ParamValues DeSerialize(string fluxstring, ParamValues retour = null)
         {
             try
@@ -276,7 +280,8 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Datavalue from fichier config xml
         /// </summary>
-        /// <param name="fichierXML"></param>
+        /// <param name="datavalue">Objet ParamValues à remplir</param>
+        /// <param name="fichierXML">Chemin du fichier XML</param>
         public void fromXML(ParamValues datavalue,string fichierXML)
         {
             try

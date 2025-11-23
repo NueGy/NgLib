@@ -3,64 +3,65 @@
 namespace Nglib.DATA.DATAPO
 {
     /// <summary>
-    ///     Flux xml ou json
+    /// Interface for NoSQL data flows (XML or JSON) stored in database fields.
+    /// Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_datapo"/>
     /// </summary>
     public interface IDataPOFlow
     {
         /// <summary>
-        ///     Obtien le nom du champ à modifier dans la base
+        /// Gets the field name to modify in the database
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Field name</returns>
         string GetFieldName();
 
 
         /// <summary>
-        ///     Obtient le type du champs dans la base
+        /// Gets the field type in the database
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Flow type enum</returns>
         FlowTypeEnum GetFieldType();
 
 
         /// <summary>
-        ///     Si le champ à été entierement encrypté en base
+        /// Indicates if the field has been fully encrypted in the database
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if encrypted</returns>
         bool IsFieldEncrypted();
 
 
         /// <summary>
-        ///     Définir le flux
+        /// Defines the flow configuration
         /// </summary>
-        /// <param name="fieldName"></param>
-        /// <param name="fieldType"></param>
-        /// <param name="EncryptedKey"></param>
+        /// <param name="fieldName">Database field name</param>
+        /// <param name="fieldType">Flow type</param>
+        /// <param name="isFullEncrypted">Whether the field is fully encrypted</param>
         void DefineField(string fieldName, FlowTypeEnum fieldType, bool isFullEncrypted = false);
 
 
         /// <summary>
-        ///     Transforme toutes les données local pour les mettre à jours dans la base
+        /// Serializes all local data for database update
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Serialized string</returns>
         string SerializeField();
 
 
         /// <summary>
-        ///     resynchronise les données provenant de la base dans le flow
+        /// Deserializes data from database into the flow
         /// </summary>
-        /// <param name="dataField"></param>
+        /// <param name="dataField">Serialized data from database</param>
         void DeSerializeField(string dataField);
 
 
         /// <summary>
-        ///     Savoir si il y as eu des modifications parmi les objets (et pourrai nécessiter une mise à jour)
+        /// Checks if there are modifications among objects (requiring an update)
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if changes detected</returns>
         bool IsChanges();
 
         /// <summary>
-        ///     Signale que toute les modification ont été traité,
+        /// Marks all modifications as accepted
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if changes were accepted</returns>
         bool AcceptChanges();
     }
 }

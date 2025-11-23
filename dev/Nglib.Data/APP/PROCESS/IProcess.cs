@@ -4,6 +4,7 @@ using System.Text;
 
 namespace Nglib.APP.PROCESS
 {
+    [Obsolete("SOON")]
     public interface IProcess
     {
 

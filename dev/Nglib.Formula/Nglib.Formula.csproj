@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Nglib</RootNamespace>
+    <NoWarn>CS1591;CS1572;CS1573;CS1711</NoWarn>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- PACKAGE VERSION : Independante, a incrementer si projet modifie -->
+    <Version>1.1.7-beta</Version>
+    
+    <!-- PACKAGE INFO -->
+    <PackageId>Nglib.Formula</PackageId>
+    <Description>Formula parser and expression evaluator. String Format. Dynamic calculation engine with parameter support, built-in functions (math, string, date, logical), custom operators, and optimized for high-performance scenarios.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- OPENSOURCE : Surcharge des proprietes communes -->
+    <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>nglib;formula;parser;expression;evaluator;calculator;math;dynamic;opensource</PackageTags>
+    <PackageProjectUrl>https://github.com/NueGy/NgLib</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nglib\Nglib.csproj" />
+  </ItemGroup>
+
+</Project>

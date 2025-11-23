@@ -13,11 +13,7 @@ namespace Nglib.DATA.CONNECTOR
     {
 
 
-        public static ConnectorConstants.ConnectorEngineEnum GetEngine(this CONNECTOR.IDataConnector connector)
-        {
-            if (connector == null) throw new ArgumentNullException("connector");
-            return ConnectorTools.FindEngine(connector.EngineName);
-        }
+  
 
 
 
@@ -30,10 +26,17 @@ namespace Nglib.DATA.CONNECTOR
             return await connector.QueryDataSetAsync(query);
         }
 
-        public static async Task<System.Data.DataSet> QueryDataSetAsync(this CONNECTOR.IDataConnector connector, SqlBuilder sqlBuilder)
+
+
+        /// <summary>
+        /// Execution d'une requête SQL avec QueryBuilder, Return Dataset
+        /// </summary>
+        /// <param name="connector">Le connecteur de base de données</param>
+        /// <param name="queryBuilder">Le QueryBuilder configuré</param>
+        /// <returns>DataSet contenant les résultats</returns>
+        public static async Task<System.Data.DataSet> QueryDataSetAsync(this CONNECTOR.IDataConnector connector, QUERYBUILDER.IQueryBuilder queryBuilder)
         {
-            sqlBuilder.SqlEngine = ConnectorTools.FindEngine(connector.EngineName);
-            QueryContext query = new QueryContext(sqlBuilder.ToString(), sqlBuilder.SqlInputParameters);
+            QueryContext query = queryBuilder.BuildQuery();
             return await connector.QueryDataSetAsync(query);
         }
 
@@ -48,11 +51,17 @@ namespace Nglib.DATA.CONNECTOR
             return connector.QueryDataSetAsync(query).GetAwaiter().GetResult();
         }
 
-        public static System.Data.DataSet QueryDataSet(this CONNECTOR.IDataConnector connector, SqlBuilder sqlBuilder)
+
+
+        /// <summary>
+        /// Execution d'une requête SQL avec QueryBuilder, Return Dataset
+        /// </summary>
+        /// <param name="connector">Le connecteur de base de données</param>
+        /// <param name="queryBuilder">Le QueryBuilder configuré</param>
+        /// <returns>DataSet contenant les résultats</returns>
+        public static System.Data.DataSet QueryDataSet(this CONNECTOR.IDataConnector connector, QUERYBUILDER.IQueryBuilder queryBuilder)
         {
-            sqlBuilder.SqlEngine = ConnectorTools.FindEngine(connector.EngineName);
-            QueryContext query = new QueryContext(sqlBuilder.ToString(), sqlBuilder.SqlInputParameters);
-            return connector.QueryDataSetAsync(query).GetAwaiter().GetResult();
+            return QueryDataSetAsync(connector, queryBuilder).GetAwaiter().GetResult();
         }
 
 
@@ -60,6 +69,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// Execution d'une requette SQL avec retour de données
         /// </summary>
+        /// <param name="connector">Le connecteur de base de données</param>
         /// <param name="sqlQuery"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
@@ -71,11 +81,17 @@ namespace Nglib.DATA.CONNECTOR
             else return retset.Tables[0];
         }
 
-        public static async Task<System.Data.DataTable> QueryAsync(this CONNECTOR.IDataConnector connector, SqlBuilder sqlBuilder)
+
+
+        /// <summary>
+        /// Execution d'une requête SQL avec QueryBuilder, Return DataTable
+        /// </summary>
+        /// <param name="connector">Le connecteur de base de données</param>
+        /// <param name="queryBuilder">Le QueryBuilder configuré</param>
+        /// <returns>DataTable contenant les résultats, ou null si aucun résultat</returns>
+        public static async Task<System.Data.DataTable> QueryAsync(this CONNECTOR.IDataConnector connector, QUERYBUILDER.IQueryBuilder queryBuilder)
         {
-            sqlBuilder.SqlEngine = ConnectorTools.FindEngine(connector.EngineName);
-            QueryContext query = new QueryContext(sqlBuilder.ToString(), sqlBuilder.SqlInputParameters);
-            System.Data.DataSet retset = await connector.QueryDataSetAsync(query);
+            System.Data.DataSet retset = await QueryDataSetAsync(connector, queryBuilder);
             if (retset.Tables.Count == 0) return null;
             else return retset.Tables[0];
         }
@@ -97,6 +113,8 @@ namespace Nglib.DATA.CONNECTOR
 
         /// <summary>
         /// Execution d'une requette SQL avec retour de données
+        /// <summary>
+        /// Execution d'une requette SQL avec retour de données
         /// </summary>
         /// <param name="connector"></param>
         /// <param name="sqlQuery"></param>
@@ -107,9 +125,16 @@ namespace Nglib.DATA.CONNECTOR
             return QueryAsync(connector, sqlQuery, parameters).GetAwaiter().GetResult();
         }
 
-        public static System.Data.DataTable Query(this CONNECTOR.IDataConnector connector, SqlBuilder sqlBuilderl)
+
+        /// <summary>
+        /// Execution d'une requête SQL avec QueryBuilder, Return DataTable (synchrone)
+        /// </summary>
+        /// <param name="connector">Le connecteur de base de données</param>
+        /// <param name="queryBuilder">Le QueryBuilder configuré</param>
+        /// <returns>DataTable contenant les résultats, ou null si aucun résultat</returns>
+        public static System.Data.DataTable Query(this CONNECTOR.IDataConnector connector, QUERYBUILDER.IQueryBuilder queryBuilder)
         {
-            return QueryAsync(connector, sqlBuilderl).GetAwaiter().GetResult();
+            return QueryAsync(connector, queryBuilder).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -125,17 +150,15 @@ namespace Nglib.DATA.CONNECTOR
             return await connector.QueryScalarAsync(query);
         }
 
-
         /// <summary>
-        ///  Execution d'une requette SQL
+        /// Execution d'une requête SQL avec QueryBuilder, Return scalar value
         /// </summary>
-        /// <param name="connector"></param>
-        /// <param name="sqlQuery"></param>
-        /// <returns></returns>
-        public static async Task<object> QueryScalarAsync(this CONNECTOR.IDataConnector connector, SqlBuilder sqlBuilder)
+        /// <param name="connector">Le connecteur de base de données</param>
+        /// <param name="queryBuilder">Le QueryBuilder configuré</param>
+        /// <returns>Valeur scalaire (première colonne de la première ligne)</returns>
+        public static async Task<object> QueryScalarAsync(this CONNECTOR.IDataConnector connector, QUERYBUILDER.IQueryBuilder queryBuilder)
         {
-            sqlBuilder.SqlEngine = ConnectorTools.FindEngine(connector.EngineName);
-            QueryContext query = new QueryContext(sqlBuilder.ToString(), sqlBuilder.SqlInputParameters);
+            QueryContext query = queryBuilder.BuildQuery();
             return await connector.QueryScalarAsync(query);
         }
 
@@ -169,9 +192,15 @@ namespace Nglib.DATA.CONNECTOR
         }
 
 
-        public static object QueryScalar(this CONNECTOR.IDataConnector connector, SqlBuilder sqlBuilder)
+        /// <summary>
+        /// Execution d'une requête SQL avec QueryBuilder, Return scalar value (synchrone)
+        /// </summary>
+        /// <param name="connector">Le connecteur de base de données</param>
+        /// <param name="queryBuilder">Le QueryBuilder configuré</param>
+        /// <returns>Valeur scalaire (première colonne de la première ligne)</returns>
+        public static object QueryScalar(this CONNECTOR.IDataConnector connector, QUERYBUILDER.IQueryBuilder queryBuilder)
         {
-            return QueryScalarAsync(connector, sqlBuilder).GetAwaiter().GetResult();
+            return QueryScalarAsync(connector, queryBuilder).GetAwaiter().GetResult();
         }
 
         private static Dictionary<string, object> ConvertArrayParameters(params object[] oparameters)
@@ -231,7 +260,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         public static async Task DeleteAsync(this CONNECTOR.IDataConnector connector, string table, Dictionary<string, object> parametersKey)
         {
-            SqlBuilder sql = new SqlBuilder(table).Delete().AddWheres(parametersKey);
+            var sql = connector.CreateQueryBuilder().Delete().From(table).WhereEquals(parametersKey);
             await connector.QueryScalarAsync(sql);
         }
 
@@ -241,12 +270,12 @@ namespace Nglib.DATA.CONNECTOR
         /// </summary>
         /// <param name="connector"></param>
         /// <param name="table"></param>
-        /// <param name="parametersKey"></param>
-        /// <param name="parametersValues"></param>
+        /// <param name="parametersWhereKey"></param>
+        /// <param name="parametersUpdateValues"></param>
         /// <returns></returns>
         public static async Task UpdateAsync(this CONNECTOR.IDataConnector connector, string table, Dictionary<string, object> parametersWhereKey, Dictionary<string, object> parametersUpdateValues)
         {
-            SqlBuilder sql = new SqlBuilder(table).Update(parametersUpdateValues).AddWheres(parametersWhereKey);
+            var sql = connector.CreateQueryBuilder().Update(parametersUpdateValues).From(table).WhereEquals(parametersWhereKey);
             await connector.QueryScalarAsync(sql);
         }
 
@@ -260,7 +289,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         public static async Task InsertAsync(this CONNECTOR.IDataConnector connector, string table, Dictionary<string, object> parametersValues, string AutoIncrementColumn = null)
         {
-            SqlBuilder sql = new SqlBuilder(table).Insert(parametersValues);
+            var sql = connector.CreateQueryBuilder().Insert(parametersValues).From(table);
             await connector.QueryScalarAsync(sql);
         }
 

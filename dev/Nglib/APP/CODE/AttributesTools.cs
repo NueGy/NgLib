@@ -6,15 +6,19 @@ using System.Reflection;
 namespace Nglib.APP.CODE
 {
     /// <summary>
-    ///     Outils pour la manipulation d'attributs
+    /// Tools for manipulating and extracting attributes from classes and members.
+    /// <para>Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_appcode"/></para>
     /// </summary>
     public class AttributesTools
     {
 
 
         /// <summary>
-        /// Obtenir un attribut depuis un objet
+        /// Gets an attribute from an object instance.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to retrieve</typeparam>
+        /// <param name="objClass">The object instance</param>
+        /// <returns>The attribute or null if not found</returns>
         public static Tattribute GetAttribute<Tattribute>(object objClass) where Tattribute : Attribute
         {
             if (objClass == null) return null;
@@ -22,34 +26,42 @@ namespace Nglib.APP.CODE
         }
 
         /// <summary>
-        /// Obtenir un attribut depuis une classe
+        /// Gets an attribute from a class type.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to retrieve</typeparam>
+        /// <param name="objClassType">The class type</param>
+        /// <returns>The attribute or null if not found</returns>
         public static Tattribute GetAttribute<Tattribute>(Type objClassType) where Tattribute : Attribute
         {
             if (objClassType == null) return null;
             var attributes = objClassType.GetCustomAttributes().ToList();
-            ;
             if (attributes == null) return null;
             var typeAttributeWant = typeof(Tattribute);
             return attributes.FirstOrDefault(at => at.GetType().Equals(typeAttributeWant)) as Tattribute;
         }
 
         /// <summary>
-        /// Obtenir un attribut depuis une classe
+        /// Gets an attribute from a class type (non-generic version).
         /// </summary>
+        /// <param name="objClassType">The class type</param>
+        /// <param name="typeAttributeWant">The desired attribute type</param>
+        /// <returns>The attribute or null if not found</returns>
         public static Attribute GetAttribute(Type objClassType, Type typeAttributeWant)
         {
             if (objClassType == null) return null;
             var attributes = objClassType.GetCustomAttributes().ToList();
-            ;
             if (attributes == null) return null;
             return attributes.FirstOrDefault(at => at.GetType().Equals(typeAttributeWant));
         }
 
 
         /// <summary>
-        /// Liste des membres d'une classe/type avec cet attribut
+        /// Gets all members of a class/type that have a specific attribute.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to search for</typeparam>
+        /// <param name="modeltype">The type to inspect</param>
+        /// <param name="memberTypes">The types of members to include (default: All)</param>
+        /// <returns>Dictionary with MemberInfo as key and attribute as value</returns>
         public static IDictionary<MemberInfo, Tattribute> GetMembersWithAttribute<Tattribute>(Type modeltype, MemberTypes memberTypes = MemberTypes.All)
          where Tattribute : Attribute
         {
@@ -67,8 +79,11 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        /// Liste des méthodes d'une classe avec cet attribut
+        /// Gets all methods of a class that have a specific attribute.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to search for</typeparam>
+        /// <param name="modeltype">The type to inspect</param>
+        /// <returns>Dictionary with MethodInfo as key and attribute as value</returns>
         public static Dictionary<MethodInfo, Tattribute> GetMethodsWithAttribute<Tattribute>(Type modeltype)
             where Tattribute : Attribute
             //=> GetMembersAttributes<Tattribute>(modeltype, MemberTypes.Method).ToDictionary(d=> d.Key as MethodInfo, d=> d.Value);
@@ -88,8 +103,11 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        /// Liste des propriétés d'une classe avec cet attribut
+        /// Gets all properties of a class that have a specific attribute.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to search for</typeparam>
+        /// <param name="modeltype">The type to inspect</param>
+        /// <returns>Dictionary with PropertyInfo as key and attribute as value</returns>
         public static Dictionary<PropertyInfo,Tattribute> GetPropertiesWithAttribute<Tattribute>(Type modeltype) where Tattribute : Attribute
         {
             if (modeltype == null) return null;
@@ -109,8 +127,11 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        /// Liste des valeurs des propriétés avec cet attribut
+        /// Gets property values from an object where properties have a specific attribute.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to search for</typeparam>
+        /// <param name="model">The object instance</param>
+        /// <returns>Dictionary with attribute as key and property value as value</returns>
         public static Dictionary<Tattribute, object> GetValuesWithAttribute<Tattribute>(object model) where Tattribute : Attribute
         {
             if (model == null) return null;
@@ -139,8 +160,11 @@ namespace Nglib.APP.CODE
 
 
         /// <summary>
-        ///     Lister tous les types avec cet attribut sur toutes les assemblies dans CurrentDomain
+        /// Lists all types with a specific attribute from all assemblies in the current domain.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to search for</typeparam>
+        /// <param name="typeNamePrefix">Optional prefix to filter type names</param>
+        /// <returns>Dictionary with Type as key and attribute as value</returns>
         public static Dictionary<Type, Tattribute> GetTypesWithAttribute<Tattribute>(string typeNamePrefix = null)
             where Tattribute : Attribute
         {
@@ -149,8 +173,12 @@ namespace Nglib.APP.CODE
         }
 
         /// <summary>
-        ///     Lister tous les types avec cet attribut sur une assembly
+        /// Lists all types with a specific attribute from a single assembly.
         /// </summary>
+        /// <typeparam name="Tattribute">The attribute type to search for</typeparam>
+        /// <param name="assembly">The assembly to inspect</param>
+        /// <param name="typeNamePrefix">Optional prefix to filter type names</param>
+        /// <returns>Dictionary with Type as key and attribute as value</returns>
         public static Dictionary<Type, Tattribute> GetTypesWithAttribute<Tattribute>(Assembly assembly, string typeNamePrefix = null)
              where Tattribute : Attribute
         {

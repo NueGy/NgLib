@@ -14,3 +14,7 @@
 /dev/Nglib.Data/bin
 /dev/Nglib.PublicTests/obj
 /dev/Nglib.PublicTests/bin
+/dev/Nglib.Formula/obj
+/dev/Nglib.Formula/bin
+/temp
+/publish

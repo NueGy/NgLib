@@ -8,41 +8,25 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Nglib.APP.CODE;
-using Nglib.DATA.DATAMODEL;
 using Nglib.FORMAT;
 
 namespace Nglib.NET.HTTPCLIENT
 {
+    /// <summary>
+    /// HTTP client helper tools for making web API requests. Provides methods for creating requests, handling content serialization, reading responses, and validating responses.
+    /// See: https://github.com/NueGy/NgLib/docs/wiki_components_httpclient
+    /// </summary>
     public static class HttpClientTools
     {
 
-        [Obsolete("todelete")]
-        public static HttpRequestMessage PrepareRequest(HttpMethod method, string RootUrl, string ServicePartUrl)
-        {
-            var finalUrl = HttpTools.CombineRootUrl(RootUrl, ServicePartUrl);
-            return PrepareRequest(method, finalUrl);
-        }
 
+        #region ---- CLIENT MANAGEMENT ----
 
 
         /// <summary>
-        /// Permet de composer une requête HTTP
+        /// Creates an HTTP client with Bearer token authentication
         /// </summary>
-        public static HttpRequestMessage PrepareRequest(HttpMethod method, string ServicePartUrl)
-        {
-            ServicePartUrl = ServicePartUrl.Trim();
-            var req = new HttpRequestMessage(method, ServicePartUrl);
-  
-            //req.Headers.Accept.Clear();
-            //req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-            return req;
-        }
-         
-
-
-        /// <summary>
-        ///     Génération d'un client HTTP avec un token Bearer
-        /// </summary>
+        [Obsolete("Use HttpClientFactory instead")]
         public static HttpClient CreateNewClient(HttpClientConfigModel tokenConfig=null, string rootUrl=null)
         {
             var client = new HttpClient();
@@ -59,21 +43,48 @@ namespace Nglib.NET.HTTPCLIENT
             return client;
         }
 
- 
+        #endregion
 
+
+
+        #region ---- CONTENT AND REQUESTS MANAGEMENT ----
+
+        /// <summary>
+        /// Prepares an HTTP request message
+        /// </summary>
+        public static HttpRequestMessage PrepareRequest(HttpMethod method, string ServicePartUrl)
+        {
+            ServicePartUrl = ServicePartUrl.Trim();
+            var req = new HttpRequestMessage(method, ServicePartUrl);
+  
+            //req.Headers.Accept.Clear();
+            //req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            return req;
+        }
+        
+        
+        /// <summary>
+        /// Calls an API using a model decorated with the HttpEndpointAttribute
+        /// </summary>
+        /// <typeparam name="TResponseModel">Response model object</typeparam>
+        /// <param name="client">HttpClient instance</param>
+        /// <param name="requestModel">Must be an object with the HttpEndpointAttribute</param>
+        /// <returns>Deserialized response model</returns>
         [Obsolete("BETA")]  
         public static async Task<TResponseModel> SendWithAttributeModelAsync<TResponseModel>(this HttpClient client,object requestModel)
         {
-            var req = HttpAttributesTools.CreateRequestFromModel(requestModel);
+            var req = EndpointTools.CreateRequestFromModel(requestModel);
             var resp = await client.SendAsync(req);
             resp.Validate();
 
             var retour = await ReadAsync<TResponseModel>(resp);
             return retour;
         }
+         
+         
 
         /// <summary>
-        /// Création d'un appel avec un model. use  PrepareRequest+PrepareJsonContent+ReadWithModelAsync
+        /// Creates an API call with request and response models. Uses PrepareRequest+PrepareJsonContent+ReadWithModelAsync internally
         /// </summary>
         public static async Task<TResponseModel> SendWithModelAsync<TResponseModel>(this HttpClient client,
             HttpMethod method, string urlPart, object requestModel = null)
@@ -88,20 +99,23 @@ namespace Nglib.NET.HTTPCLIENT
             var retour = await ReadAsync<TResponseModel>(resp);
             return retour;
         }
+        
 
+        
 
         /// <summary>
-        /// Permet de définir un token Bearer dans une requête
+        /// Sets a Bearer token in the Authorization header of an HTTP request
         /// </summary>
-        /// <param name="httpRequestMessage"></param>
-        /// <param name="token"></param>
         public static void SetBearerToken(this HttpRequestMessage httpRequestMessage, string token)
         {
-            if(string.IsNullOrEmpty(token)) return;
+            if (string.IsNullOrEmpty(token)) return;
             if (httpRequestMessage == null) throw new ArgumentNullException(nameof(httpRequestMessage));
             httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("bearer", token);
         }
 
+        /// <summary>
+        /// Sets a Basic Authorization header in an HTTP request
+        /// </summary>  
         public static void SetBasicAuth(this HttpRequestMessage httpRequestMessage, string username, string password)
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password)) return;
@@ -111,7 +125,7 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Ajouter un header dans une requête
+        /// Adds a header to an HTTP request
         /// </summary>
         public static bool SetParameterHeader(HttpRequestMessage request, string key, string value)
         {
@@ -125,7 +139,7 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Pemet de créer un contenu JSON. Sérialisation du model, Si post Alors application/json si Get alors querystring
+        /// Creates JSON content by serializing the model. For POST requests, uses application/json content type; for GET, appends to querystring
         /// </summary>
         public static HttpContent SetContent(this HttpRequestMessage httpRequestMessage, object formToSerialize, bool ForcePostFormUrlContent=false)
         {
@@ -133,7 +147,7 @@ namespace Nglib.NET.HTTPCLIENT
             try
             {
                 HttpContent httpContent = null;
-                // Si Get ou Head, pas de body donc on passe le content dans l'url
+                // For GET or HEAD methods, no body allowed, so append content to URL
                 List<HttpMethod> methodsWithNoBody = new List<HttpMethod> { HttpMethod.Get, HttpMethod.Head };
                 if (httpRequestMessage!=null && methodsWithNoBody.Contains(httpRequestMessage.Method))
                 {
@@ -141,16 +155,16 @@ namespace Nglib.NET.HTTPCLIENT
                     string fullurl = HttpTools.AppendQueryToUrl(httpRequestMessage.RequestUri.ToString(), values.ToDictionary(k => k.Key, v => v.Value?.ToString()));
                     httpRequestMessage.RequestUri = new Uri(fullurl);
                 }
-                else if (formToSerialize is string) // C'est déja un type primitif
+                else if (formToSerialize is string) // Already a primitive type
                 {
                     httpContent= new StringContent(formToSerialize as string, Encoding.UTF8, "application/json");
                 }
-                else if(ForcePostFormUrlContent) // demande explicite de FormUrlEncodedContent
+                else if(ForcePostFormUrlContent) // Explicit request for FormUrlEncodedContent
                 {
                     var values = APP.CODE.PropertiesTools.GetValues(formToSerialize);
                     httpContent = new FormUrlEncodedContent(values.ToDictionary(d => d.Key, d => Convert.ToString(d.Value)));
                 }
-                else // Serialisation standard
+                else // Standard serialization
                 {
                     var jsonSerializerOptions = new JsonSerializerOptions { IgnoreNullValues = true };
                     var bodyjsoncontent = JsonSerializer.Serialize(formToSerialize, formToSerialize.GetType(), jsonSerializerOptions);
@@ -185,38 +199,43 @@ namespace Nglib.NET.HTTPCLIENT
         }
 
         /// <summary>
-        /// Permet d'ajouter les valeurs d'un dictionnaire dans une requête
-        /// Si get, ajout dans l'url si post FormUrlEncodedContent
+        /// Adds dictionary values to a request. For GET, appends to URL; for POST, uses FormUrlEncodedContent
         /// </summary>
-        /// <param name="httpRequestMessage"></param>
-        /// <param name="values"></param>
+        /// <param name="values">Dictionary of values</param>
         public static FormUrlEncodedContent PrepareFormUrlContent(Dictionary<string, object> values)
         {
                     return new FormUrlEncodedContent(values.ToDictionary(d => d.Key, d => Convert.ToString(d.Value)));
         }
 
+
+        #endregion
+
+
+
+        #region ---- RESPONSE MANAGEMENT ----
+
+
         /// <summary>
-        /// Permet de valider le retour du serveur. Génère une exception si invalide
-        /// Plus précis que EnsureSuccessStatusCode
+        /// Validates the server response. Throws an exception if invalid. More precise than EnsureSuccessStatusCode
         /// </summary>
         public static void Validate(this HttpResponseMessage resp, string msgPrefix = null)
         {
             if (resp == null) throw new Exception($"{msgPrefix} HTTPResponseMessage null");
             if (resp.IsSuccessStatusCode) return;
             string bodymsg = ReadResponseTextSafe(resp);
-            //todo!!! : Supprimer les eventuels balises html
+            //TODO: Remove any HTML tags
             bodymsg = StringTools.Limit(bodymsg, 256);
             string resqEndUrl = null;
             if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null)
                 resqEndUrl = $"{resp.RequestMessage.RequestUri} [{resp.RequestMessage.Method}]";
- 
+
             throw new Exception(
                 $"{msgPrefix} HTTP {resqEndUrl} ({(int)resp.StatusCode}) {resp.ReasonPhrase} : {bodymsg}");
         }
 
 
         /// <summary>
-        /// Lecture d'une réponse, Désérialisation JSON
+        /// Reads a response and deserializes JSON content
         /// </summary>
         public static async Task<TResponseModel> ReadAsync<TResponseModel>(this HttpResponseMessage resp)
         {
@@ -240,9 +259,10 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Obtenir un header de la réponse
+        /// Gets a response header by name
         /// </summary>
-        /// <param name="response"></param>
+        /// <param name="response">HTTP response</param>
+        /// <param name="headername">Header name</param>
         public static string GetResponseHeader(HttpResponseMessage response, string headername)
         {
             if (response == null) return null;
@@ -253,7 +273,7 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Identique à ReadAsStringAsync()
+        /// Same as ReadAsStringAsync()
         /// </summary>
         /// <param name="res"></param>
         /// <returns></returns>
@@ -271,22 +291,16 @@ namespace Nglib.NET.HTTPCLIENT
         }
 
  
-        /// <summary>
-        /// Obtenir le type HttpMethod depuis un string
-        /// </summary>
-        public static HttpMethod ConvertToHttpMethod(string method)
-        {
-            if (string.IsNullOrWhiteSpace(method) || method.Equals("Get", StringComparison.OrdinalIgnoreCase))
-                return HttpMethod.Get;
-            else if (method.Equals("Post", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Post;
-            else if (method.Equals("Put", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Put;
-            else if (method.Equals("Delete", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Delete;
-            else if (method.Equals("Head", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Head;
-            else if (method.Equals("Options", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Options;
-            else if (method.Equals("Trace", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Trace;
-            else if (method.Equals("Patch", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Patch;
-            else throw new Exception("method invalid");
-             
-        }
+
+
+        #endregion
+
+
+
+
+
+
+ 
+
     }
 }

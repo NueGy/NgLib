@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -9,7 +10,7 @@ using Nglib.FORMAT;
 namespace Nglib.SECURITY.CRYPTO
 {
     /// <summary>
-    ///     Outils pour gérer les token
+    /// Outils pour gérer les token
     /// </summary>
     public static class TokenJwtTools
     {
@@ -17,7 +18,7 @@ namespace Nglib.SECURITY.CRYPTO
 
 
         /// <summary>
-        ///     Création d'un Token JWT avec les claims (iss,aud,sub,iat,exp,jti)
+        /// Création d'un Token JWT avec les claims (iss,aud,sub,iat,exp,jti)
         /// </summary>
         /// <param name="keyHs256">Clef de signature</param>
         /// <param name="issuer">Emetteur du token</param>
@@ -25,6 +26,7 @@ namespace Nglib.SECURITY.CRYPTO
         /// <param name="subject">Sujet(user,...) concerné par ce token</param>
         /// <param name="addJti">Rendre le token unique</param>
         /// <param name="ExpireSecond">Expiration du token</param>
+        /// <param name="payload">Claims additionnels</param>
         /// <returns></returns>
         public static string EncodeBasicJWT(string keyHs256, string issuer, string audience = null,
             string subject = null, bool addJti = true, int ExpireSecond = 3600,
@@ -52,16 +54,16 @@ namespace Nglib.SECURITY.CRYPTO
                 payload.Add("exp",
                     (long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds + ExpireSecond); // not after
             if (!payload.ContainsKey("jti") && addJti)
-                payload.Add("jti", "K" + StringTools.GenerateGuid32()); // token unique
+                payload.Add("jti", "K" + StringTools.RandomGuid32()); // token unique
             return payload;
         }
 
 
         /// <summary>
-        ///     Permet de créer une signature Hmac256 comme les token JWT
+        /// Permet de créer une signature Hmac256 comme les token JWT
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="key"></param>
+        /// <param name="stringToSign">Chaîne à signer</param>
+        /// <param name="key">Clé de signature</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
         public static string GetHmacSha256(string stringToSign, string key)
@@ -85,7 +87,7 @@ namespace Nglib.SECURITY.CRYPTO
 
 
         /// <summary>
-        ///     Création d'un token HS256 HMAC AES
+        /// Création d'un token HS256 HMAC AES
         /// </summary>
         /// <param name="payload">Données à signer</param>
         /// <param name="keyHs256">Clef UTF8</param>
@@ -114,7 +116,7 @@ namespace Nglib.SECURITY.CRYPTO
 
 
         /// <summary>
-        ///     Valider et obtenir les données d'un token JWT  HS256 HMAC AES
+        /// Valider et obtenir les données d'un token JWT  HS256 HMAC AES
         /// </summary>
         /// <param name="token">Token signé</param>
         /// <param name="keyHs256">Clef</param>
@@ -137,9 +139,15 @@ namespace Nglib.SECURITY.CRYPTO
                 //Dictionary<string, object> retour = FILES.SERIAL.JsonTools.DeSerializeDictionaryValues(payload);
                 var retour = JsonSerializer.Deserialize<Dictionary<string, object>>(payload);
 
-                // !!! ajouter sécurité sur exp
+                // Validation des claims temporels (exp, nbf)
+                ValidateTokenTimeClaims(retour);
 
                 return retour;
+            }
+            catch (SecurityException)
+            {
+                // On relance les SecurityException sans les encapsuler
+                throw;
             }
             catch (Exception ex)
             {
@@ -147,7 +155,47 @@ namespace Nglib.SECURITY.CRYPTO
             }
         }
 
+        /// <summary>
+        /// Valide les claims temporels du token JWT (exp, nbf)
+        /// </summary>
+        /// <param name="payload">Payload du token JWT</param>
+        /// <exception cref="SecurityException">Token expiré ou pas encore valide</exception>
+        private static void ValidateTokenTimeClaims(Dictionary<string, object> payload)
+        {
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+            // Vérifier expiration (exp)
+            if (payload.TryGetValue("exp", out var expObj))
+            {
+                long exp;
+                if (expObj is JsonElement expElement)
+                    exp = expElement.GetInt64();
+                else
+                    exp = Convert.ToInt64(expObj);
+                    
+                if (now >= exp)
+                    throw new SecurityException("Token expired");
+            }
+
+            // Vérifier "not before" (nbf)
+            if (payload.TryGetValue("nbf", out var nbfObj))
+            {
+                long nbf;
+                if (nbfObj is JsonElement nbfElement)
+                    nbf = nbfElement.GetInt64();
+                else
+                    nbf = Convert.ToInt64(nbfObj);
+                    
+                if (now < nbf)
+                    throw new SecurityException("Token not yet valid");
+            }
+        }
+
+        /// <summary>
+        /// Encode en Base64Url selon la spécification JWT
+        /// </summary>
+        /// <param name="input">Données à encoder</param>
+        /// <returns>String encodée en Base64Url</returns>
         // from JWT spec
         public static string Base64UrlEncode(byte[] input)
         {
@@ -158,6 +206,11 @@ namespace Nglib.SECURITY.CRYPTO
             return output;
         }
 
+        /// <summary>
+        /// Décode une string Base64Url selon la spécification JWT
+        /// </summary>
+        /// <param name="input">String à décoder</param>
+        /// <returns>String décodée</returns>
         // from JWT spec
         public static string Base64UrlDecode(string input)
         {

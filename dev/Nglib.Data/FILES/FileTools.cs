@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Text;
 
@@ -12,8 +13,21 @@ namespace Nglib.FILES
     public static class FileTools
     {
 
-        // Rename OK or KO
+        /// <summary>
+        /// Ajoute une extension à un fichier
+        /// monfichier.csv.OK
+        /// </summary>
+        public static void AddExtention(System.IO.FileInfo file, string ext, bool overwrite=true)
+        {
+            if(string.IsNullOrEmpty(ext) || file==null) return;
+            ext = ext.Trim().Trim('.');
+            if (file.Extension == "." + ext) return; //déjà la bonne extension
+            string[] exts = file.Name.Split('.');
+            if (exts.Length > 2) return;    //n'accepte pas plus de 2 extensions
 
+            string newfile = file.FullName.Substring(0, file.FullName.Length - file.Extension.Length) + "." + ext;
+            file.MoveTo(newfile, overwrite);
+        }
 
         /// <summary>
         /// transforme une chaine pour un file path
@@ -46,20 +60,37 @@ namespace Nglib.FILES
             return String.Format("{0:0.##} {1}", byteCount, sizes[order]);
         }
 
-        public static long GetDirectorySize(DirectoryInfo folder)
+        /// <summary>
+        /// Obtenir des fichiers selon des extensions
+        /// </summary>
+        public static IEnumerable<FileInfo> GetFilesByExtensions(DirectoryInfo dir, SearchOption searchOption, params string[] extensions)
         {
-            try
+            if (extensions == null)
+                throw new ArgumentNullException("extensions");
+            IEnumerable<FileInfo> files = Enumerable.Empty<FileInfo>();
+            foreach (string ext in extensions)
             {
-                if (folder == null) return 0;
-                var inefiles = folder.EnumerateFiles("*", SearchOption.AllDirectories);
-                return inefiles.Sum(fi => fi.Length);
+                files = files.Concat(dir.GetFiles(ext, searchOption));
             }
-            catch (Exception ex)
-            {
-                throw new Exception("GetDirectorySize "+ex.Message,ex);
-            }
+            return files;
         }
 
+        /// <summary>
+        /// Si une expression pattern correspond à un fichier
+        /// </summary>
+        public static bool IsMatchPattern(string expression, string filename)
+        {
+            if (string.IsNullOrWhiteSpace(expression) || string.IsNullOrWhiteSpace(filename)) return false;
+            bool ignoreCase = true;
+            EnumerationOptions options = new EnumerationOptions { MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
+            //  new EnumerationOptions { RecurseSubdirectories = true, MatchType = MatchType.Win32, AttributesToSkip = 0, IgnoreInaccessible = false };
+            return options.MatchType switch
+            {
+                MatchType.Simple => FileSystemName.MatchesSimpleExpression(expression.AsSpan(), filename.AsSpan(), ignoreCase),
+                MatchType.Win32 => FileSystemName.MatchesWin32Expression(expression.AsSpan(), filename.AsSpan(), ignoreCase),
+                _ => throw new ArgumentOutOfRangeException(nameof(options)),
+            };
+        }
 
     }
 }

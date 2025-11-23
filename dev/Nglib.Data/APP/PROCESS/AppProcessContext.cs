@@ -16,7 +16,7 @@ namespace Nglib.APP.PROCESS
         /// </summary>
         internal AppProcessContext()
         {
-            this.ProcessRunId = FORMAT.StringTools.GenerateGuid32();
+            this.ProcessRunId = FORMAT.StringTools.RandomGuid32();
             if (CancelToken == null) this.CancelToken = new System.Threading.CancellationToken();
         }
 

@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 namespace Nglib.NET.HTTPCLIENT
 {
     /// <summary>
-    /// Permet de gérer les tokens d'authentification sur un HttpClient
+    /// Manages authentication tokens for HttpClient
     /// </summary>
     public class HttpClientTokenHandler : System.Net.Http.DelegatingHandler
     {
         /// <summary>
-        /// Elements de configuration pour la génération du token
+        /// Configuration elements for token generation
         /// </summary>
         public HttpClientConfigModel Config { get; set; }
 
@@ -43,29 +43,28 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Dernier Token généré
+        /// Last generated token
         /// </summary>
         public string LastToken { get; set; }
 
         /// <summary>
-        /// Date de chargement du dernier token
+        /// Date when the last token was loaded
         /// </summary>
         public DateTime? LastTokenDate { get; set; }
 
         /// <summary>
-        /// Temps d'expiration du token
-        /// Si 0, le token n'expire pas ou expiration non géré
+        /// Token expiration time. If 0, the token does not expire or expiration is not managed
         /// </summary>
         public int LastTokenExpireSeconds { get; set; }
 
 
         /// <summary>
-        /// Pour les tokens de rafraichissement Oauth2
+        /// For OAuth2 refresh tokens
         /// </summary>
         public string LastRefreshToken { get; set; }
 
 
-        // todo: Ajouter un mutex pout éviter les refresh token en parallèle si Oauth2
+        // TODO: Add mutex to avoid parallel refresh token if OAuth2
 
 
 
@@ -76,31 +75,31 @@ namespace Nglib.NET.HTTPCLIENT
 
             if(this.Config ==null || this.Config.AuthType == TokenAuthTypeEnum.none)
             {
-                // no new token
-                // Ajoute le token dans la requête si il existe mais n'en générera pas de nouveau
+                // No new token
+                // Add token to request if it exists but will not generate a new one
                 HttpClientTools.SetBearerToken(request, this.LastToken); 
             }
             else if (this.Config.AuthType == TokenAuthTypeEnum.FixedBearerToken)
             {
-                // Bearer : Ajouter le token dans le header
+                // Bearer: Add token to header
                 if(string.IsNullOrEmpty(this.Config.FixedToken)) throw new Exception("FixedToken is empty in HttpClientConfigModel");
                 HttpClientTools.SetBearerToken(request, this.Config.FixedToken);
             }
             else if (this.Config.AuthType == TokenAuthTypeEnum.Basic)
             {
-                // Basic : Ajouter le username/password dans le header
+                // Basic: Add username/password to header
                 HttpClientTools.SetBasicAuth(request, this.Config.Username, this.Config.Password);
             }
             else if (this.Config.AuthType == TokenAuthTypeEnum.JwtHmac)
             {
-                // JwtHmac : Génération d'un nouveau token Hs256
+                // JwtHmac: Generate a new HS256 token
                 throw new NotImplementedException("JwtHmac not implemented");
                 //this.LastToken = TokenJwtTools.EncodeBasicJWT(this.TokenConfig.AppSecret, "na", this)
                // HttpClientTools.SetBasicAuth(request, this.TokenConfig.Username, this.TokenConfig.Password);
             }
             else
             {
-                    // Oauth2
+                    // OAuth2
                  if (HTTPCLIENT.HttpClientTokenTools.IsTokenExpired(this))
                         await HTTPCLIENT.HttpClientTokenTools.RefreshTokenOAuth2Async(this);
                 
@@ -134,7 +133,7 @@ namespace Nglib.NET.HTTPCLIENT
                 if (this.Config?.DisableSslValidation == true)
                     handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
-                handler.AllowAutoRedirect = !this.Config.DisableAutoRedirect;// pas de redirect pour les api ?
+                handler.AllowAutoRedirect = !this.Config.DisableAutoRedirect;// No redirect for APIs?
             }
             return handler;
         }

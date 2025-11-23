@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
 	  <RootNamespace>Nglib</RootNamespace>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -11,6 +11,7 @@
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
     <PackageReference Include="coverlet.collector" Version="3.2.0" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.116" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nglib.Data\Nglib.Data.csproj" />
+    <ProjectReference Include="..\Nglib.Formula\Nglib.Formula.csproj" />
     <ProjectReference Include="..\Nglib\Nglib.csproj" />
   </ItemGroup>
 

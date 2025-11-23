@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,9 +12,9 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Exporter un flux du datavalue
         /// </summary>
-        /// <param name="datavalue"></param>
-        /// <param name="Xml">true=xml, false=json</param>
-        /// <returns></returns>
+        /// <param name="datavalue">Données à exporter</param>
+        /// <param name="isXml">true=xml, false=json</param>
+        /// <returns>Flux string</returns>
         public static string ToFlux(this ParamValues datavalue, bool isXml = true)
         {
             IParamValuesSerializer serial = ParamValuesTools.SerializerFactory(isXml);
@@ -32,8 +26,9 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Chargement d'un flux(Json/Ou XML) dans le datavalue
         /// </summary>
-        /// <param name="itemdv"></param>
-        /// <param name="flux"></param>
+        /// <param name="datavalue">Objet ParamValues à remplir</param>
+        /// <param name="flux">Flux string à charger</param>
+        /// <param name="isXml">null=auto-détection, true=xml, false=json</param>
         public static void FromFlux(this ParamValues datavalue, string flux, bool? isXml = null)
         {
             //clean

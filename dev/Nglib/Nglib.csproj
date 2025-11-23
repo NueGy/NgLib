@@ -1,28 +1,38 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Nglib</RootNamespace>
-	  <AssemblyVersion>1.1.6.3</AssemblyVersion>
+    <NoWarn>CS1591;CS1572;CS1573;CS1711</NoWarn>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
-    <!-- PACKAGE PUBLIC-->
-    <Version>1.1.6-beta</Version>
-	  <PackageId>Nglib</PackageId>
-	  <Authors>Nuegy SARL</Authors>
-	  <Description>C# Basics Tools, Abstractions, No dependencies.</Description>
-	  <Copyright></Copyright>
-	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-	  <PackageProjectUrl></PackageProjectUrl>
-	  <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
-	  <PackageTags>Nglib</PackageTags>
-	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- PACKAGE VERSION : Independante, a incrementer si projet modifie -->
+    <Version>1.1.7-beta</Version>
     
+    <!-- PACKAGE INFO -->
+    <PackageId>Nglib</PackageId>
+    <Description>C# Basics Tools, Abstractions and Utilities. Lightweight library with no dependencies providing essential tools for data access, string manipulation, validation.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- OPENSOURCE : Surcharge des proprietes communes -->
+    <RepositoryUrl>https://github.com/NueGy/NgLib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>nglib;tools;utilities;data-accessor;opensource</PackageTags>
+    <PackageProjectUrl>https://github.com/NueGy/NgLib</PackageProjectUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <Optimize>false</Optimize>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
+
+
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+
 
 
 </Project>

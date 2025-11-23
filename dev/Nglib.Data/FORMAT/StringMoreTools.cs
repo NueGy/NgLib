@@ -13,7 +13,7 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Permet de supprimer les balises d'une chaine de caratères
+        /// Permet de supprimer les balises d'une chaine de caratères
         /// </summary>
         /// <param name="orgnStr">Chaine d'origine</param>
         /// <param name="pTagsToStrip">tag spécifique seulements</param>

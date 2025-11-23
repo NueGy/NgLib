@@ -1,17 +1,12 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 
 namespace Nglib.FORMAT
 {
     /// <summary>
-    ///     Outils pour manipulations des dates
+    /// Utility class for date and time manipulation.
+    /// Documentation: <see href="https://github.com/NueGy/NgLibComponents/wiki/wiki_components_format"/>
     /// </summary>
     public static class DateTools
     {
@@ -19,8 +14,11 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Obtenir la différence entre 2 dates en chaine simplifiée ( 4 Hr , 26 Sec , ...)
+        /// Gets the difference between 2 dates as a simplified string (4 Hr, 26 Sec, ...)
         /// </summary>
+        /// <param name="date1">First date</param>
+        /// <param name="date2">Second date</param>
+        /// <returns>Human-readable time difference</returns>
         public static string ToStringDateDelay(DateTime? date1, DateTime? date2)
         {
             if (!date1.HasValue || !date2.HasValue) return string.Empty;
@@ -35,13 +33,16 @@ namespace Nglib.FORMAT
             if (next < 2) return "Now";
             if (next < 60) return isneg + next + " Sec";
             if (next < 3600) return isneg + next / 60 + " Min";
-            if (next < 86000) return isneg + next / 3600 + " Hr";
-            return isneg + next / 86000 + " Days";
+            if (next < 86400) return isneg + next / 3600 + " Hr";
+            return isneg + next / 86400 + " Days";
         }
 
         /// <summary>
-        /// Si jour même, affiche l'heure, sinon la date
+        /// If same day, displays time; otherwise displays date
         /// </summary>
+        /// <param name="date1">Date to display</param>
+        /// <param name="dateFormat">Date format if not today</param>
+        /// <returns>Time or date string</returns>
         public static string ToStringDateOrTime(DateTime date1, string dateFormat = "dd/MM/yyyy")
         {
             if (date1.Date == DateTime.Now.Date)
@@ -51,11 +52,17 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Permet d'obtenir la prochaine date avec gestion des jours interdits (Jours fériés)
+        /// Gets the next date by adding days while excluding forbidden dates (holidays, weekends)
         /// </summary>
+        /// <param name="startDate">Starting date</param>
+        /// <param name="addDays">Number of business days to add</param>
+        /// <param name="excludesDates">Excluded specific dates (holidays)</param>
+        /// <param name="excludesDays">Excluded days of week (e.g., weekends)</param>
+        /// <returns>Calculated date</returns>
         public static DateTime AddDaysWithExcludes(DateTime startDate, int addDays = 1,
             List<DateTime> excludesDates = null, List<DayOfWeek> excludesDays = null)
         {
+            if(addDays<0) throw new Exception("addDays must be positive");
             var lastDate = startDate;
             var addedDays = 0;
             while (true)
@@ -71,26 +78,27 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     UNIX TimeStamp To DateTime
+        /// Converts UNIX timestamp to DateTime
         /// </summary>
-        /// <param name="unixTimeStamp"></param>
-        /// <returns></returns>
-        public static DateTime TimeStampToDateTime(long unixTimeStamp, bool UseLocalTime = false)
+        /// <param name="unixTimeStamp">Unix timestamp (seconds since epoch)</param>
+        /// <param name="useLocalTime">Convert to local time</param>
+        /// <returns>DateTime value</returns>
+        public static DateTime TimeStampToDateTime(long unixTimeStamp, bool useLocalTime = false)
         {
             // Unix timestamp is seconds past epoch
             var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             dtDateTime = dtDateTime.AddSeconds(unixTimeStamp);
-            if (UseLocalTime) dtDateTime = dtDateTime.ToLocalTime();
+            if (useLocalTime) dtDateTime = dtDateTime.ToLocalTime();
             return dtDateTime;
         }
 
 
         /// <summary>
-        ///     DateTime To UNIX TimeStamp
+        /// Converts DateTime to UNIX timestamp
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="UseLocalTime"></param>
-        /// <returns></returns>
+        /// <param name="time">DateTime to convert</param>
+        /// <param name="UseLocalTime">Use local time</param>
+        /// <returns>Unix timestamp in seconds</returns>
         public static long DateTimeToTimeStamp(DateTime time, bool UseLocalTime = false)
         {
             var unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0);
@@ -101,10 +109,10 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Convertir une date sur 8cars : 20211231
+        /// Converts 8-character date string to DateTime (format: 20211231)
         /// </summary>
-        /// <param name="datestr"></param>
-        /// <returns></returns>
+        /// <param name="datestr">8-character date string</param>
+        /// <returns>DateTime value</returns>
         public static DateTime ConvertDateTime8(string datestr)
         {
             try
@@ -124,10 +132,10 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Try parse simplifié
+        /// Simplified TryParse for DateTime
         /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
+        /// <param name="input">String to parse</param>
+        /// <returns>DateTime value or null if failed</returns>
         public static DateTime? TryParse(string input)
         {
             var ret = DateTime.MinValue;
@@ -137,9 +145,9 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Obtient le timestamp actuel
+        /// Gets current UTC timestamp
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Unix timestamp</returns>
         public static long Time()
         {
             return DateTimeToTimeStamp(DateTime.UtcNow);
@@ -147,11 +155,11 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Permet d'obtenir toutes les jounrées dans une période
+        /// Gets all days within a period
         /// </summary>
-        /// <param name="dateStart">Date de début incluse</param>
-        /// <param name="dateEnd">Date de fin, non incluse</param>
-        /// <returns>periode range</returns>
+        /// <param name="dateStart">Start date (included)</param>
+        /// <param name="dateEnd">End date (excluded)</param>
+        /// <returns>Period range</returns>
         public static List<DateTime> GetPeriodDays(DateTime dateStart, DateTime dateEnd)
         {
             if (dateStart > dateEnd) return new List<DateTime>();
@@ -181,6 +189,10 @@ namespace Nglib.FORMAT
         {
             switch (valueOfDate)
             {
+                case ValueOfDateEnum.FirstDayOfYear:
+                    return new DateTime(date.Year, 1, 1);
+                case ValueOfDateEnum.FirstDayOfMonth:
+                    return new DateTime(date.Year, date.Month, 1);
                 case ValueOfDateEnum.LastDayOfMonth:
                     return new DateTime(date.Year, date.Month, DateTime.DaysInMonth(date.Year, date.Month));
                 case ValueOfDateEnum.LastDayOfYear:
@@ -205,7 +217,7 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Obtient le trimestre
+        /// Obtient le trimestre
         /// </summary>
         /// <param name="date"></param>
         /// <returns></returns>
@@ -224,6 +236,16 @@ namespace Nglib.FORMAT
             /// Obtenir le premier jour de la semaine Américaine
             /// </summary>
             FirstSundayOfWeek,
+
+            /// <summary>
+            /// Obtenir le premier jour du mois
+            /// </summary>
+            FirstDayOfMonth,
+
+            /// <summary>
+            /// Obtenir le premier jour de l'année
+            /// </summary>
+            FirstDayOfYear,
 
             /// <summary>
             /// Obtenir le dernier jour de la semaine

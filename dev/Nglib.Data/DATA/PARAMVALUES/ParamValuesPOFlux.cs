@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using Nglib.DATA.ACCESSORS;
+﻿using Nglib.DATA.ACCESSORS;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -56,7 +56,7 @@ namespace Nglib.SECURITY.IDENTITY
         {
             if (user == null) return false;
             if (user.Identity == null) return false;
-            if (!user.IsAuthenticated()) return false;
+            if (!user.Identity.IsAuthenticated) return false;
             if (string.IsNullOrWhiteSpace(user.Identity.Name)) return false;
             return true;
         }

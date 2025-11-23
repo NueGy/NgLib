@@ -1,11 +1,6 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -14,38 +9,39 @@ using Nglib.DATA.COLLECTIONS;
 using Nglib.SECURITY.CRYPTO;
 
 
-// Amélioreration avec http://tlevesque.developpez.com/tutoriels/dotnet/acces-aux-donnees-avec-dapper/
-//https://www.exceptionnotfound.net/dapper-vs-entity-framework-vs-ado-net-performance-benchmarking/
+
 
 namespace Nglib.DATA.DATAPO
 {
+    
     /// <summary>
-    /// Objet de base utilisant le datarow (ADO.NET)
+    /// DataPO (Data Persistent Object) - Hybrid ADO.NET/NoSQL ORM. Architecture inspired by Active Record pattern with NoSQL flows support.
+    /// Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_datapo"/>
     /// </summary>
     public class DataPO : IDataPO, IDataAccessor
     {
         /// <summary>
-        /// Ce sont les donnees de base du datapo !
+        /// Core data storage for the DataPO
         /// </summary>
-        protected internal System.Data.DataRow localRow = null; // Données Sql 
+        protected internal System.Data.DataRow localRow = null; // SQL data 
 
         /// <summary>
-        /// Flux de données noSQl dans une col/table
+        /// NoSQL data flows stored in a column/table
         /// </summary>
-        protected internal List<IDataPOFlow> flows = null; // Données NoSql standard
+        protected internal List<IDataPOFlow> flows = null; // Standard NoSQL data
 
         /// <summary>
-        /// Le datapo à été chargé proprement avec les clefs et pret à faire des opération insert/update/delete/select
+        /// The DataPO has been properly initialized with keys and is ready for insert/update/delete/select operations
         /// </summary>
         protected internal bool _isDefined = false;
 
         /// <summary>
-        /// L'objet à été chargé par un autre datarow
+        /// The object has been loaded from another DataRow
         /// </summary>
         protected internal bool _isLoaded = false;
 
         /// <summary>
-        /// Parametre pour encrypter les données
+        /// Encryption context for data security
         /// </summary>
         protected internal DATA.ACCESSORS.IDataAccessorCryptoContext CryptoContext { get; set; }
 
@@ -53,13 +49,16 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// constructeur vide
+        /// Empty constructor
         /// </summary>
-        public DataPO() 
+        public DataPO()
         {
-           
+
         }
 
+        /// <summary>
+        /// Constructor with DataRow initialization
+        /// </summary>
         public DataPO(System.Data.DataRow row)
         {
             this.SetRow(row);
@@ -67,52 +66,48 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// Accès aux données
+        /// Data indexer for direct field access
         /// </summary>
-        /// <param name="nameValue"></param>
-        /// <param name="isLegalCreateColIfNotExist"></param>
-        /// <returns></returns>
-        public object this[string nameValue, bool isLegalCreateColIfNotExist = true]
+        /// <param name="nameValue">Field name</param>
+        /// <returns>Field value</returns>
+        public object this[string nameValue]
         {
-            get { return this.GetObject(nameValue, DataAccessorOptionEnum.Safe); }
-            set { this.SetObject(nameValue, value, isLegalCreateColIfNotExist ? DataAccessorOptionEnum.None: DataAccessorOptionEnum.NotCreateColumn); }
+            get { return this.GetValue<object>(nameValue, DataAccessorOptionEnum.Safe); }
+            set { this.SetValue(nameValue, value); }
         }
 
 
 
         /// <summary>
-        /// Obtient le datarow de l'objet
-        /// Initialisera l'objet si il n'a pas été initialisé ou chargé déja
+        /// Gets the DataRow from the object. Initializes the object if not already initialized or loaded.
         /// </summary>
-        /// <param name="RefreshFlow">Refrachit les champs qui contienne les flux nosql</param>
-        /// <returns></returns>
-        public System.Data.DataRow GetRow(bool RefreshFlow = true)
+        /// <param name="syncFlows">Synchronizes fields containing NoSQL flows</param>
+        /// <returns>The DataRow instance</returns>
+        public DataRow GetRow(bool syncFlows = true)
         {
+            // Initialize schema if necessary (fallback pour DataPO standalone)
             if (this.localRow == null)
-                this.DefineSchemaPO();
+                this.DefineSchemaPO(); // Si non initialisé et qu'on veut setter une valeur on init le schéma
+            if (this.localRow == null)
+                this.localRow = (new DataTable()).NewRow(); // fallback (should not happen if DefineSchemaOnPO works correctly
 
-            if (RefreshFlow && this.flows != null) // il faut sérialiser les données des collections Nosql dans le datarow
-                foreach (var flow in this.flows)
-                {
-                    if (!flow.IsChanges()) continue; // aucun changement donc aucune modifications nécessaire (sauf pour l'insert)
-                    string serialfield = flow.SerializeField();
-                    string fieldname = flow.GetFieldName();
-                    this.SetObject(fieldname, serialfield, flow.IsFieldEncrypted() ? DataAccessorOptionEnum.Encrypted : DataAccessorOptionEnum.None);
-                }
+
+            if (syncFlows && this.flows?.Count > 0)
+                SyncFlowsToRow();
             return this.localRow;
         }
 
 
         /// <summary>
-        /// Définit le datarow dans l'objet
+        /// Sets the DataRow into the object
         /// </summary>
-        /// <param name="row">L'objet de données</param>
+        /// <param name="row">The data object</param>
         public void SetRow(System.Data.DataRow row)
         {
             try
             {
                 this.localRow = row;
-                this._isDefined = false; // alr 02/2023 bug si savePo après reSetRow
+                this._isDefined = false; // alr 02/2023 bug fix if savePo after reSetRow
                 this._isLoaded = true;
             }
             catch (Exception ex)
@@ -124,25 +119,21 @@ namespace Nglib.DATA.DATAPO
 
 
 
-        
-
-
         /// <summary>
-        /// Permet d'initialiser le schema du datapo (col,keys,tablename, ...)
-        /// Il faut l'overider ensuite il sera executé automatiquement
+        /// Initializes the DataPO schema (columns, keys, table name, ...). Must be overridden, then it will be executed automatically.
         /// </summary>
-        /// <returns>Retournera le Schema de l'objet en question</returns>
-        public virtual System.Data.DataTable InitSchema()
+        /// <returns>Returns the schema of the object</returns>
+        public virtual System.Data.DataTable CreateSchema()
         {
-            return null;
+            return null; // Par défaut, on ne fait rien
+            //return DataPOSchemaTools.CreateSchemaWithAttributes(this.GetType());   //  on utilise le système d'attributs?
         }
 
         /// <summary>
-        /// Obtient un flow de données nosql
+        /// Gets a NoSQL data flow by field name
         /// </summary>
-        /// <typeparam name="Tflow"></typeparam>
-        /// <param name="fieldName"></param>
-        /// <returns></returns>
+        /// <param name="fieldName">The field name</param>
+        /// <returns>The flow instance or null</returns>
         public IDataPOFlow GetDataPOFlow(string fieldName)
         {
             if (this.flows == null || string.IsNullOrWhiteSpace(fieldName)) return null;
@@ -150,14 +141,14 @@ namespace Nglib.DATA.DATAPO
         }
 
         /// <summary>
-        /// Obtient un flow de données nosql existant ou le crée
+        /// Gets an existing NoSQL data flow or creates it
         /// </summary>
-        /// <typeparam name="Tflow"></typeparam>
-        /// <param name="fieldName"></param>
-        /// <param name="fieldType"></param>
-        /// <param name="FullEncrypted">Le champs xml/json est totalement crypté en text en base</param>
-        /// <returns></returns>
-        public Tflow GetOrDefineFlow<Tflow>(string fieldName, DATA.ACCESSORS.FlowTypeEnum fieldType, bool FullEncrypted=false) where Tflow : class,IDataPOFlow,new()
+        /// <typeparam name="Tflow">Flow type</typeparam>
+        /// <param name="fieldName">Field name</param>
+        /// <param name="fieldType">Flow type enum</param>
+        /// <param name="FullEncrypted">Whether the XML/JSON field is fully encrypted as text in database</param>
+        /// <returns>The flow instance</returns>
+        public Tflow GetOrDefineFlow<Tflow>(string fieldName, DATA.ACCESSORS.FlowTypeEnum fieldType, bool FullEncrypted = false) where Tflow : class, IDataPOFlow, new()
         {
             if (string.IsNullOrWhiteSpace(fieldName)) return null;
             if (this.flows == null) this.flows = new List<IDataPOFlow>();
@@ -166,7 +157,7 @@ namespace Nglib.DATA.DATAPO
             {
                 flow = new Tflow();
                 flow.DefineField(fieldName, fieldType, FullEncrypted);
-                string flowContent = this.GetString(fieldName, flow.IsFieldEncrypted() ? DataAccessorOptionEnum.Encrypted: DataAccessorOptionEnum.None);   // Chargement des données dans le flux
+                string flowContent = this.GetValue<string>(fieldName, flow.IsFieldEncrypted() ? DataAccessorOptionEnum.Encrypted : DataAccessorOptionEnum.None);   // Load data into flow
                 flow.DeSerializeField(flowContent);
                 this.flows.Add(flow);
 
@@ -182,159 +173,79 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// Obtient un Objet (du datarow, fluxxml ou des objets liés)
-        /// méthode principale
+        /// Gets a value (from DataRow, XML flow, or linked objects). Main optimized method with complex path handling.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="nameValue">Field name or path (e.g., "field", "datapo:field", "/flowname/path")</param>
+        /// <param name="AccesOptions">Data access options</param>
+        /// <returns>The requested value or null if not found</returns>
         public object GetData(string nameValue, DataAccessorOptionEnum AccesOptions)
         {
-            if (this.localRow == null) return null; // vraiement innutile, y'a aucune données
-            try
-            {
-                if (string.IsNullOrWhiteSpace(nameValue)) return null;
-                nameValue = nameValue.Trim();
-                // -----------------------------
-                if (nameValue.Contains(":")) // Il s'agit d'un champ provenant d'un autre datapo incorporé
-                {
-                    string[] fieldsPO = nameValue.Split(':');
-                    if (fieldsPO.Length < 2 || string.IsNullOrWhiteSpace(fieldsPO[0]) || string.IsNullOrWhiteSpace(fieldsPO[1])) return null;
-                    System.Reflection.PropertyInfo pi = this.GetType().GetProperty(fieldsPO[0]);
-                    if (pi == null || !pi.CanRead) return null;
-                    object ObjfieldIn = pi.GetValue(this, null);
-                    if (ObjfieldIn == null) return null;
-                    if (ObjfieldIn is DATAPO.DataPO)
-                    {
-                        DATAPO.DataPO dpo = (DATAPO.DataPO)ObjfieldIn;
-                        return dpo.GetObject(fieldsPO[1], AccesOptions);
-                    }
-                    else if (pi.PropertyType.IsClass)
-                    {
-                        System.Reflection.PropertyInfo subpi = pi.PropertyType.GetProperty(fieldsPO[1]);
-                        if (subpi == null) return null;
-                        else return subpi.GetValue(ObjfieldIn, null);
-                        // !!! ajouter la recherche dans une liste ou dictionary : 'documents[monchamp="valeur",monchamp2="valeur"]:monchamp3'
-                    }
-                }
-                // -----------------------------
-                else if (nameValue.StartsWith("/")) // Il s'agit du flux de données nosql
-                {
-                    //string fieldName = nameValue.Split('/')[1]; // le nom du champ est équivalent au nom du root
-                    //IDataPOFlow flow = this.GetFlow(fieldName);
-                    //// IDataAccessor flowdata = this.GetFlow(fieldName) as IDataAccessor; // On converti le 
-                    //if (flow == null ||) return null;
-                    //return flow.GetObject(nameValue, AccesOptions);
-                    //!!!!!!!!!
-                }
-                // -----------------------------
-                else // sinon c'est un champdu datarow
-                {
-                    System.Data.DataColumn realColumn = DataSetTools.GetColumn(this.localRow.Table, nameValue);
-                    if (realColumn != null) return this.localRow[realColumn];
-                }
-                return null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            if (this.localRow == null) return null;
+            if (string.IsNullOrWhiteSpace(nameValue)) return null;
+            
+            nameValue = nameValue.Trim();
+
+            // Access data from linked DataPO (format "property:field")
+            if (nameValue.Contains(":"))
+                return GetDataFromLinkedObject(nameValue, AccesOptions);
+
+            // Access NoSQL flows (format "/flowname/path")
+            if (nameValue.StartsWith("/"))
+                return GetDataFromFlow(nameValue, AccesOptions);
+
+            // Direct DataRow access (standard case)
+            return GetDataFromRow(nameValue);
         }
 
 
 
 
 
+
         /// <summary>
-        /// Défini un objet
+        /// Sets a value in the DataPO (DataRow or NoSQL flows). Main optimized method - DOES NOT support linked objects with ':'.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="nameValue">Field name or path (e.g., "field", "/flowname/path")</param>
+        /// <param name="obj">Value to set</param>
+        /// <param name="AccesOptions">Modification options</param>
+        /// <returns>True if the value was modified, False otherwise</returns>
         public bool SetData(string nameValue, object obj, DataAccessorOptionEnum AccesOptions)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(nameValue)) return false;
-                nameValue = nameValue.Trim();
+            if (string.IsNullOrWhiteSpace(nameValue)) return false;
+            nameValue = nameValue.Trim();
 
+            // Initialize schema if necessary (fallback pour DataPO standalone)
+            if (this.localRow == null) 
+                this.DefineSchemaPO(); // Si non initialisé et qu'on veut setter une valeur on init le schéma
+            if (this.localRow == null) 
+                this.localRow = (new DataTable()).NewRow(); // fallback (should not happen if DefineSchemaOnPO works correctly
 
-                if (nameValue.Contains(":"))
-                { // Obtenir la valeur dans un datapo join à celui-ci
-                    throw new Exception("DataPo In SubObject non géré");
-                }
-                else if (nameValue.StartsWith("/"))
-                { // Obtenir la valeur dans le flux nosql lié
-                    string fieldName = nameValue.Split('/')[1]; // le nom du champ est équivalent au nom du root
-                    IDataPOFlow flow = this.GetDataPOFlow(fieldName);
-                    if (flow == null) return false;
-                    //bool iset = flow.SetObject(nameValue, obj, AccesOptions);
-                    //if (iset) this.localRow.SetModified();
-                    //return iset;
-                    //!!!!!!!!!!!!
-                    return false;
-                }
-                else
-                { // Obtien la valeur normalement dans le datarow local
-                    if (this.localRow == null) this.DefineSchemaPO(); // si pas de datarow, on l'initialiser (identique à GetRow())
-                    System.Data.DataColumn realColumn = this.localRow.Table.Columns[nameValue];
-                    if (realColumn == null)
-                    {
-                        if (AccesOptions.HasFlag(DataAccessorOptionEnum.NotCreateColumn)) // création de la colonne interdite
-                        {
-                            if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe)) return false;
-                            else throw new Exception("Colonne Introuvable dans le DataRow (NotCreateColumn = true)");
-                        }
-                        else if (obj == null || obj == DBNull.Value) // si la valeur est null et que la valeur existe pas c'est pas la peine de créer une colone
-                        {
-                            return false;
-                            //if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe)) return false;
-                            //else throw new Exception("Colonne Introuvable dans le DataRow (Impossible de déterminer le type à partir d'un null pour créer la colonne)");
-                        }
-                        // Création de la colone
-                        Type typetocreate = obj.GetType();
-                        realColumn = this.localRow.Table.CreateColumn(nameValue.ToLower(), typetocreate);  // Création d'une nouvelle colonne dans la table pour stoker la valeur (toujours en minuscule)
-                    }
-
-
-                    object orgnobj = this.localRow[realColumn];
-
-                    if (obj == null && orgnobj == null) return false;// inutile si pas modifié
-                    if (obj != null && obj.Equals(orgnobj)) return false; // inutile si pas modifié
-
-                    if (AccesOptions.HasFlag(DataAccessorOptionEnum.IgnoreChange)) // il faut tromper le datarow pour lui faire croire que la donnée n'a pas été modifié
-                    {
-                        Dictionary<string, object> prechanged = DataSetTools.GetChangedValues(this.localRow); // on obtien les changements précédents
-                        if (prechanged.Count > 0) this.localRow.RejectChanges(); // on les rejetents pour les remettre après
-                        this.localRow[realColumn] = obj; // on met à jours la données
-                        this.localRow.AcceptChanges(); // on approuve la mise à jours
-                        if (prechanged.Count > 0) prechanged.Keys.ToList().ForEach(k => this.localRow[k] = prechanged[k]); // on remet les anciennes modifications
-                    }
-                    else
-                    {
-                        this.localRow[realColumn] = obj; // on met à jours la données dans le datarow , l'objet passera au statut modified
-                    }
-                    return true;
-                }
-            }
-            catch (Exception ex)
+            // Linked objects (format "property:field") are NOT supported for writing
+            if (nameValue.Contains(":"))
             {
                 if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe)) return false;
-                else throw new Exception("SetObject DataRow " + nameValue + " : " + ex.Message, ex);
+                throw new NotSupportedException($"SetData does not support linked objects (format 'property:field'): {nameValue}");
             }
-            finally
-            {
 
-            }
+            // Write to NoSQL flow (format "/flowname/path")
+            if (nameValue.StartsWith("/"))
+                return SetDataToFlow(nameValue, obj, AccesOptions);
+
+            // Write to DataRow (standard case)
+            return SetDataToRow(nameValue, obj, AccesOptions);
         }
 
 
         /// <summary>
-        /// Permet de déterminer si l'objet est présent en base de données ou si il faut faire un insert
+        /// Determines if the object exists in the database or if an insert is required
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if in database</returns>
         public bool IsInDataBase()
         {
             if (this.localRow == null) return false;
-            //if (this._isLoaded) return true; // il provient d'un datatable donc oui il doit prevenir de la base
-            if (this.localRow.RowState.HasFlag(System.Data.DataRowState.Detached)) return false; // détaché donc hors de la base
-            if (this.localRow.RowState.HasFlag(System.Data.DataRowState.Deleted)) return false; // supprimé donc hors base
+            //if (this._isLoaded) return true; // comes from a datatable so yes it must come from the database
+            if (this.localRow.RowState.HasFlag(System.Data.DataRowState.Detached)) return false; // detached so outside the database
+            if (this.localRow.RowState.HasFlag(System.Data.DataRowState.Deleted)) return false; // deleted so outside database
             return true;
         }
 
@@ -347,28 +258,28 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// Marque pour toutes les données que les changements ont été pris en comptes
+        /// Marks all data changes as accepted
         /// </summary>
-        /// <returns>retourne si un changement était présent</returns>
+        /// <returns>True if changes were present</returns>
         public bool AcceptChanges()
         {
             if (this.IsChanges())
             {
                 try
                 {
-                    // Mise à jour du datarow
-            
-                        if (!this.localRow.RowState.HasFlag(System.Data.DataRowState.Detached)) // ne pas fair si détached !!! 
-                            this.localRow.AcceptChanges();
+                    // Update the DataRow
+
+                    if (this.localRow!=null && !this.localRow.RowState.HasFlag(System.Data.DataRowState.Detached)) // don't do if detached!!! 
+                        this.localRow.AcceptChanges();
 
 
-                    // Mise à jours des flow
-                    if (this.flows!=null)
+                    // Update flows
+                    if (this.flows != null)
                         this.flows.ForEach(f => f.AcceptChanges());
-   
+
                     return true;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     return false;
                 }
@@ -377,17 +288,19 @@ namespace Nglib.DATA.DATAPO
         }
 
 
-
-
+        /// <summary>
+        /// Lists all field/column names available in the DataRow
+        /// </summary>
+        /// <returns>Array of column names</returns>
         public string[] ListFieldsKeys()
         {
-            if (this.localRow == null) return new string[]{ };
+            if (this.localRow == null) return new string[] { };
             return this.localRow.Table.GetColumns().Select(c => c.ColumnName).ToArray();
         }
 
 
         /// <summary>
-        /// obtenir le context de cryptage de l'objet
+        /// Gets the encryption context of the object
         /// </summary>
         public virtual IDataAccessorCryptoContext GetCryptoContext()
         {
@@ -397,7 +310,7 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// définir le context de cryptage de l'objet
+        /// Sets the encryption context of the object
         /// </summary>
         public void SetCryptoOptions(IDataAccessorCryptoContext dataPOCryptoContext)
         {
@@ -406,9 +319,9 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// obtient un vecteur d'initialisation unique pour l'objet
+        /// Gets a unique initialization vector for the object
         /// </summary>
-        /// <returns></returns>
+        /// <returns>IV string</returns>
         public virtual string GetCryptoIV()
         {
             //string md5 = FORMAT.CryptHash.Hash(compose.ToString(), HashModeEnum.MD5);
@@ -418,15 +331,301 @@ namespace Nglib.DATA.DATAPO
 
 
 
-        ///// <summary>
-        ///// Obtient l'identifiant Unique 
-        ///// </summary>
-        ///// <returns></returns>
-        //public override string ToString()
-        //{
-        //    return base.ToString();
-        //}
+        #region ---- TOOLS AND LOCAL MANAGEMENT ----
 
+
+        /// <summary>
+        /// Applies NoSQL flow modifications to the DataRow
+        /// </summary>
+        private void SyncFlowsToRow()
+        {
+            foreach (var flow in this.flows.Where(f => f.IsChanges()))
+            {
+                try
+                {
+                    var serialized = flow.SerializeField();
+                    var fieldName = flow.GetFieldName();
+                    var options = flow.IsFieldEncrypted()
+                        ? DataAccessorOptionEnum.Encrypted
+                        : DataAccessorOptionEnum.None;
+
+                    this.SetData(fieldName, serialized, options);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Flow synchronization error '{flow.GetFieldName()}': {ex.Message}", ex);
+                }
+            }
+        }
+
+
+
+        /// <summary>
+        /// Gets a value from a linked object via property (format "property:field")
+        /// </summary>
+        private object GetDataFromLinkedObject(string nameValue, DataAccessorOptionEnum AccesOptions)
+        {
+            string[] fieldsPO = nameValue.Split(new[] { ':' }, 2);
+            if (fieldsPO.Length < 2 || string.IsNullOrWhiteSpace(fieldsPO[0]) || string.IsNullOrWhiteSpace(fieldsPO[1]))
+                return null;
+
+            PropertyInfo pi = this.GetType().GetProperty(fieldsPO[0]);
+            if (pi == null || !pi.CanRead) return null;
+
+            object linkedObj = pi.GetValue(this, null);
+            if (linkedObj == null) return null;
+
+            // If it's a DataPO, delegate access
+            if (linkedObj is DataPO dataPO)
+                return dataPO.GetObject(fieldsPO[1], AccesOptions);
+
+            // If it's a standard object, access via reflection
+            if (pi.PropertyType.IsClass)
+            {
+                PropertyInfo subPi = pi.PropertyType.GetProperty(fieldsPO[1]);
+                return subPi?.GetValue(linkedObj, null);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets a value from a NoSQL flow (format "/flowname/path")
+        /// </summary>
+        private object GetDataFromFlow(string nameValue, DataAccessorOptionEnum AccesOptions)
+        {
+            if (this.flows == null || this.flows.Count == 0) return null;
+
+            string[] pathParts = nameValue.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (pathParts.Length == 0) return null;
+
+            string flowName = pathParts[0];
+            IDataPOFlow flow = this.GetDataPOFlow(flowName);
+            if (flow == null) return null;
+
+            // If the flow implements IDataAccessor, delegate full access
+            if (flow is IDataAccessor flowAccessor)
+                return flowAccessor.GetObject(nameValue, AccesOptions);
+
+            // Otherwise, return the flow itself if it's the only path element
+            return pathParts.Length == 1 ? flow : null;
+        }
+
+        /// <summary>
+        /// Gets a value from the local DataRow (optimized direct access)
+        /// </summary>
+        private object GetDataFromRow(string nameValue)
+        {
+            if (this.localRow == null) return null;
+            DataColumn column = DataSetTools.GetColumn(this.localRow.Table, nameValue);
+            if (column == null) return null;
+
+            object value = this.localRow[column];
+            return value == DBNull.Value ? null : value;
+        }
+
+
+        /// <summary>
+        /// Sets a value in a NoSQL flow (format "/flowname/path")
+        /// </summary>
+        private bool SetDataToFlow(string nameValue, object obj, DataAccessorOptionEnum AccesOptions)
+        {
+            if (this.flows == null || this.flows.Count == 0) return false;
+
+            string[] pathParts = nameValue.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (pathParts.Length == 0) return false;
+
+            string flowName = pathParts[0];
+            IDataPOFlow flow = this.GetDataPOFlow(flowName);
+            if (flow == null) return false;
+
+            // If the flow implements IDataAccessor, delegate modification
+            if (flow is IDataAccessor flowAccessor)
+            {
+                bool isSet = flowAccessor.SetObject(nameValue, obj);
+                if (isSet && this.localRow != null)
+                    this.localRow.SetModified(); // Mark DataRow as modified
+                return isSet;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Sets a value in the local DataRow with column creation management
+        /// </summary>
+        private bool SetDataToRow(string nameValue, object obj, DataAccessorOptionEnum AccesOptions)
+        {
+            if (this.localRow == null) // Ne devrais jamais se produire si DefineSchemaPO fonctionne correctement
+             throw new InvalidOperationException($"SetDataToRow: localRow is null for field '{nameValue}'. Schema not initialized."); 
+
+            // Get or create the column
+            DataColumn column = GetOrCreateColumn(nameValue, obj, AccesOptions);
+            if (column == null) return false;
+
+            // Check if value changed (optimization to avoid unnecessary modifications)
+            object currentValue = this.localRow[column];
+            if (IsValueUnchanged(obj, currentValue))
+                return false;
+
+            // Apply value according to mode
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.IgnoreChange))
+                SetValueWithoutTracking(column, obj);
+            else
+                this.localRow[column] = obj ?? DBNull.Value;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Gets an existing column or creates a new one if necessary
+        /// </summary>
+        private DataColumn GetOrCreateColumn(string nameValue, object obj, DataAccessorOptionEnum AccesOptions)
+        {
+            if(this.localRow==null) return null;
+            DataColumn column = DataSetTools.GetColumn(this.localRow.Table, nameValue);
+            if (column != null) return column;
+
+            // Column doesn't exist
+            if (AccesOptions.HasFlag(DataAccessorOptionEnum.NotCreateColumn))
+            {
+                if (AccesOptions.HasFlag(DataAccessorOptionEnum.Safe)) return null;
+                throw new InvalidOperationException($"Column '{nameValue}' not found (NotCreateColumn = true)");
+            }
+
+            // Don't create column for null value
+            if (obj == null || obj == DBNull.Value)
+                return null;
+
+            // Create new column
+            Type columnType = obj.GetType();
+            return this.localRow.Table.CreateColumn(nameValue.ToLower(), columnType);
+        }
+
+        /// <summary>
+        /// Checks if a value hasn't changed (optimization)
+        /// </summary>
+        private bool IsValueUnchanged(object newValue, object currentValue)
+        {
+            // Normalize null values
+            bool isNewNull = newValue == null || newValue == DBNull.Value;
+            bool isCurrentNull = currentValue == null || currentValue == DBNull.Value;
+
+            if (isNewNull && isCurrentNull) return true;
+            if (isNewNull != isCurrentNull) return false;
+
+            return newValue.Equals(currentValue);
+        }
+
+        /// <summary>
+        /// Sets a value without change tracking (IgnoreChange mode)
+        /// </summary>
+        private void SetValueWithoutTracking(DataColumn column, object value)
+        {
+            if (this.localRow == null) return;
+
+            // Save previous changes
+            Dictionary<string, object> previousChanges = DataSetTools.GetChangedValues(this.localRow);
+            
+            // Reset state if necessary
+            if (previousChanges.Count > 0)
+                this.localRow.RejectChanges();
+
+            // Apply new value
+            this.localRow[column] = value ?? DBNull.Value;
+            this.localRow.AcceptChanges();
+
+            // Restore previous changes
+            if (previousChanges.Count > 0)
+            {
+                foreach (var kvp in previousChanges)
+                    this.localRow[kvp.Key] = kvp.Value;
+            }
+        }
+
+
+        /// <summary>
+        /// Permet de définir directement la structure du PO (un nouveau Row à partir de la nouvelle table)
+        /// </summary>
+        /// <param name="tableSchema">Table contenant le schéma à appliquer</param>
+        /// <param name="AllowKeepOriginalRow">Si true et qu'il y a déjà un datarow avec des données, on préserve les données dans la nouvelle Table</param>
+        /// <param name="CloneNewTable">Si true, clone la table entière. Si false, clone uniquement le schéma</param>
+        public void DefineSchemaPO(DataTable tableSchema, bool AllowKeepOriginalRow = true, bool CloneNewTable = true)
+        {
+            try
+            {
+                if(tableSchema==null) throw new Exception("tableSchema is null");
+                bool rowexisting = false;
+                if (this.localRow != null && this.localRow.ItemArray != null && this.localRow.ItemArray.Length > 0)
+                    rowexisting = true; // il y as des données dans le datarow existant
+
+                if (rowexisting && AllowKeepOriginalRow) //Clone un nouveau datarow dans la nouvelle table avec des données d'origine
+                    this.localRow.Table.MergeAddSchema(tableSchema); // il suffit juste de vérifier que le shémas est bien identique
+                //po.localRow = DataSetTools.ReplaceRowInOtherTable(po.localRow, table); // premet de recopier les données orgininal dans la nouvelle table
+                else
+                {
+                    DataTable tabledata = CloneNewTable ? tableSchema.Clone() : tableSchema;
+                    // il faut clonner la table pour eviter les erreurs sur autoincrement, !!! voir si possible d'améliorer car multipli le temps de traitement x10
+                    this.localRow = tabledata.NewRow(); // init simple
+                }
+
+                this._isDefined = true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(string.Format("DefineSchemaPO {0}", ex.Message));
+            }
+        }
+
+
+        /// <summary>
+        /// Permet de préparer l'objet (notamment définir le datarow et son schéma)
+        /// C'est nécessaire pour les opérations SQL, ou l'instanciation vide d'un DATAPO
+        /// </summary>
+        /// <param name="allowCache">Si true, utilise le cache pour optimiser les performances</param>
+        public bool DefineSchemaPO(bool allowCache = true)
+        {
+            try
+            {
+                Type potype = this.GetType();
+                System.Data.DataTable tableStd = DataPOSchemaTools.GetSchemaOnPO(potype, allowCache);
+                if (tableStd == null) return false;
+
+                // on prend un clone de la table
+                this.DefineSchemaPO(tableStd, true); // voir si il est possible d'améliorer pour ne pas prendre de clone !!! (faire le clone que si il y as modification des colonnes)
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(string.Format("DefineSchemaPO {0}", ex.Message));
+            }
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Vérifie si le DataPO a été correctement défini pour des actions SQL
+        /// </summary>
+        /// <param name="po">Instance du DataPO à vérifier</param>
+        /// <returns>True si le DataPO est correctement initialisé (localRow défini et _isDefined = true), false sinon</returns>
+        public bool IsDefinedSchema()
+        {
+            if (this.localRow == null) return false;
+            if (this._isDefined) return true;  // si il a été défini explicitement
+            if (this.localRow.Table.PrimaryKey!=null && this.localRow.Table.PrimaryKey.Length > 0) return true; // Si clef primaire défini, on considère que c'est ok
+            return false;
+        }
+
+
+
+
+
+
+        #endregion
 
     }
 }

@@ -1,22 +1,22 @@
 ﻿namespace Nglib.DATA.BASICS
 {
     /// <summary>
-    ///     Formulaire de recherche
+    /// Formulaire de recherche
     /// </summary>
     public interface ISearchForm
     {
         /// <summary>
-        ///     Page
+        /// Page
         /// </summary>
         int CurrentPage { get; set; }
 
         /// <summary>
-        ///     Résultats maximum
+        /// Résultats maximum
         /// </summary>
         int LimitResults { get; set; }
 
         /// <summary>
-        ///     OrderBy
+        /// OrderBy
         /// </summary>
         string ShowOrderBy { get; set; }
     }

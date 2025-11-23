@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using Nglib.DATA.ACCESSORS;
+﻿using Nglib.DATA.ACCESSORS;
 using Nglib.SECURITY.CRYPTO;
 using System;
 using System.Collections.Generic;
@@ -27,16 +21,18 @@ namespace Nglib.DATA.PARAMVALUES
 
         protected internal DATA.ACCESSORS.IDataAccessorCryptoContext CryptoContext { get; set; }
 
-
         /// <summary>
-        /// Creer une liste de données
-        /// Peut etre stocker dans la bdd, xml, ...
+        /// Constructeur avec nom
         /// </summary>
-        /// <param name="name">nom du datadoc (facultatif mais obligatoire pour sérialisation XML)</param>
+        /// <param name="dataValueName">nom du datadoc (facultatif mais obligatoire pour sérialisation XML)</param>
         public ParamValues(string dataValueName)
         {
             this._DataValueName = dataValueName;
         }
+        
+        /// <summary>
+        /// Constructeur par défaut
+        /// </summary>
         public ParamValues()
         {
             this._DataValueName = "param";
@@ -75,7 +71,7 @@ namespace Nglib.DATA.PARAMVALUES
             }
             set
             {
-                this.SetObject(nameValue, value, DataAccessorOptionEnum.None);
+                this.SetObject(nameValue, value);
             }
         }
 
@@ -129,7 +125,7 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Efface une donnée
         /// </summary>
-        /// <param name="name">nom de l'élément</param>
+        /// <param name="namedata">nom de l'élément</param>
         public void Remove(string namedata)
         {
             namedata = this.PrepareNameNode(namedata);
@@ -153,7 +149,7 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// ajoute une donnée pure
         /// </summary>
-        /// <param name="name">nom de l'élément</param>
+        /// <param name="data">données à ajouter</param>
         public void Add(ParamValuesNode data)
         {
             try
@@ -418,7 +414,7 @@ namespace Nglib.DATA.PARAMVALUES
         /// <summary>
         /// Creer une liste de données
         /// </summary>
-        /// <param name="dodoc">autre datadoc, Ne link pas les données, il recopie intégralement l'objet</param>
+        /// <returns>Clone de l'objet</returns>
         public ParamValues Clone()
         {
             ParamValues retour = new ParamValues(this._DataValueName);

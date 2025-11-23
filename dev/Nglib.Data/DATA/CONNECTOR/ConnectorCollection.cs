@@ -10,16 +10,14 @@ namespace Nglib.DATA.CONNECTOR
     /// </summary>
     public class ConnectorCollection : List<IDataConnector>
     {
-        public const string DefaultConnectionStr = "DefaultConnection";
-
         /// <summary>
         /// Obtient le connecteur principal (DefaultConnection)
         /// </summary>
         /// <returns></returns>
         public IDataConnector GetDefaultConnector()
         {
-            IDataConnector master = this.FirstOrDefault(c => DefaultConnectionStr.Equals(c.ConnectorName, StringComparison.OrdinalIgnoreCase));
-            if(master==null) master = this.FirstOrDefault(c => !c.ReadOnly);
+            IDataConnector master = this.FirstOrDefault(c => !c.ReadOnly); 
+            if(master==null) master = this.FirstOrDefault();
             return master;
         }
 

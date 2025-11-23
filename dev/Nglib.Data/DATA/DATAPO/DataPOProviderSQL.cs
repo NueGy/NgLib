@@ -1,116 +1,72 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
 using Nglib.DATA.ACCESSORS;
 using Nglib.DATA.CONNECTOR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Linq.Expressions;
 using Nglib.DATA.COLLECTIONS;
 using Nglib.DATA.BASICS;
+using Nglib.SECURITY.TENANTS;
+using Nglib.DATA.CONNECTOR.QUERYBUILDER;
 
 namespace Nglib.DATA.DATAPO
 {
 
-
-    ///// <summary>
-    ///// manipulation des dataPo en base
-    ///// </summary>
-    ///// <typeparam name="Tobj">DataPO</typeparam>
-    //public class DataPOProviderSQL<Tobj, TModel> : DataPOProviderSQL<Tobj> 
-    //    where Tobj : DATAPO.DataPO, new() where TModel : IModel, new()
-    //{
-    //    public DataPOProviderSQL(DATA.CONNECTOR.IDataConnector connector) : base(connector) { }
-    //    public DataPOProviderSQL(APP.ENV.IGlobalEnv env) : base(env) { }
-
-
-
-    //    public List< ListModel(string SqlQuery, params object[] insparam)
-    //    {
-    //        return base.GetCollectionPO<TCollectionPO>(SqlQuery, insparam);
-    //    }
-
-    //    public TCollectionPO GetCollectionPO(string SqlQuery, Dictionary<string, object> paramKeySearch = null)
-    //    {
-    //        return base.GetCollectionPO<TCollectionPO>(SqlQuery, paramKeySearch);
-    //    }
-
-    //}
-
-
     /// <summary>
-    /// manipulation des dataPo en base
+    /// Manipulation des dataPo en base
     /// </summary>
-    /// <typeparam name="Tobj">DataPO</typeparam>
-    public class DataPOProviderSQL<Tobj> : DataPOProviderSQL where Tobj : DATAPO.DataPO, new()
+    /// <typeparam name="TPo">DataPO</typeparam>
+    public class DataPOProviderSQL<TPo> : IDataPOProvider 
+                where TPo : DATAPO.DataPO, new()
     {
-        public DataPOProviderSQL(DATA.CONNECTOR.IDataConnector connector) : base(connector) { }
-        public DataPOProviderSQL(APP.ENV.IGlobalEnv env) : base(env) { }
-        public DataPOProviderSQL() : base() { }
-        public CollectionPO<Tobj> GetListPO(string SqlQuery, params object[] insparam)
-        {
-            return base.GetListPO<Tobj>(SqlQuery, insparam);
-        }
 
-        public CollectionPO<Tobj> GetListPO(string SqlQuery, Dictionary<string, object> paramKeySearch = null)
-        {
-            return base.GetListPO<Tobj>(SqlQuery, paramKeySearch);
-        }
-        public CollectionPO<Tobj> GetListPO(int nbMax = 1000, Dictionary<string, object> paramKeySearch = null)
-        {
-            return base.GetListPO<Tobj>(nbMax, paramKeySearch);
-        }
-
-        public Tobj GetFirstPO(long idIncrement)
-        {
-            return base.GetFirstPO<Tobj>(idIncrement);
-        }
-
-        public virtual async Task<Tobj> GetPOWithB36keyAsync(string fullB36Key)
-        {
-            return await base.GetPOWithB36keyAsync<Tobj>(fullB36Key);
-        }
-
-        public Tobj GetPOWithB36key(string fullB36Key)  { return this.GetPOWithB36keyAsync(fullB36Key).GetAwaiter().GetResult(); }
-    }
-
-
-
-
-
-    /// <summary>
-    /// manipulation des dataPo en base
-    /// </summary>
-    public class DataPOProviderSQL
-    {
-     
-
-        /// <summary>
-        /// Liste des connecteurs/serveurs disponibles
-        /// </summary>
-        public DATA.CONNECTOR.ConnectorCollection Connectors = null;
+        //todo : ajout helper/filter custom,  tenantid dans les requetes...
 
 
 
         /// <summary>
-        /// Permet de désactiver les acceptchange lors des Update,insert : pratique pour le inmemory
+        /// Désactive AcceptChange
         /// </summary>
-        public bool DisableAcceptChange = false;
+        public bool DisableAcceptChange { get; set; } = false;
 
+        /// <summary>
+        /// Connecteur principal qui sera utilisé pour ce provider
+        /// </summary>
+        public DATA.CONNECTOR.IDataConnector Connector { get; protected set; }
 
-        
+        /// <summary>
+        /// Timeout d'insertion par défaut
+        /// </summary>
+        public int InsertPODefaultTimeOut { get; set; } = 600;
 
 
         /// <summary>
-        /// Connecteur principal avec le SGBD
+        /// Schéma de l'objet DataPO (DataTable)
         /// </summary>
-        public DATA.CONNECTOR.IDataConnector Connector { get { return this.Connectors == null ? null : this.Connectors.GetDefaultConnector(); } }
+        public System.Data.DataTable SchemaPo { get; protected set; }
+
+
+
+        /// <summary>
+        /// Des paramètres par défauts qui seront ajoutés à chaque requête de lecture
+        /// </summary>
+        [Obsolete("SOON")]
+        protected Dictionary<string, object> defaultParameters = null;
+
+
+        /// <summary>
+        /// Objet qui permet de gérer la sécurité et obtenir les clefs de cryptages
+        /// </summary>
+        protected IDataPOSecurityFilter securityFilter { get;  set; }
+
+        /// <summary>
+        /// Configure le filtre de sécurité pour ce provider
+        /// </summary>
+        /// <param name="filter">Filtre de sécurité à utiliser</param>
+        public virtual void SetSecurityFilter(IDataPOSecurityFilter filter)
+        {
+            this.securityFilter = filter;
+        }
 
 
         /// <summary>
@@ -119,6 +75,7 @@ namespace Nglib.DATA.DATAPO
         [Obsolete("use constructor with param")]
         public DataPOProviderSQL()
         {
+  
         }
 
 
@@ -127,8 +84,8 @@ namespace Nglib.DATA.DATAPO
         /// </summary>
         public DataPOProviderSQL(DATA.CONNECTOR.IDataConnector connector)
         {
-            this.Connectors = new DATA.CONNECTOR.ConnectorCollection();
-            this.Connectors.Add(connector);
+            this.Connector = connector;
+            if (this.Connector == null) throw new Exception("provider.connector Not loaded");
         }
 
         /// <summary>
@@ -136,244 +93,416 @@ namespace Nglib.DATA.DATAPO
         /// </summary>
         public DataPOProviderSQL(DATA.CONNECTOR.ConnectorCollection connectors)
         {
-            this.Connectors = connectors;
-            if (this.Connectors == null) throw new Exception("connectors Not loaded");
+            this.Connector = connectors?.GetDefaultConnector();
+            if (this.Connector == null) throw new Exception("provider.connector Not loaded");
         }
 
         /// <summary>
         /// manipulation des dataPo en base
         /// </summary>
-        public DataPOProviderSQL(APP.ENV.IGlobalEnv env)
+        public DataPOProviderSQL(APP.ENV.IMasterEnv env)
         {
-            this.Connectors = env.Connectors;
-            if (this.Connectors == null) throw new Exception("Env connectors Not loaded");
+            this.Connector = env?.Connectors?.GetDefaultConnector();
+            if (this.Connector == null) throw new Exception("provider.connector Not loaded");
         }
+
+
+
+        #region ------- Outils SQL -------
+
+
+        protected virtual void InitSchema()
+        {
+            Type potype = null;
+            try
+            {
+                potype = typeof(TPo);
+                this.SchemaPo = DataPOSchemaTools.GetSchemaOnPO(potype);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"InitSchema('{typeof(TPo).Name}') Error: "+ex.Message);
+            }
+
+            DataPOProviderTools.ValidateSchema(this.SchemaPo, potype);
+        }
+
+
+
+        /// <summary>
+        /// Obtient le nom de la table SQL de l'objet DataPO avec validation
+        /// </summary>
+        /// <returns>Le nom de la table SQL</returns>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini ou invalide</exception>
+        protected string GetTableName()
+        {
+            if (this.SchemaPo == null) this.InitSchema();
+            return this.SchemaPo?.TableName;
+        }
+           
+        
+
+        /// <summary>
+        /// Exécute une requête SQL sur le connecteur configuré
+        /// </summary>
+        /// <param name="query">Contexte de la requête contenant le SQL et les paramètres</param>
+        /// <returns>La DataTable résultante</returns>
+        /// <exception cref="ArgumentNullException">Si query est null</exception>
+        /// <exception cref="InvalidOperationException">Si aucun connecteur n'est configuré ou si aucune table n'est retournée</exception>
+        protected async Task<System.Data.DataTable> ExecuteQueryAsync(QueryContext query)
+        {
+            DataPOProviderTools.ValidateQuery(query, "ExecuteQueryAsync");
+            DataPOProviderTools.ValidateConnector(this.Connector, typeof(TPo));
+            
+            var dataserresult = await this.Connector.QueryDataSetAsync(query);
+            
+            if (dataserresult.Tables.Count == 0)
+                throw new InvalidOperationException($"ExecuteQueryAsync: Aucune table retournée par la requête SQL. Query: {query.SqlQuery}");
+            
+            return dataserresult.Tables[0];
+        }
+
+
+        /// <summary>
+        /// Extrait les clés primaires d'un modèle pour construire les requêtes SQL de recherche/mise à jour/suppression.
+        /// Le dictionnaire retourné est utilisé dans les clauses WHERE des requêtes SQL (ex: WHERE id=@id AND tenantid=@tenantid).
+        /// </summary>
+        /// <param name="item">DataPO pour lequel extraire les clés primaires</param>
+        /// <returns>Dictionnaire nom_colonne → valeur pour identifier l'enregistrement en base</returns>
+        protected virtual Dictionary<string, object> GetPOKeys(TPo item)
+        {
+            if (item == null) return null;
+
+            if (this.SchemaPo == null)
+                this.InitSchema();
+
+            // Obtenir les colonnes de clés primaires depuis le schéma
+            var primaryKeys = this.SchemaPo?.PrimaryKey;
+            if (primaryKeys == null || primaryKeys.Length == 0)
+                return new Dictionary<string, object>(); // Pas de clés primaires définies
+
+            // Créer un dictionnaire avec les valeurs des clés depuis le Model
+            var keys = new Dictionary<string, object>();
+            foreach (var pkCol in primaryKeys)
+            {
+                var value = item.GetData(pkCol.ColumnName, DataAccessorOptionEnum.None); // Récupérer la valeur de la clé, GetData directement sur le PO (et non GetObject qui transforme les types)
+                keys.Add(pkCol.ColumnName, value);
+            }
+
+            return  keys;
+
+            // Cette méthode doit être surchargée dans les classes dérivées
+            // car elle dépend de la structure du modèle et de ses clés primaires
+            //throw new NotImplementedException($"GetModelKeys doit être surchargée dans {this.GetType().Name} pour définir comment extraire les clés de {typeof(TModel).Name}");
+        }
+
+
+
+        #endregion
+
+
 
 
 
 
         #region ------- Lectures SQL -------
 
+        /// <summary>
+        /// Obtient un objet DataPO par son ID auto-incrémenté
+        /// </summary>
+        /// <param name="idIncrement">L'ID auto-incrémenté de l'enregistrement</param>
+        /// <param name="TenantId">ID du tenant pour le filtrage multi-tenant (0 = pas de filtre)</param>
+        /// <returns>L'objet DataPO correspondant ou null si non trouvé</returns>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini ou si aucune colonne auto-incrémentée n'existe</exception>
+        public async Task<TPo> GetPOAsync(long idIncrement, int TenantId = 0)
+        {
+            Type potype = typeof(TPo);
+            if(this.SchemaPo==null) this.InitSchema();
+
+            string fieldkeyName = DataPOProviderTools.GetAutoIncrementColumnName(this.SchemaPo);
+            if (string.IsNullOrWhiteSpace(fieldkeyName))
+                throw new InvalidOperationException($"GetPOByIdAsync: Aucune colonne auto-incrémentée trouvée dans le schéma du type '{potype.Name}'.");
+            
+            Dictionary<string, object> paramKeys = new Dictionary<string, object>();
+            paramKeys.Add("p1", idIncrement);
+            string sql = $"SELECT * FROM {this.SchemaPo.TableName} WHERE {fieldkeyName}=@p1";
+            
+            if (TenantId > 0) 
+            { 
+                paramKeys.Add("p2", TenantId); 
+                sql += " AND tenantid=@p2"; 
+            }
+            
+            Nglib.DATA.CONNECTOR.QueryContext query = new Nglib.DATA.CONNECTOR.QueryContext(sql, paramKeys);
+            return (await this.QueryPOAsync(query)).FirstOrDefault();
+        }
 
         /// <summary>
-        /// Obtient le premier enregistrement 
+        /// Obtient un objet DataPO par des paramètres de recherche personnalisés
         /// </summary>
-        /// <typeparam name="Tobj"></typeparam>
-        /// <param name="idIncrement"></param>
-        /// <returns></returns>
-        public async Task<Tobj> GetPOWithB36keyAsync<Tobj>(string fullB36Key) where Tobj : DATAPO.DataPO, new()
+        /// <param name="paramKeys">Dictionnaire des colonnes et valeurs à rechercher (ex: {"email": "test@test.com"})</param>
+        /// <returns>Le premier objet DataPO correspondant ou null si non trouvé</returns>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini</exception>
+        public async Task<TPo> GetPOAsync(Dictionary<string, object> paramKeys)
+        {
+            if (this.SchemaPo == null) this.InitSchema();
+
+            string wheresql = string.Empty;
+            if (paramKeys != null && paramKeys.Count > 0)
+            {
+                List<string> wheres = new List<string>();
+                paramKeys.Keys.ToList().ForEach(k => wheres.Add(string.Format("{0}=@{0}", k)));
+                wheresql = " WHERE " + string.Join(" AND ", wheres.ToArray());
+            }
+            
+            Nglib.DATA.CONNECTOR.QueryContext query = new Nglib.DATA.CONNECTOR.QueryContext(
+                string.Format("SELECT * FROM {0} {1};", this.SchemaPo.TableName, wheresql), 
+                paramKeys);
+
+            return (await this.QueryPOAsync(query)).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Obtient un objet DataPO en utilisant la clé B36 (Format Nglib)
+        /// </summary>
+        /// <param name="fullB36Key">Clé au format B36 contenant ItemId, TenantId, etc.</param>
+        /// <returns>L'objet DataPO correspondant ou null si non trouvé ou clé invalide</returns>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini ou si aucune colonne auto-incrémentée n'existe</exception>
+        /// <remarks>Note: Il faut avoir préalablement vérifié le TenantId pour la sécurité</remarks>
+        public async virtual Task<TPo> GetPOByKeyAsync(string fullB36Key)
         {
             var key = FORMAT.KeyTools.ParseKeyB36(fullB36Key);
-            if (!key.IsValid) return default(Tobj);
-            Type potype = typeof(Tobj);
-            System.Data.DataTable schema = DATAPO.DataPOTools.GetSchemaOnPO(potype);
-            if (schema == null || string.IsNullOrWhiteSpace(schema.TableName)) throw new Exception(string.Format("GetFirst: schema on {0} is not defined", potype.ToString()));
-            string fieldkeyName = schema.GetColumns().Where(col => col.AutoIncrement).Select(col => col.ColumnName).FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(fieldkeyName)) throw new Exception(string.Format("GetFirst: column AutoIncrement not found in {0}", potype.ToString()));
+            if (!key.IsValid) return default(TPo);
+
+            if (this.SchemaPo == null) this.InitSchema();
+
+            string fieldkeyName = DataPOProviderTools.GetAutoIncrementColumnName(this.SchemaPo);
+            if (string.IsNullOrWhiteSpace(fieldkeyName))
+                throw new InvalidOperationException($"GetPOByKeyAsync: Aucune colonne auto-incrémentée trouvée dans le schéma.");
 
             Dictionary<string, object> paramKeys = new Dictionary<string, object>();
             paramKeys.Add("p1", key.ItemId);
-            string sql = $"SELECT * FROM {schema.TableName} WHERE {fieldkeyName}=@p1";
+            string sql = $"SELECT * FROM {this.SchemaPo.TableName} WHERE {fieldkeyName}=@p1";
 
             if (key.TenantId > 0)
             {
                 paramKeys.Add("p2", key.TenantId);
                 sql += " AND tenantid=@p2";
             }
-            //if (key.DateIndex.Year > 1) 
-            //{
-            //    paramKeys.Add("p3", key.DateIndex);
-            //    sql += " AND dateindex=@p3";
-            //}
-
-            return this.GetListPO<Tobj>(sql, paramKeys).FirstOrDefault();
+            
+            Nglib.DATA.CONNECTOR.QueryContext query = new Nglib.DATA.CONNECTOR.QueryContext(sql, paramKeys);
+            return (await this.QueryPOAsync(query)).FirstOrDefault();
         }
-
-        public Tobj GetPOWithB36key<Tobj>(string fullB36Key) where Tobj : DATAPO.DataPO, new() { return this.GetPOWithB36keyAsync<Tobj>(fullB36Key).GetAwaiter().GetResult(); }
-
-
 
         /// <summary>
-        /// Obtient le premier enregistrement 
+        /// Vérifie l'existence d'un enregistrement en base via ses clés.
+        /// Effectue une requête COUNT optimisée au lieu de charger l'objet complet.
+        /// Utilisé pour valider l'existence avant insertion ou pour les contrôles de sécurité.
         /// </summary>
-        /// <typeparam name="Tobj"></typeparam>
-        /// <param name="idIncrement"></param>
-        /// <returns></returns>
-        public Tobj GetFirstPO<Tobj>(long idIncrement) where Tobj : DATAPO.DataPO, new()
+        /// <param name="keys">Dictionnaire des colonnes et valeurs pour identifier l'enregistrement (ex: {"id": 123, "tenantid": 1})</param>
+        /// <returns>true si l'enregistrement existe, false sinon</returns>
+        /// <exception cref="ArgumentNullException">Si keys est null ou vide</exception>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini</exception>
+        public virtual async Task<bool> ExistAsync(Dictionary<string, object> keys)
         {
-            Type potype = typeof(Tobj);
-            System.Data.DataTable schema = DATAPO.DataPOTools.GetSchemaOnPO(potype);
-            if (schema == null || string.IsNullOrWhiteSpace(schema.TableName)) throw new Exception(string.Format("GetFirst: schema on {0} is not defined", potype.ToString()));
-            Dictionary<string, object> paramKeys = new Dictionary<string, object>();
-            paramKeys.Add("p1", idIncrement);
-            string fieldkeyName = schema.GetColumns().Where(col => col.AutoIncrement).Select(col => col.ColumnName).FirstOrDefault();
-            if(string.IsNullOrWhiteSpace(fieldkeyName)) throw new Exception(string.Format("GetFirst: column AutoIncrement not found in {0}", potype.ToString()));
-            return this.GetListPO<Tobj>(string.Format("SELECT * FROM {0} WHERE {1}=@p1;", schema.TableName, fieldkeyName), paramKeys).FirstOrDefault();
-        }
-
-
-        /// <summary>
-        /// Obtient le premier enregistrement avec ces clefs
-        /// </summary>
-        /// <typeparam name="Tobj"></typeparam>
-        /// <param name="paramKeys"></param>
-        /// <returns></returns>
-        public Tobj GetFirstPO<Tobj>(Dictionary<string, object> paramKeys) where Tobj : DATAPO.DataPO, new()
-        {
-            Type potype = typeof(Tobj);
-            var schema = DATAPO.DataPOTools.GetSchemaOnPO(potype);
-            if (schema == null || string.IsNullOrWhiteSpace(schema.TableName)) throw new Exception(string.Format("GetFirst :schema on {0} is not defined", potype.ToString()));
-            string wheresql = string.Empty;
-            if (paramKeys!=null && paramKeys.Count>0)
-            {
-                List<string> wheres = new List<string>();
-                paramKeys.Keys.ToList().ForEach(k => wheres.Add(string.Format("{0}=@{0}", k)));
-                wheresql = " WHERE "+string.Join(" AND ", wheres.ToArray());
-            }
-                
-            return this.GetListPO<Tobj>(string.Format("SELECT * FROM {0} {1};", schema.TableName,wheresql), paramKeys).FirstOrDefault();
-        }
-
-
-
-
-
-
-        /// <summary>
-        /// OBtient une liste d'objets
-        /// </summary>
-        /// <typeparam name="Tobj"></typeparam>
-        /// <param name="SqlQuery"></param>
-        /// <param name="insparam"></param>
-        /// <returns></returns>
-        public TCollectionPO GetCollectionPO<TCollectionPO>(string SqlQuery, params object[] insparam) where TCollectionPO : ICollectionPO, new()
-        {
-            Dictionary<string, object> paramKeySearch = new Dictionary<string, object>();
-            if(insparam!=null)
-            {
-                int ii = 1;
-                foreach (var item in insparam)
-                {
-                    paramKeySearch.Add("p" + ii, item);
-                    ii++;
-                }
-            }
-            return this.GetCollectionPO<TCollectionPO>(SqlQuery, paramKeySearch);
-        }
-
-
-        public CollectionPO<Tobj> GetListPO<Tobj>(string SqlQuery, params object[] insparam) where Tobj : DATAPO.DataPO, new()
-        {
-            return this.GetCollectionPO<CollectionPO<Tobj>>(SqlQuery, insparam);
-        }
-
-
-
-
-        /// <summary>
-        /// Obtient une liste d'objets
-        /// </summary>
-        /// <typeparam name="Tobj"></typeparam>
-        /// <param name="SqlQuery"></param>
-        /// <param name="paramKeySearch"></param>
-        /// <returns></returns>
-        public TCollectionPO GetCollectionPO<TCollectionPO>(string SqlQuery, Dictionary<string, object> paramKeySearch) where TCollectionPO : ICollectionPO, new()
-        {
-            // On obtient la table du PO
-            //System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            string TableDefault = "";
-            TCollectionPO retour = new TCollectionPO();
             try
             {
-                Type typepo = retour.GetPOType();
-                var dtable = DataPOTools.GetSchemaOnPO(typepo);
-                if (dtable != null) TableDefault = dtable.TableName;
-                if (string.IsNullOrWhiteSpace(TableDefault) || TableDefault.Length < 3) throw new Exception();
+                if (keys == null || keys.Count == 0) return false;
+
+                if (this.SchemaPo == null) this.InitSchema();
+
+                // Construction de la clause WHERE
+                List<string> wheres = new List<string>();
+                keys.Keys.ToList().ForEach(k => wheres.Add(string.Format("{0}=@{0}", k)));
+                string wheresql = " WHERE " + string.Join(" AND ", wheres.ToArray());
+
+                // Requête COUNT optimisée (ne charge pas les données)
+                string sql = string.Format("SELECT COUNT(*) FROM {0} {1};", this.SchemaPo.TableName, wheresql);
+                Nglib.DATA.CONNECTOR.QueryContext query = new Nglib.DATA.CONNECTOR.QueryContext(sql, keys);
+
+                // Note pas besoin de filtre de sécurité sur les exists.
+
+                // Exécution de la requête
+                var dataTable = await ExecuteQueryAsync(query);
+                
+                if (dataTable.Rows.Count == 0)
+                    return false;
+
+                // Récupération du COUNT
+                long count = Convert.ToInt64(dataTable.Rows[0][0]);
+                return count > 0;
             }
             catch (Exception ex)
             {
-                throw new Exception("GetListPO (DEV) Impossible d'obtenir la table sql de l objet");
+                throw new Exception($"ExistAsync {ex.Message}", ex);
             }
+        }
+
+
+
+
+
+        /// <summary>
+        /// Recherche des objets depuis une requête SQL et retourne une collection personnalisée
+        /// Méthode principale pour l'exécution des requêtes SQL
+        /// </summary>
+        /// <typeparam name="TCollection">Type de collection spécifique héritant de CollectionPO</typeparam>
+        /// <param name="query">Contexte de requête contenant le SQL et les paramètres</param>
+        /// <returns>Collection personnalisée d'objets DataPO</returns>
+        /// <exception cref="ArgumentNullException">Si query est null</exception>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini ou si le connecteur n'est pas configuré</exception>
+        public async Task<TCollection> QueryPOAsync<TCollection>(Nglib.DATA.CONNECTOR.QueryContext query)
+            where TCollection : CollectionPO<TPo>, new()
+        {
+
+            DataPOProviderTools.ValidateQuery(query, "QueryPOAsync");
+
+            // Appliquer le filtre de sécurité avant l'exécution
+            if (this.securityFilter != null)
+                if (!this.securityFilter.ApplyQueryFilter(query))
+                    return new TCollection();   // Query bloquée par le filtre de sécurité, 
+
+
+            // On obtient la table du PO
+            string TableDefault = this.GetTableName();
+             
 
             // Finir la Construction de la requette
             try
             {
-                if (SqlQuery != null && !SqlQuery.ToUpper().Contains("SELECT ") && !SqlQuery.ToUpper().Contains("WHERE "))
-                    SqlQuery = " WHERE "+SqlQuery;
+                DataPOProviderTools.CompleteSqlQuery(query, TableDefault);
+                this.OnBeforeRead(query);
 
-                if(SqlQuery == null || !SqlQuery.ToUpper().Contains("SELECT "))
-                    SqlQuery = "SELECT * FROM " + TableDefault + " " + SqlQuery;
+                System.Data.DataTable sqlResult = await this.ExecuteQueryAsync(query);
+                if (sqlResult == null) return new TCollection();
 
+                // Assigner le nom de la table mais pas les clés primaires pour permettre des requetes libre multi-tables
+                sqlResult.TableName = TableDefault;
 
-                System.Data.DataTable  ret = this.Connector.Query(SqlQuery, paramKeySearch);
-               
-                retour.LoadFromDataTable(ret);
+                //Mapping 
+                TCollection retour = new TCollection();
+                retour.LoadFromDataTable(sqlResult);
+
+                // Appliquer le contexte crypto et vérifier les permissions de lecture
+                if (this.securityFilter != null)
+                    this.ApplySecurityPostLoad(retour);
+                
+                retour.ExecuteTimeElapsed = query.watchAll.ElapsedMilliseconds;
                 return retour;
             }
             catch (Exception ex)
             {
-                throw new Exception("GetListPO " + ex.Message, ex);
+                throw new InvalidOperationException(DataPOProviderTools.FormatError("QueryPOAsync", $"Erreur lors de l'exécution de la requête SQL", ex), ex);
             }
         }
 
-        public CollectionPO<Tobj> GetListPO<Tobj>(string SqlQuery, Dictionary<string, object> paramKeySearch) where Tobj : DATAPO.DataPO, new()
+
+
+        /// <summary>
+        /// Recherche des objets depuis une requête SQL et retourne une collection standard
+        /// </summary>
+        /// <param name="query">Contexte de requête contenant le SQL et les paramètres</param>
+        /// <returns>Collection d'objets DataPO</returns>
+        public async Task<CollectionPO<TPo>> QueryPOAsync(Nglib.DATA.CONNECTOR.QueryContext query)
+            => await this.QueryPOAsync<CollectionPO<TPo>>(query);
+
+
+
+
+
+        /// <summary>
+        /// Recherche des objets avec limite et paramètres optionnels
+        /// </summary>
+        /// <param name="limitResult">Nombre maximum de résultats à retourner</param>
+        /// <param name="SqlParams">Paramètres de filtrage (WHERE columnName = value)</param>
+        /// <returns>Collection d'objets DataPO correspondant aux critères</returns>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini</exception>
+        public virtual async Task<CollectionPO<TPo>> QueryPOAsync(int limitResult = 1000, Dictionary<string, object> SqlParams = null)
         {
-            return this.GetCollectionPO<CollectionPO<Tobj>>(SqlQuery, paramKeySearch);
+
+            // Obtenir la table par défaut
+            string TableDefault = this.GetTableName();
+
+            // Construction de la requette et retour 
+            var engine = ConnectorTools.ParseEngineName(this.Connector?.EngineName);
+            var sqlBuilder = this.Connector.CreateQueryBuilder().From(TableDefault);
+            if (SqlParams != null) SqlParams.ForEach(kvp => sqlBuilder.WhereEqual(kvp.Key, kvp.Value));
+            sqlBuilder.Limit(limitResult);
+            string SqlQuery = sqlBuilder.ToString();
+            Dictionary<string, object> paramKeySearch = sqlBuilder.GetParameters();
+            Nglib.DATA.CONNECTOR.QueryContext query = new Nglib.DATA.CONNECTOR.QueryContext(SqlQuery, paramKeySearch);
+
+            return await this.QueryPOAsync(query);
+        }
+
+
+        /// <summary>
+        /// Recherche des objets en base et retourne la collection
+        /// Utilise un formulaire de recherche pour construire la requête SQL
+        /// </summary>
+        /// <param name="form">Formulaire de recherche contenant les critères</param>
+        /// <param name="tenant">Filtrer sur un tenant/cloisonnement (null = pas de filtre tenant)</param>
+        /// <returns>Collection d'objets DataPO correspondant aux critères du formulaire</returns>
+        /// <exception cref="ArgumentNullException">Si form est null</exception>
+        /// <exception cref="InvalidOperationException">Si le schéma n'est pas défini</exception>
+        public virtual async Task<CollectionPO<TPo>> SearchPOAsync(DATA.BASICS.ISearchForm form, ITenant2 tenant = null)
+        {
+            if (form == null) 
+                throw new ArgumentNullException(nameof(form), "SearchPOAsync: Le formulaire de recherche ne peut pas être null.");
+
+            // Obtenir la table par défaut
+            string TableDefault = this.GetTableName();
+
+            // Construction de la requette et retour 
+            var enginetype = ConnectorTools.ParseEngineName(this.Connector?.EngineName);
+            var sqlBuilder = this.Connector.CreateQueryBuilder().From(TableDefault);
+            if (tenant != null) sqlBuilder.WhereEqual("tenantid", tenant.TenantId);
+            sqlBuilder.ApplySearchForm(form);
+            string SqlQuery = sqlBuilder.ToString();
+            Dictionary<string, object> paramKeySearch = sqlBuilder.GetParameters();
+            Nglib.DATA.CONNECTOR.QueryContext query = new Nglib.DATA.CONNECTOR.QueryContext(SqlQuery, paramKeySearch);
+
+            return await this.QueryPOAsync(query);
         }
 
 
 
+        /// <summary>
+        /// Lancé avant chaque lecture de données (surchargeable)
+        /// </summary>
+        protected virtual void OnBeforeRead(Nglib.DATA.CONNECTOR.QueryContext query) { }
 
-        public TCollectionPO GetCollectionPO<TCollectionPO>(int nbMax = 1000, Dictionary<string, object> paramKeySearch = null) where TCollectionPO : ICollectionPO, new()
+        /// <summary>
+        /// Applique la sécurité post-chargement : injection du contexte crypto et vérification des permissions de lecture
+        /// </summary>
+        /// <param name="collection">Collection d'objets chargés depuis la base</param>
+        protected virtual void ApplySecurityPostLoad<TCollection>(TCollection collection) 
+            where TCollection : CollectionPO<TPo>
         {
-            // On obtient la table du PO
-            string TableDefault = "";
-            TCollectionPO retour = new TCollectionPO();
-            try
+            if (this.securityFilter == null || collection == null || collection.Count == 0) return;
+
+            // Filtrer les objets non autorisés en lecture et injecter le contexte crypto
+            var filteredItems = new List<TPo>();
+            
+            foreach (var item in collection)
             {
-                Type typepo = retour.GetPOType();
-                var dtable = DataPOTools.GetSchemaOnPO(typepo);
-                if (dtable != null) TableDefault = dtable.TableName;
-                if (string.IsNullOrWhiteSpace(TableDefault) || TableDefault.Length < 3) throw new Exception();
+                // Vérifier les permissions de lecture
+                if (this.securityFilter.IsAllowedRead(item))
+                {
+                    // Injecter le contexte crypto pour décryptage transparent
+                    var cryptoContext = this.securityFilter.GetCryptoContext(item);
+                    if (cryptoContext != null)
+                    {
+                        item.SetCryptoOptions(cryptoContext);
+                    }
+                    filteredItems.Add(item);
+                }
             }
-            catch (Exception ex)
-            {
-                throw new Exception("GetListPO (DEV) Impossible d'obtenir la table sql de l objet");
-            }
 
-            // Construction de la requette
-            SqlBuilder sqlBuilder = new SqlBuilder(TableDefault, this.Connector.GetEngine()).AddWheres(paramKeySearch).Limit(nbMax);
-            return this.GetCollectionPO<TCollectionPO>(sqlBuilder.ToString(), paramKeySearch);
+            // Remplacer la collection par les éléments autorisés
+            collection.Clear();
+            collection.AddRange(filteredItems);
         }
-
-
-        public CollectionPO<Tobj> GetListPO<Tobj>(int nbMax = 1000, Dictionary<string, object> paramKeySearch = null) where Tobj : DATAPO.DataPO, new()
-        {
-            return this.GetCollectionPO<CollectionPO<Tobj>>(nbMax, paramKeySearch);
-        }
-
-
-
-
-
-
-
-        //public TCollectionPO SearchPO<TCollectionPO, Tsearch>(Expression<Func<Tsearch, bool>> predicate) where Tsearch : ISearchFormPO, new() where TCollectionPO : ICollectionPO, new()
-        //{
-        //    string nm = predicate.Name;
-        //    throw new NotImplementedException();
-
-        //    TCollectionPO retour = new TCollectionPO();
-        //    retour.LoadFromDataTable(null);
-        //    return retour;
-        //}
-
-
-
-
-
-
-
 
 
 
@@ -385,68 +514,96 @@ namespace Nglib.DATA.DATAPO
 
         #region ------- Ecritures SQL -------
 
-
-
-
         /// <summary>
-        /// Mettre à jour (update only) des objets en base
+        /// Met à jour (UPDATE) des objets en base de données
         /// </summary>
-        /// <param name="bubbles">DataPos</param>
-        /// <param name="ForceEvenIfNotModified">Force la mise à jours de tous les champs même si il n'ont pas été modifié</param>
-        /// <returns>Modification effectué</returns>
-        public async Task<bool> SavePOAsync(DATAPO.DataPO[] bubbles, bool ForceEvenIfNotModified = false)
+        /// <param name="items">Tableau d'objets DataPO à sauvegarder</param>
+        /// <param name="ForceEvenIfNotModified">true: Force la mise à jour de tous les champs même non modifiés</param>
+        /// <returns>true si au moins un objet a été sauvegardé, false sinon</returns>
+        /// <exception cref="ArgumentNullException">Si bubbles est null ou vide</exception>
+        /// <exception cref="InvalidOperationException">Si aucun connecteur configuré ou si les types sont différents</exception>
+        /// <exception cref="UnauthorizedAccessException">Si les permissions d'écriture sont refusées</exception>
+        public async Task<bool> SavePOAsync(TPo[] items, bool ForceEvenIfNotModified = false)
         {
-            if (bubbles == null || bubbles.Count() == 0) return false;
-            if (this.Connector == null) throw new Exception("MasterConnector Not found");
-            List<DATAPO.DataPO> bubblesNeedToSave;
+            if (items == null || items.Count() == 0) return false;
+            
+            // Vérifier les permissions d'écriture
+            if (this.securityFilter != null && !this.securityFilter.IsAllowedWrite(items))
+                throw new UnauthorizedAccessException("SavePOAsync: Permissions d'écriture refusées par le filtre de sécurité");
+
+            DataPOProviderTools.ValidateConnector(this.Connector, typeof(TPo));
+            
+            List<TPo> bubblesNeedToSave;
             try
             {
-                // Vérifier qu'il s'agit toujours du même type d'objets (on ne peus pas travailler sur plusieurs tables)
-                if (bubbles.Select(b => b.GetType()).Distinct().Count() != 1) throw new Exception("different types");
-                if(bubbles.FirstOrDefault().GetValues(true,false).Count==0) throw new Exception("Primarykey not found on " + bubbles.FirstOrDefault().GetType().Name);
+                // Vérifier qu'il s'agit toujours du même type d'objets
+                DataPOProviderTools.ValidateSameType(items, "SavePOAsync");
+                
+                var firstItem = items.FirstOrDefault();
+                var keys = this.GetPOKeys(firstItem);
+                DataPOProviderTools.ValidatePrimaryKeys(keys, firstItem.GetType(), "SavePOAsync");
+                this.OnBeforeWrite(items,"SAVE");
 
-
-                // Detecter et préparer les objets qui nécessite une modifications
-                if (ForceEvenIfNotModified) bubblesNeedToSave = bubbles.ToList();
-                else bubblesNeedToSave=bubbles.Where(bubble => bubble.IsChanges()).ToList();
+                // Detecter et préparer les objets qui nécessitent une modification
+                if (ForceEvenIfNotModified) 
+                    bubblesNeedToSave = items.ToList();
+                else 
+                    bubblesNeedToSave = items.Where(bubble => bubble.IsChanges()).ToList();
+                
                 if (bubblesNeedToSave.Count == 0) return false;
 
                 await this.SavePo_LineByLinesAsync(bubblesNeedToSave, ForceEvenIfNotModified);
 
                 return true;
-
             }
             catch (Exception e)
             {
-                throw new Exception(string.Format("SavePO {0} ", e.Message), e);
+                throw new InvalidOperationException(DataPOProviderTools.FormatError("SavePOAsync", "Erreur lors de la sauvegarde des objets", e), e);
             }
         }
-        public async Task<bool> SavePOAsync(DATAPO.DataPO bubble, bool ForceEvenIfNotModified = false) { return  await this.SavePOAsync(new DATAPO.DataPO[]{ bubble }, ForceEvenIfNotModified); }
-        public bool SavePO(DATAPO.DataPO bubble, bool ForceEvenIfNotModified = false) { return this.SavePOAsync(bubble, ForceEvenIfNotModified).GetAwaiter().GetResult(); }
-
 
         /// <summary>
-        /// Execute plusieurs Save en une requette
+        /// Met à jour (UPDATE) un objet en base de données
         /// </summary>
-        /// <param name="bubblesNeedToSave"></param>
-        /// <param name="ForceEvenIfNotModified"></param>
-        private async Task SavePo_LineByLinesAsync(List<DATAPO.DataPO> bubblesNeedToSave, bool ForceEvenIfNotModified)
+        /// <param name="bubble">Objet DataPO à sauvegarder</param>
+        /// <param name="ForceEvenIfNotModified">false: Ne mettra à jour que si modifié, true: Force la mise à jour</param>
+        /// <returns>true si l'objet a été sauvegardé</returns>
+        public async Task<bool> SavePOAsync(params TPo[] items) 
+            => await this.SavePOAsync(items, false); 
+        
+
+
+        
+
+        /// <summary>
+        /// Exécute plusieurs UPDATE en une transaction (méthode privée optimisée)
+        /// </summary>
+        private async Task SavePo_LineByLinesAsync(List<TPo> bubblesNeedToSave, bool ForceEvenIfNotModified)
         {
             bool openedtransact = false;
             try
             {
                 if (bubblesNeedToSave.Count > 1) // si nécessaire d'ouvrir une transaction pour optimiser les performances
-                    openedtransact = this.Connector.BeginTransaction(null); //this.Connector.Open(true); 
+                    openedtransact = this.Connector.BeginTransaction(); //this.Connector.Open(true); 
                 foreach (var bubble in bubblesNeedToSave)
                 {
-                    // mut.WaitOne();
-                    Dictionary<string, object> vals = ForceEvenIfNotModified ? bubble.GetValues(false, true) : bubble.GetChangedValues();
-                    if (vals.Count == 0 && ForceEvenIfNotModified) throw new Exception("GetChangedValues Empty");
-                    else if (vals.Count == 0) continue;
-                    Dictionary<string, object> keys = bubble.GetValues(true, false);
-                    if (keys.Count == 0) throw new Exception("Primarykey Empty");
+                    Dictionary<string, object> vals = ForceEvenIfNotModified ? bubble.GetValues() : bubble.GetChangedValues();
+                    if (vals.Count == 0 && ForceEvenIfNotModified) 
+                        throw new InvalidOperationException($"SavePo_LineByLinesAsync: Aucune valeur à mettre à jour pour {bubble.GetType().Name}.");
+                    else if (vals.Count == 0) 
+                        continue;
+
+                    Dictionary<string, object> keys = this.GetPOKeys(bubble);
+                    DataPOProviderTools.ValidatePrimaryKeys(keys, bubble.GetType(), "SavePo_LineByLinesAsync");
+                    // Suppression des clés des valeurs à mettre à jour en mode ignorecase
+                    foreach (var k in keys.Keys)
+                    {
+                        var keyInVals = vals.Keys.FirstOrDefault(vk => vk.Equals(k, StringComparison.OrdinalIgnoreCase));
+                        if (!string.IsNullOrWhiteSpace(keyInVals)) vals.Remove(keyInVals);
+                    }
+
                     System.Data.DataRow rowb = bubble.GetRow();
-                    string tablename = rowb.Table.TableName;
+                    string tablename = this.GetTableName();
                     await this.Connector.UpdateAsync(tablename, keys, vals);
 
                     if (!DisableAcceptChange)
@@ -454,7 +611,7 @@ namespace Nglib.DATA.DATAPO
                 }
                 if (openedtransact) this.Connector.CommitTransaction();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 if (openedtransact) this.Connector.RollBackTransaction();
                 throw;
@@ -463,118 +620,113 @@ namespace Nglib.DATA.DATAPO
             {
                 if(openedtransact)this.Connector.Close();
             }
-
         }
 
-
-
-
-
         /// <summary>
-        /// Mettre à jours plusieurs objets en même temps avec les mêmes valeurs
+        /// Met à jour plusieurs objets simultanément avec les mêmes valeurs
         /// </summary>
-        /// <param name="bubbles"></param>
-        /// <param name="valeursParameters"></param>
-        public async Task UpdatePOAsync(DATAPO.DataPO[] bubbles, Dictionary<string, object> valeursParameters)
+        /// <param name="items">Tableau d'objets DataPO à mettre à jour</param>
+        /// <param name="valeursParameters">Dictionnaire des colonnes et valeurs à appliquer à tous les objets</param>
+        /// <exception cref="ArgumentNullException">Si bubbles ou valeursParameters est null</exception>
+        /// <exception cref="InvalidOperationException">Si aucun connecteur configuré ou si les types sont différents</exception>
+        /// <exception cref="UnauthorizedAccessException">Si les permissions d'écriture sont refusées</exception>
+        public async Task UpdatePOAsync(TPo[] items, Dictionary<string, object> valeursParameters)
         {
+            // Vérifier les permissions d'écriture
+            if (this.securityFilter != null && !this.securityFilter.IsAllowedWrite(items))
+                throw new UnauthorizedAccessException("UpdatePOAsync: Permissions d'écriture refusées par le filtre de sécurité");
+            
             try
             {
-                if (this.Connector == null) throw new Exception("MasterConnector Not found");
-                // Vérifier qu'il s'agit toujours du même type d'objets (on ne peus pas travailler sur plusieurs tables)
-                if (bubbles.Select(b => b.GetType()).Distinct().Count() != 1) throw new Exception("different types");
+                DataPOProviderTools.ValidateConnector(this.Connector, typeof(TPo));
+                DataPOProviderTools.ValidateSameType(items, "UpdatePOAsync");
+                this.OnBeforeWrite(items,"UPDATE");
 
-                // !!! Vérifier que les objets on bien tous les memes types de clefs primarykey
-
-                //maj simple
-                foreach (DATAPO.DataPO bubble in bubbles)
+                foreach (TPo item in items)
                 {
-                    if (bubble == null) throw new Exception("DataPO null");
-                    System.Data.DataRow rowb = bubble.GetRow(); // la structure du datapo sera défini à ce moment si nécessaire
-                    if (!bubble.IsDefinedSchema()) bubble.DefineSchemaPO();
-                    if (!bubble.IsDefinedSchema()) throw new Exception("DataPo not defined"); // on peus pas traiter un datapo sans structure, car on aura pas les primarykey pour le sql
-                    if (string.IsNullOrWhiteSpace(rowb.Table.TableName)) throw new Exception("tablename empty");
-                    // mut.WaitOne();
-
-                    Dictionary<string, object> keys = DataSetTools.GetValues(rowb, true, false); //clef
-                    if (keys.Count == 0) throw new Exception("Primarykey not found on " + bubble.GetType().Name);
-                    await this.Connector.UpdateAsync(rowb.Table.TableName, keys, valeursParameters);
-
+                    DataPOProviderTools.ValidateNotNull(item, nameof(item), "UpdatePOAsync");
+                    
+                    System.Data.DataRow rowb = item.GetRow();
+                    Dictionary<string, object> keys = this.GetPOKeys(item);
+                    DataPOProviderTools.ValidatePrimaryKeys(keys, item.GetType(), "UpdatePOAsync");
+                    
+                    await this.Connector.UpdateAsync(this.GetTableName(), keys, valeursParameters);
                 }
-
-
             }
             catch (Exception e)
             {
-                throw new Exception("UpdatePO " + e.Message, e);
-                //exceptionbulle("Impossible de mettre à jour", e);
+                throw new InvalidOperationException(DataPOProviderTools.FormatError("UpdatePOAsync", "Erreur lors de la mise à jour des objets", e), e);
             }
-            finally
+        }
+
+        /// <summary>
+        /// Met à jour des valeurs sur un objet
+        /// </summary>
+        public async Task UpdatePOAsync(TPo item, Dictionary<string, object> valeursParameters)
+            => await this.UpdatePOAsync(new TPo[] { item }, valeursParameters);
+
+        /// <summary>
+        /// Insère des objets DataPO en base de données (INSERT)
+        /// </summary>
+        /// <param name="items">Tableau d'objets DataPO à insérer</param>
+        /// <exception cref="ArgumentNullException">Si bubbles est null ou vide</exception>
+        /// <exception cref="InvalidOperationException">Si aucun connecteur configuré, si les types sont différents, ou erreur d'insertion</exception>
+        /// <exception cref="UnauthorizedAccessException">Si les permissions d'écriture sont refusées</exception>
+        public async Task InsertPOAsync(params TPo[] items)
+        {
+            if (items == null || items.Length == 0) return;
+            
+            // Vérifier les permissions d'écriture
+            if (this.securityFilter != null && !this.securityFilter.IsAllowedWrite(items))
             {
-                //  mut.ReleaseMutex();
+                throw new UnauthorizedAccessException("InsertPOAsync: Permissions d'écriture refusées par le filtre de sécurité");
             }
-        }
-
-        /// <summary>
-        /// Mettre à jours plusieurs objets en même temps avec les mêmes valeurs
-        /// </summary>
-        public async Task UpdatePOAsync(DATAPO.DataPO[] bubbles, string columnKey, object ColumnValue)
-        {
-            await this.UpdatePOAsync(bubbles, new Dictionary<string, object>() { { columnKey, ColumnValue } });
-        }
-
-
-
-
-
-
-        /// <summary>
-        /// Insertion de du dataPo en base
-        /// </summary>
-        public async Task InsertPOAsync(DATAPO.DataPO[] bubbles)
-        {
-            if (bubbles == null || bubbles.Length == 0) return;
+            
             try
             {
-                if (this.Connector == null) throw new Exception("MasterConnector Not found");
+                DataPOProviderTools.ValidateConnector(this.Connector, typeof(TPo));
+                DataPOProviderTools.ValidateSameType(items, "InsertPOAsync");
+                this.OnBeforeWrite(items,"INSERT");
 
-                // Vérifier qu'il s'agit toujours du même type d'objets (on ne peus pas travailler sur plusieurs tables)
-                if (bubbles.Select(b => b.GetType()).Distinct().Count() != 1) throw new Exception("different types");
+                System.Data.DataTable tabinsert = DataPOTools.CloneDataTable(items);
 
-                // !!!voir si c'est pas plus performant de le faire un par un si il n'y as qu'une seule ligne
-                //List<System.Data.DataTable> alltables = bubbles.Select(dt => dt.GetRow().Table).Distinct().ToList();
-                System.Data.DataTable tabinsert = DataPOTools.CloneDataTable(bubbles);
-                if(tabinsert.TableName.StartsWith("Table"))
+                // Corriger le nom de table si nécessaire
+                if(this.SchemaPo==null) this.InitSchema();
+                tabinsert.TableName = this.GetTableName();
+
+                // Obtenir et retirer les colonnes auto-incrémentées
+                List<System.Data.DataColumn> autoincrementedColumns = this.SchemaPo.GetColumns()
+                    .Where(c => c.AutoIncrement)
+                    .ToList();
+                    
+                autoincrementedColumns.ForEach(col => 
                 {
-                    System.Data.DataTable tableStd = DataPOTools.GetSchemaOnPO(bubbles[0].GetType());
-                    if(tableStd!=null) tabinsert.TableName = tableStd.TableName;
-                }
+                    if (tabinsert.Columns.Contains(col.ColumnName)) 
+                        tabinsert.Columns.Remove(col.ColumnName);
+                });
 
-
-
-                // Obtient si existe la colonne autoincrémenté
-                List<System.Data.DataColumn> autoincrementedColumns = bubbles.FirstOrDefault().GetRow().Table.GetColumns().Where(c => c.AutoIncrement).ToList();
-                autoincrementedColumns.ForEach(col=> {if(tabinsert.Columns.Contains(col.ColumnName)) tabinsert.Columns.Remove(col.ColumnName); });
-
-                string colautoincrement = null;
-                if (autoincrementedColumns.Count() > 0) colautoincrement = autoincrementedColumns.FirstOrDefault().ColumnName;
+                string colautoincrement = autoincrementedColumns.Count() > 0 
+                    ? autoincrementedColumns.FirstOrDefault().ColumnName 
+                    : null;
 
                 // --- INSERT ---
-                List<long> valsincrement = await this.Connector.InsertTableAsync(tabinsert, InsertPODefaultTimeOut, colautoincrement);
+                List<long> valsincrement = await this.Connector.InsertTableAsync(
+                    tabinsert, 
+                    InsertPODefaultTimeOut, 
+                    colautoincrement);
 
-                // On réaffecte les id autoincrémenté aux objets
+                // Réaffecter les IDs auto-incrémentés aux objets
                 if (!string.IsNullOrWhiteSpace(colautoincrement))
                 {
-                    if (valsincrement.Count != bubbles.Count()) throw new Exception("Insert Increment Error"); // il doit forcément y avoir autant de clef incrémenté que de lignes
+                    if (valsincrement.Count != items.Count()) 
+                        throw new InvalidOperationException($"InsertPOAsync: Erreur d'incrémentation. {valsincrement.Count} IDs retournés pour {items.Count()} objets.");
+                    
                     for (int i = 0; i < valsincrement.Count; i++)
-                        bubbles[i].SetObject(colautoincrement, valsincrement[i]); 
+                        items[i].SetObject(colautoincrement, valsincrement[i]);
                 }
 
-                //var colsDatasInsert = MANIPULATE.DATASET.DataSetTools.GetValues(rowb, UseKey, true);
-                //var colsKeysInsert = MANIPULATE.DATASET.DataSetTools.GetValues(rowb, true, false);
-                //long retnum = this.Connector.Insert(rowb.Table.TableName, colsDatasInsert, colautoincrement);
-
-                // Déclare les objet inserer, AcceptChanges, pour indiquer qu'il ne sera pas nécessaire de les remodifier
-                foreach (DataPO item in bubbles)
+                // Déclarer les objets insérés avec AcceptChanges
+                foreach (DataPO item in items)
                 {
                     try
                     {
@@ -586,80 +738,62 @@ namespace Nglib.DATA.DATAPO
                     }
                     catch (Exception) { }
                 }
-
-      
             }
             catch (Exception e)
             {
-                throw new Exception("InsertPO " + e.Message, e);
-                //exceptionbulle("Impossible de mettre à jour", e);
-            }
-            finally
-            {
-                //  mut.ReleaseMutex();
+                throw new InvalidOperationException(DataPOProviderTools.FormatError("InsertPOAsync", "Erreur lors de l'insertion des objets", e), e);
             }
         }
-        public async Task InsertPOAsync(DATAPO.DataPO bubble) { await this.InsertPOAsync(new DataPO[] { bubble }); }
-
-        public void InsertPO(DATAPO.DataPO bubble) { this.InsertPOAsync(new DataPO[] { bubble }).GetAwaiter().GetResult(); }
-
-        public int InsertPODefaultTimeOut = 600;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 
         /// <summary>
-        /// Supprimer un objet en base
+        /// Supprime des objets DataPO de la base de données (DELETE)
         /// </summary>
-        /// <param name="bubble"></param>
-        public async Task DeletePOAsync(params DATAPO.DataPO[] bubbles)
+        /// <param name="items">Objets DataPO à supprimer</param>
+        /// <exception cref="ArgumentNullException">Si un objet est null</exception>
+        /// <exception cref="InvalidOperationException">Si aucun connecteur configuré ou clé primaire manquante</exception>
+        /// <exception cref="UnauthorizedAccessException">Si les permissions d'écriture sont refusées</exception>
+        public async Task DeletePOAsync(params TPo[] items)
         {
+            // Vérifier les permissions d'écriture
+            if (this.securityFilter != null && !this.securityFilter.IsAllowedWrite(items))
+            {
+                throw new UnauthorizedAccessException("DeletePOAsync: Permissions d'écriture refusées par le filtre de sécurité");
+            }
+            
             try
             {
-                if (this.Connector == null) throw new Exception("MasterConnector Not found");
+                DataPOProviderTools.ValidateConnector(this.Connector, typeof(TPo));
+                this.OnBeforeWrite(items, "DELETE");
 
-                // Préparation des objets
-
-                foreach (var bubble in bubbles)
+                foreach (var item in items)
                 {
-                    if (bubble == null) throw new Exception("DataPO null");
-                    Dictionary<string, object> keys = bubble.GetValues(true, false); //clef// mut.WaitOne();
-                    if (keys.Count == 0) throw new Exception("Primarykey not found on " + bubble.GetType().Name);
-                    System.Data.DataRow rowb = bubble.GetRow(); // la structure du datapo sera défini à ce moment si nécessaire
-                    await this.Connector.DeleteAsync(rowb.Table.TableName, keys);
+                    DataPOProviderTools.ValidateNotNull(item, nameof(item), "DeletePOAsync");
+                    
+                    Dictionary<string, object> keys = this.GetPOKeys(item);
+                    DataPOProviderTools.ValidatePrimaryKeys(keys, item.GetType(), "DeletePOAsync");
+                    
+                    System.Data.DataRow rowb = item.GetRow();
+                    await this.Connector.DeleteAsync(this.GetTableName(), keys);
+                    
                     try { rowb.Delete(); }
                     catch (Exception) { }
                 }
             }
             catch (Exception e)
             {
-                throw new Exception("DeletePO " + e.Message, e);
-                //exceptionbulle("Impossible de mettre à jour", e);
-            }
-            finally
-            {
-                //  mut.ReleaseMutex();
+                throw new InvalidOperationException(DataPOProviderTools.FormatError("DeletePOAsync", "Erreur lors de la suppression des objets", e), e);
             }
         }
-        public void DeletePO(params DATAPO.DataPO[] bubbles) { this.DeletePOAsync(bubbles).GetAwaiter().GetResult(); }
+
+
+        /// <summary>
+        /// Lancé avant chaque lecture de données (surchargeable)
+        /// </summary>
+        protected virtual void OnBeforeWrite(TPo[] items, string mode) { }
 
 
 
@@ -667,6 +801,25 @@ namespace Nglib.DATA.DATAPO
 
 
 
+
+
+
+
+        #region ==== Obsolete Methods  ====
+
+        /// <summary>
+        /// Obtenir un provider SQL générique (non typé)
+        /// </summary>
+        //[Obsolete("RetroCompatibility")]
+        public DataPOGenericProvider GetGenericProvider()
+        {
+            return new DataPOGenericProvider(this.Connector);
+        }
+
+
+
+
+        #endregion
 
 
 

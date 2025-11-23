@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using Nglib.DATA.ACCESSORS;
+﻿using Nglib.DATA.ACCESSORS;
 using Nglib.SECURITY.CRYPTO;
 using System;
 using System.Collections.Generic;
@@ -294,7 +288,7 @@ namespace Nglib.DATA.PARAMVALUES
             if (model.Attributs != null)
                 foreach (var attributeKey in model.Attributs.Keys)
                 {
-                    string val = model.GetString(attributeKey, DataAccessorOptionEnum.None);
+                    string val = model.GetString(attributeKey);
                     if (string.IsNullOrEmpty(val)) continue; // cela sert à rien d'écrire un attribut vide
                     XAttribute nodeAttribute = new XAttribute(attributeKey, val);
                     element.Add(nodeAttribute);

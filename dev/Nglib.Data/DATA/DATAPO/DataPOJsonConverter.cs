@@ -53,7 +53,7 @@ namespace Nglib.DATA.DATAPO
         {
             if (item == null) return null;
             Dictionary<string, object> retour = new Dictionary<string, object>();
-            Nglib.DATA.COLLECTIONS.CollectionsTools.AddRange(retour, Nglib.DATA.DATAPO.DataPOTools.GetValues(item, true, true), false);
+            Nglib.DATA.COLLECTIONS.CollectionsTools.AddRange(retour, Nglib.DATA.DATAPO.DataPOTools.GetValues(item), false);
             // Ajouter fullid,ajouter flux !!! 
 
 

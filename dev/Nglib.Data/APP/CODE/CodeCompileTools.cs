@@ -17,7 +17,8 @@ namespace Nglib.APP.CODE
         /// <summary>
         /// Permet l'execution de code compilé
         /// </summary>
-        /// <param name="executeContext"></param>
+        /// <param name="codeModel">Code compilé à exécuter</param>
+        /// <param name="executeParams">Paramètres d'exécution</param>
         public static async Task<CompileExecuteResult> ExecuteCodeAsync(ICompiledCode codeModel, params object[] executeParams)
         {
             CompileExecuteResult retour = new CompileExecuteResult();

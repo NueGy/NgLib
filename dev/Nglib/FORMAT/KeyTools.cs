@@ -2,50 +2,77 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using Nglib.SECURITY.CRYPTO;
 
 namespace Nglib.FORMAT
 {
     /// <summary>
-    /// Permet de manipuler des clefs
+    /// Utility class for key manipulation and sanitization.
+    /// Documentation: <see href="https://github.com/NueGy/NgLibComponents/wiki/wiki_components_format"/>
     /// </summary>
     public static class KeyTools
     {
         //private const string CharList = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private const string CharList = "0123456789abcdefghijklmnopqrstuvwxyz";
-        public const string AllowCharactersForKey = "azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN1234567890_-";
+        internal static readonly HashSet<char> KeysCharsConst = new(StringTools.AlphaNumCharsConst + "._");
 
         /// <summary>
-        ///     Prépare un string pour une clef (supprime les blanc, remplace les accents, ...)
-        ///     AllowCharacters = azertyuiopqsdfghjklmwxcvbn1234567890_
+        /// Sanitizes a key string allowing only alphanumeric chars, dots, underscores and dashes (a-z A-Z 0-9 ._-)
+        /// Combines diacritic replacement and character filtering in a single pass for optimal performance
         /// </summary>
-        public static string CleanStringForKey(string orgnStr)
+        /// <param name="orgnStr">Original string to sanitize</param>
+        /// <param name="upperStr">Convert to uppercase if true</param>
+        /// <returns>Sanitized key string or null if input is null</returns>
+        public static string SanitizeKey(string orgnStr, bool upperStr = true)
         {
-            if (string.IsNullOrWhiteSpace(orgnStr)) return null;
-            orgnStr = StringTools.CleanString(orgnStr);
-            orgnStr = orgnStr.Replace(" ", "")
-                .Replace(".", "_"); // pas de blancs,  pas de point
-            orgnStr = StringTools.ReplaceDiacritics(orgnStr); // Accent interdit;
-            orgnStr = StringTools.FilterCharacters(orgnStr, AllowCharactersForKey);
-            return orgnStr;
+            if (orgnStr == null) return null;
+            if (string.IsNullOrWhiteSpace(orgnStr)) return string.Empty; 
+    
+            var sb = new StringBuilder(orgnStr.Length);
+            foreach (char c in orgnStr)
+            {
+                char processedChar = StringTools.DiacriticsMap.TryGetValue(c, out char replacement) ? replacement : c;
+                if (upperStr)
+                    processedChar = char.ToUpperInvariant(processedChar);
+                if (KeyTools.KeysCharsConst.Contains(processedChar))
+                    sb.Append(processedChar);
+            }
+            return sb.ToString();
         }
 
 
         /// <summary>
-        ///     Permet de générer une clef en base36 composé de 3 valeurs avec un checksum
+        /// Validates that a key respects the allowed characters.
+        /// Allowed characters: alphanumeric + period + underscore (a-z A-Z 0-9 . _)
         /// </summary>
-        /// <param name="DateIndex">Date (Facultative)</param>
-        /// <param name="tenantId">Groupe</param>
-        /// <param name="itemId">Identifiant unique</param>
-        /// <param name="prefix">Ajoutera un prefix xx- sur la clef</param>
-        /// <returns></returns>
+        /// <param name="key">Key to validate</param>
+        /// <returns>True if the key is valid, False otherwise</returns>
+        public static bool IsValidKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return false;
+            
+            // Check each character against the allowed character set
+            return key.All(c => KeysCharsConst.Contains(c));
+        }
+
+
+
+        /// <summary>
+        /// Generates a base36 key composed of 3 values with a checksum
+        /// </summary>
+        /// <param name="DateIndex">Date (optional)</param>
+        /// <param name="tenantId">Tenant/Group ID</param>
+        /// <param name="itemId">Unique identifier</param>
+        /// <param name="prefix">Adds a prefix xx- to the key</param>
+        /// <returns>Base36 key string</returns>
         [Obsolete("BETA")]
         public static string WriteKeyB36(DateTime? DateIndex, int tenantId, long itemId, string prefix = null)
         {
             try
             {
                 if (itemId == 0) return null;
-                var SpecialCommandParam = '1'; // 0: Pas de date, 1:date année 2000, 2: advancedParam
+                var SpecialCommandParam = '1'; // 0: No date, 1:year 2000 date, 2: advancedParam
                 var dateindexpart = "";
                 if (DateIndex == null)
                 {
@@ -59,7 +86,7 @@ namespace Nglib.FORMAT
                 }
                 else
                 {
-                    throw new Exception("Date Non gérée");
+                    throw new Exception("Date not managed");
                 }
 
                 var fullWithoutSign = dateindexpart + tenantId + itemId;
@@ -69,13 +96,13 @@ namespace Nglib.FORMAT
                 var p2 = ToBase36(Convert.ToInt64(tenantId + dateindexpart)); //5WLS8
                 var p2size = p2.Length;
                 if (SpecialCommandParam != '0')
-                    p2size = p2size - 2; // on as le droit qu'a 9 char dans le p1, alors on économise la zone date
+                    p2size = p2size - 2; // we only have rights to 9 chars in p1, so we save the date zone
                 var p3 = ToBase36(itemId); //J1V5
                 var p1 = SpecialCommandParam + p2size.ToString();
                 p1 = ToBase36(Convert.ToInt64(p1)); //F
                 p1 = string.IsNullOrEmpty(p1) ? "0" : p1;
 
-                if (prefix != null) prefix = CleanStringForKey(prefix);
+                if (prefix != null) prefix = SanitizeKey(prefix);
                 prefix = prefix != null ? prefix + "-" : "";
                 return prefix + p1 + p2 + p3 + Checksum;
             }
@@ -87,10 +114,9 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        ///     Parser un clef
+        /// Parser un clef
         /// </summary>
         /// <param name="fullid">val</param>
-        /// <param name="IgnoreFirstChar">Ignorer les premiers charactères</param>
         /// <returns></returns>
         [Obsolete("BETA")]
         public static KeyB36 ParseKeyB36(string fullid)
@@ -198,7 +224,7 @@ namespace Nglib.FORMAT
         }
 
         /// <summary>
-        ///     Encode the given number into a Base36 string
+        /// Encode the given number into a Base36 string
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
@@ -219,7 +245,7 @@ namespace Nglib.FORMAT
         }
 
         /// <summary>
-        ///     Decode the Base36 Encoded string into a number
+        /// Decode the Base36 Encoded string into a number
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>

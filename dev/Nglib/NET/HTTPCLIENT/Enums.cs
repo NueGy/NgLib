@@ -3,17 +3,17 @@
     public enum HttpParameterTypeEnum
     {
         /// <summary>
-        ///     A path parameter which is inserted into the path portion of the request URI.
+        /// A path parameter which is inserted into the path portion of the request URI.
         /// </summary>
         Path = 0,
 
         /// <summary>
-        ///     A query parameter which is inserted into the query portion of the request URI.
+        /// A query parameter which is inserted into the query portion of the request URI.
         /// </summary>
         Query = 1,
 
         /// <summary>
-        ///     Add to Header
+        /// Add to Header
         /// </summary>
         Header = 2,
 
@@ -23,16 +23,27 @@
         FormData = 3,
 
 
+        /// <summary>
+        /// JSON body
+        /// </summary>
+        Body = 4,
+
+        /// <summary>
+        /// Raw text body
+        /// </summary>
+        BodyRaw = 5
+
+
     }
 
 
     /// <summary>
-    /// Méthode authentification pour api token
+    /// Authentication method for API token
     /// </summary>
     public enum TokenAuthTypeEnum
     {
         /// <summary>
-        /// Aucune authentification, utilisera le lastToken seulement si il est défini
+        /// No authentication, will use lastToken only if defined
         /// </summary>
         none,
 
@@ -52,12 +63,12 @@
         OAuth2Password,
 
         /// <summary>
-        /// Signe un JWT HS256 avec une clé secrète 
+        /// Signs a JWT HS256 with a secret key
         /// </summary>
         JwtHmac,
 
         /// <summary>
-        /// Token pré-défini dans la configuration
+        /// Pre-defined token in configuration
         /// </summary>
         FixedBearerToken,
 

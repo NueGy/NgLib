@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Nglib.SOLUTIONS.IDENTITY.TENANTS;
+using Nglib.SECURITY.TENANTS;
 using System;
 using System.Collections.Generic;
 using System.Text;

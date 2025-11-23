@@ -1,25 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Nglib.NET.HTTPCLIENT
 {
     /// <summary>
-    /// Divers 
+    /// Various HTTP utility methods for URL manipulation, query string building, and HTTP method conversion
     /// </summary>
     public static class HttpTools
     {
 
         /// <summary>
-        /// permet de combiner une url de base avec un path
+        /// Combines a base URL with a path
         /// </summary>
         public static string CombineRootUrl(string rootUrl, string path)
         {
-            if (string.IsNullOrWhiteSpace(rootUrl)) return path; // pas de root
-            if (string.IsNullOrWhiteSpace(path)) return null; // pas de path
-            if(path.StartsWith("http")) return path; // déja une url complète
+            if (string.IsNullOrWhiteSpace(rootUrl)) return path; // no root
+            if (string.IsNullOrWhiteSpace(path)) return null; // no path
+            if(path.StartsWith("http")) return path; // already a full URL
             path = path.Trim();
             if (rootUrl.EndsWith("/") && path.StartsWith("/")) return rootUrl + path.Substring(1);
             if (!rootUrl.EndsWith("/") && !path.StartsWith("/")) return rootUrl + "/" + path;
@@ -29,7 +30,7 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Permet de composer une querystring pour Url à partir d'un dictionnaire de paramètres
+        /// Builds a querystring for URL from a parameter dictionary
         /// </summary>
         public static string GetQueryString(Dictionary<string, string> parameters)
         {
@@ -45,7 +46,7 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Permet de composer une querystring pour Url à partir d'un dictionnaire de paramètres
+        /// Appends querystring parameters to an existing URL from a parameter dictionary
         /// </summary>
         public static string AppendQueryToUrl(string originalUrl, Dictionary<string, string> parameters)
         {
@@ -57,6 +58,25 @@ namespace Nglib.NET.HTTPCLIENT
         }
 
 
+
+
+        /// <summary>
+        /// Converts a string to HttpMethod type
+        /// </summary>
+        public static HttpMethod ConvertToHttpMethod(string method)
+        {
+            if (string.IsNullOrWhiteSpace(method) || method.Equals("Get", StringComparison.OrdinalIgnoreCase))
+                return HttpMethod.Get;
+            else if (method.Equals("Post", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Post;
+            else if (method.Equals("Put", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Put;
+            else if (method.Equals("Delete", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Delete;
+            else if (method.Equals("Head", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Head;
+            else if (method.Equals("Options", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Options;
+            else if (method.Equals("Trace", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Trace;
+            else if (method.Equals("Patch", StringComparison.OrdinalIgnoreCase)) return HttpMethod.Patch;
+            else throw new Exception("method invalid");
+
+        }
 
     }
 }

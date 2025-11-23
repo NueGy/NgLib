@@ -10,14 +10,15 @@ namespace Nglib.DATA.CONNECTOR
     /// <summary>
     /// Permet de composer une requete SQL
     /// </summary>
+    [Obsolete("Use QueryBuilder")]
     public class SqlBuilder
     {
 
 
         public SqlBuilder(string tablename, ConnectorConstants.ConnectorEngineEnum  SqlEngine = ConnectorConstants.ConnectorEngineEnum.POSTGRESQL)
         {
-            this.SqlEngine = SqlEngine; /// ConnectorConstants.ConnectorEngineEnum.POSTGRESQL; // par default
-            sqlCommandType = SqlCommandTypeEnum.SELECT;
+            this.SqlEngine = SqlEngine; // ConnectorConstants.ConnectorEngineEnum.POSTGRESQL; // par default
+            sqlCommandType = SqlCommandTypeEnum.Select;
             this.TableName = tablename;
         }
 
@@ -101,9 +102,14 @@ namespace Nglib.DATA.CONNECTOR
             if (form == null) return;
             try
             {
+                // Ajouter les elements de base
                 int offset = 0;
                 if(form.CurrentPage>1) offset=form.CurrentPage * form.LimitResults;
                 this.Limit(form.LimitResults, offset);
+
+                // Ajouter les elements de recherche via les attributs
+                // todo!!!
+                // !!!!
             }
             catch (Exception ex)
             {
@@ -120,7 +126,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         public SqlBuilder Select(params string[] fields)
         {
-            this.sqlCommandType = SqlCommandTypeEnum.SELECT;
+            this.sqlCommandType = SqlCommandTypeEnum.Select;
             if (fields != null) this.SqlFieldNames = fields.ToList();
             return this;
         }
@@ -129,11 +135,11 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// Mise à jour de données en base
         /// </summary>
-        /// <param name="updateValues"></param>
+        /// <param name="updateValues">Valeurs à mettre à jour</param>
         /// <returns></returns>
         public SqlBuilder Update(Dictionary<string, object> updateValues)
         {
-            this.sqlCommandType = SqlCommandTypeEnum.UPDATE;
+            this.sqlCommandType = SqlCommandTypeEnum.Update;
             this.SqlFieldNames = updateValues.Select(di => di.Key).ToList();
             this.SqlInputParameters.AddRange(updateValues, false);
             return this;
@@ -147,7 +153,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         public SqlBuilder Delete()
         {
-            this.sqlCommandType = SqlCommandTypeEnum.DELETE;
+            this.sqlCommandType = SqlCommandTypeEnum.Delete;
             return this;
         }
 
@@ -157,7 +163,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         public SqlBuilder Insert(Dictionary<string, object> insertValues)
         {
-            this.sqlCommandType = SqlCommandTypeEnum.INSERT;
+            this.sqlCommandType = SqlCommandTypeEnum.Insert;
             this.SqlFieldNames = insertValues.Select(di => di.Key).ToList();
             this.SqlInputParameters.AddRange(insertValues, false);
             return this;
@@ -195,6 +201,7 @@ namespace Nglib.DATA.CONNECTOR
         /// </summary>
         /// <param name="parametername"></param>
         /// <param name="parameterValue"></param>
+        /// <param name="IgnoreIfNotNullEmpty">Si true, ignore si la valeur est null ou vide</param>
         /// <returns></returns>
         public SqlBuilder AddWhereEqual(string parametername, object parameterValue, bool IgnoreIfNotNullEmpty=false)
         {
@@ -366,6 +373,16 @@ namespace Nglib.DATA.CONNECTOR
             }
         }
 
+        public QueryContext ToQueryContext()
+        {
+            string sql = this.ToString();
+            return new QueryContext(sql, this.SqlInputParameters);
+        }
+
+
+
+
+
 
         public string GetSqlWherePart() => ComposeSQLWherePart(this);
 
@@ -400,25 +417,25 @@ namespace Nglib.DATA.CONNECTOR
                 StringBuilder retoursql = new StringBuilder();
 
                 // ------ SELECT PART --------
-                if(query.sqlCommandType == SqlCommandTypeEnum.SELECT)
+                if(query.sqlCommandType == SqlCommandTypeEnum.Select)
                 {
                     retoursql.Append("SELECT ");
                     if (query.SqlEngine == ConnectorConstants.ConnectorEngineEnum.MSSQL && query.LimitResults > 0) retoursql.Append($"TOP {query.LimitResults} ");
                     if (query.SqlFieldNames.Count == 0) retoursql.Append(" * ");
                     else retoursql.Append(string.Join(" , ", query.SqlFieldNames) + " ");
                 }
-                else if (query.sqlCommandType == SqlCommandTypeEnum.UPDATE)
+                else if (query.sqlCommandType == SqlCommandTypeEnum.Update)
                 {
                     if (query.SqlFieldNames.Count == 0) throw new Exception("No Update Values");
                     if(query.WhereClauses.Count == 0) throw new Exception("WhereClauses Required for UPDATE");
                     retoursql.Append($"UPDATE {query.TableName} SET "+ string.Join(" , ",query.SqlFieldNames.Select(valk => valk + "=@" + valk))+" " );
                 }
-                else if (query.sqlCommandType == SqlCommandTypeEnum.DELETE)
+                else if (query.sqlCommandType == SqlCommandTypeEnum.Delete)
                 {
                     if (query.WhereClauses.Count == 0) throw new Exception("WhereClauses Required for DELETE");
                     retoursql.Append($"DELETE ");
                 }
-                else if (query.sqlCommandType == SqlCommandTypeEnum.INSERT)
+                else if (query.sqlCommandType == SqlCommandTypeEnum.Insert)
                 {
                     if (query.SqlFieldNames.Count == 0) throw new Exception("No Insert Values");
                     retoursql.Append($"INSERT INTO {query.TableName} ");
@@ -429,7 +446,7 @@ namespace Nglib.DATA.CONNECTOR
 
 
                 // ------ FROM PART --------
-                if (query.sqlCommandType == SqlCommandTypeEnum.SELECT || query.sqlCommandType == SqlCommandTypeEnum.DELETE)
+                if (query.sqlCommandType == SqlCommandTypeEnum.Select || query.sqlCommandType == SqlCommandTypeEnum.Delete)
                 {
                     if (!string.IsNullOrWhiteSpace(query.Into)) { retoursql.AppendLine("INTO "+ query.Into); }
                     retoursql.AppendLine();
@@ -457,7 +474,7 @@ namespace Nglib.DATA.CONNECTOR
                 // ------ GROUP PART --------
                 if (query.GroupClauses.Count > 0)
                 {
-                    if (query.sqlCommandType != SqlCommandTypeEnum.SELECT) throw new Exception("GroupClauses only valid for SELECT");
+                    if (query.sqlCommandType != SqlCommandTypeEnum.Select) throw new Exception("GroupClauses only valid for SELECT");
                     retoursql.AppendLine();
                     retoursql.Append("GROUP BY " + string.Join(" , ", query.GroupClauses) + " ");
                 }
@@ -465,12 +482,12 @@ namespace Nglib.DATA.CONNECTOR
                 // ------ ORDER PART --------
                 if (query.OrderClauses.Count > 0)
                 {
-                    if (query.sqlCommandType != SqlCommandTypeEnum.SELECT) throw new Exception("OrderClauses only valid for SELECT");
+                    if (query.sqlCommandType != SqlCommandTypeEnum.Select) throw new Exception("OrderClauses only valid for SELECT");
                     retoursql.AppendLine();
                     retoursql.Append("ORDER BY " + string.Join(" , ", query.OrderClauses) + " ");
                 }
                    
-                if (query.LimitResults > 0 && query.sqlCommandType == SqlCommandTypeEnum.SELECT)
+                if (query.LimitResults > 0 && query.sqlCommandType == SqlCommandTypeEnum.Select)
                 {
                     retoursql.AppendLine();
                     if (query.SqlEngine != ConnectorConstants.ConnectorEngineEnum.MSSQL)

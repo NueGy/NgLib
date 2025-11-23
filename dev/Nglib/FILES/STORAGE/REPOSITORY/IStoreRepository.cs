@@ -62,8 +62,7 @@ namespace Nglib.FILES.STORAGE.REPOSITORY
         /// <summary>
         /// Information sur un fichier
         /// </summary>
-        /// <param name="containerName"></param>
-        /// <param name="fileName"></param>
+        /// <param name="fileName">Nom du fichier</param>
         /// <returns></returns>
         Task<IStoreFile> GetFileInformationAsync(string fileName);
     }

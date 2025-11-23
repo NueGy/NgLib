@@ -97,8 +97,8 @@ namespace Nglib.DATA.COLLECTIONS
         /// <summary>
         /// Savoir si une colonne à été modifiée
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="col"></param>
+        /// <param name="row">Ligne de données</param>
+        /// <param name="col">Colonne à vérifier</param>
         /// <returns></returns>
         private static bool hasCellChanged(DataRow row, DataColumn col)
         {
@@ -242,7 +242,7 @@ namespace Nglib.DATA.COLLECTIONS
         /// Obtient les données d'un datarow sous forme de dictionnaire
         /// </summary>
         /// <param name="row">Données</param>
-        /// <param name="colNames">Selection de colonnes</param>
+        /// <param name="colFilters">Selection de colonnes</param>
         /// <returns></returns>
         public static Dictionary<string, object> GetValues(this System.Data.DataRow row, params string[] colFilters)
         {
@@ -345,7 +345,7 @@ namespace Nglib.DATA.COLLECTIONS
         /// <summary>
         /// Permet de clonner les données des datarow en une seule nouvelle datatable (Merge)
         /// </summary>
-        /// <param name="datas"></param>
+        /// <param name="rows">Lignes à cloner</param>
         /// <returns></returns>
         public static System.Data.DataTable CloneRowsInNewDataTable(params System.Data.DataRow[] rows)
         {
@@ -408,7 +408,10 @@ namespace Nglib.DATA.COLLECTIONS
 
 
 
-
+        public static System.Data.DataTable DefineDataTable(string tablename, params System.Data.DataColumn[] primarykeys)
+        {
+            return Nglib.DATA.COLLECTIONS.DataSetTools.DefineDataTable(tablename, null, primarykeys, null);
+        }
 
 
 
@@ -599,8 +602,8 @@ namespace Nglib.DATA.COLLECTIONS
         /// définir des colones comme primary key
         /// en reprenant bien celle de la table si existe déja
         /// </summary>
-        /// <param name="table"></param>
-        /// <param name="keyColsNames"></param>
+        /// <param name="table">Table de données</param>
+        /// <param name="colsPrimKeys">Colonnes clés primaires</param>
         /// <returns></returns>
         public static void SetPrimaryKeys(this DataTable table, params System.Data.DataColumn[] colsPrimKeys)
         {
@@ -682,6 +685,12 @@ namespace Nglib.DATA.COLLECTIONS
         }
 
 
+        public static List<System.Data.DataTable> ToList(this System.Data.DataTableCollection tables)
+        {
+            List<System.Data.DataTable> retour = new List<System.Data.DataTable>();
+            foreach (System.Data.DataTable item in tables) retour.Add(item);
+            return retour;
+        }
 
         public static List<System.Data.DataColumn> ToList(this System.Data.DataColumnCollection columns)
         {

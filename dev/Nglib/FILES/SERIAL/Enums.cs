@@ -28,6 +28,12 @@ namespace Nglib.FILES.SERIAL
         /// </summary>
         XML,
         /// <summary>
+        /// 
+        /// application/parquet
+        /// https://github.com/aloneguid/parquet-dotnet
+        /// </summary>
+        PARQUET,
+        /// <summary>
         /// application/dat application/octet-stream 
         /// Données Brutes binaires (Fileset)
         /// </summary>

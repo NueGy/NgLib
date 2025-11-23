@@ -1,7 +1,7 @@
 ﻿namespace Nglib.DATA.BASICS
 {
     /// <summary>
-    ///     Enum d'utilisation
+    /// Enum d'utilisation
     /// </summary>
     public enum UseModeEnum
     {

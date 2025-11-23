@@ -1,5 +1,4 @@
-﻿using Nglib.DATA.KEYVALUES;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +6,8 @@ using System.Linq;
 namespace Nglib.DATA.COLLECTIONS
 {
     /// <summary>
-    ///     Outils pour manipuler  List et Dictionary
+    /// Static utility tools for manipulating List and Dictionary collections with advanced features.
+    /// <para>Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_collections"/></para>
     /// </summary>
     public static class CollectionsTools
     {
@@ -15,21 +15,21 @@ namespace Nglib.DATA.COLLECTIONS
 
 
         /// <summary>
-        ///     Contient la clef
+        /// Checks if the dictionary contains the specified key.
         /// </summary>
-        public static bool ContainsKey<TValue>(this IDictionary<string, TValue> dic, string keySearch, bool Insensitive)
+        public static bool ContainsKey<TValue>(this IDictionary<string, TValue> dic, string keySearch, bool insensitive)
         {
-            return dic.Keys.Contains(keySearch, Insensitive);
+            return dic.Keys.Contains(keySearch, insensitive);
         }
 
         /// <summary>
-        ///     Contient au moins l'une des clefs
+        /// Checks if the collection contains at least one of the specified keys.
         /// </summary>
         public static bool Contains(this ICollection<string> keys, ICollection<string> keysSearch,
-            bool Insensitive = true)
+            bool insensitive = true)
         {
             if (keys == null || keys.Count == 0 || keysSearch == null || keysSearch.Count == 0) return false;
-            var compare = Insensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            var compare = insensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             foreach (var itemkey in keys)
             {
                 if (string.IsNullOrEmpty(itemkey)) continue;
@@ -37,17 +37,18 @@ namespace Nglib.DATA.COLLECTIONS
                     return true;
             }
 
-            return true;
+            return false;
         }
 
 
         /// <summary>
-        ///     Si la liste contient la clef, avec mode Insensitive
+        /// Checks if the collection contains the specified key with optional case-insensitive mode.
         /// </summary>
-        public static bool Contains(this ICollection<string> keys, string keySearch, bool Insensitive)
+        public static bool Contains(this ICollection<string> keys, string keySearch, bool insensitive)
         {
+            if (keys == null || keys.Count == 0) return false;
             if (string.IsNullOrEmpty(keySearch)) return false;
-            var compare = Insensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            var compare = insensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             if (keys.Any(kal => keySearch.Equals(kal, compare)))
                 return true;
             return false;
@@ -55,39 +56,37 @@ namespace Nglib.DATA.COLLECTIONS
 
 
         /// <summary>
-        /// Si le string est dans la liste
-        /// Comme string[].Contains() mais en inversé
+        /// Checks if the string is in the list (inverted Contains).
         /// </summary>
-        public static bool EqualsList(this string str, ICollection<string> keysSearch, bool Insensitive = true)
+        public static bool ContainInList(this string str, ICollection<string> keysSearch, bool insensitive = true)
         {
-            return keysSearch.Contains(str, Insensitive);
+            return keysSearch.Contains(str, insensitive);
         }
 
         /// <summary>
-        /// Si le string est dans la liste (InsensitiveMode = true)
-        /// Comme string[].Contains() mais en inversé
+        /// Checks if the string is in the list (InsensitiveMode = true, inverted Contains).
         /// </summary>
-        public static bool EqualsList(this string str, params string[] keysSearch)
+        public static bool ContainInList(this string str, params string[] keysSearch)
         {
             return keysSearch.Contains(str, true);
         }
 
         /// <summary>
-        /// Fusionner deux dictionaries, si la clef existe déjà, elle est remplacée
+        /// Merges two dictionaries. If a key already exists, it is replaced.
         /// </summary>
         public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue> dicOrigin,
-            IDictionary<TKey, TValue> dicToAdd, bool AllowOverride = true)
+            IDictionary<TKey, TValue> dicToAdd, bool allowOverride = true)
         {
             dicToAdd.ForEachSafe(x =>
             {
                 if (!dicOrigin.ContainsKey(x.Key)) dicOrigin.Add(x.Key, x.Value);
-                else if (AllowOverride) dicOrigin[x.Key] = x.Value;
+                else if (allowOverride) dicOrigin[x.Key] = x.Value;
             });
         }
 
 
         /// <summary>
-        ///     Permet d'ajouter ou remplacer une valeur
+        /// Adds or replaces a value in the dictionary.
         /// </summary>
         public static void AddOrReplace<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key, TValue value)
         {
@@ -97,18 +96,21 @@ namespace Nglib.DATA.COLLECTIONS
 
 
         /// <summary>
-        ///     Permet d'ajouter ou remplacer une valeur avec gestion de la casse (Insensitive)
+        /// Adds or replaces a value with case-insensitive handling.
         /// </summary>
-        public static void AddOrReplace<TValue>(this IDictionary<string, TValue> dic, string keyString, TValue value, bool Insensitive)
+        public static void AddOrReplace<TValue>(this IDictionary<string, TValue> dic, string keyString, TValue value, bool insensitive)
         {
-            if (!dic.ContainsKey(keyString,Insensitive)) dic.Add(keyString, value);
-            string realkey = dic.Keys.FirstOrDefault(k => keyString.Equals(k, StringComparison.OrdinalIgnoreCase));
-            dic[realkey] = value;
+            if (!dic.ContainsKey(keyString, insensitive)) dic.Add(keyString, value);
+            else
+            {
+                string realkey = dic.Keys.FirstOrDefault(k => keyString.Equals(k, insensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
+                if (realkey != null) dic[realkey] = value;
+            }
         }
 
 
         /// <summary>
-        /// Linq, Retourne que les éléments non null
+        /// LINQ extension: Returns only non-null elements.
         /// </summary>
         public static IEnumerable<T> NotNull<T>(this IEnumerable<T> source)
         {
@@ -118,9 +120,9 @@ namespace Nglib.DATA.COLLECTIONS
 
 
         /// <summary>
-        ///  Comme Linq ForEach
+        /// Like LINQ ForEach but with safe error handling.
         /// </summary>
-        /// <returns>false:ok true:anyError</returns>
+        /// <returns>false: ok, true: anyError</returns>
         public static bool ForEachSafe<T>(this IEnumerable<T> source, Action<T> action)
         {
             bool anyError = false;
@@ -130,7 +132,7 @@ namespace Nglib.DATA.COLLECTIONS
                 {
                     action(item);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     anyError = true;
                 }
@@ -141,7 +143,7 @@ namespace Nglib.DATA.COLLECTIONS
 
 
         /// <summary>
-        ///     Diviser en autant de collections que nécessaire (avec autant d'éléments dans chaque liste)
+        /// Divides the collection into multiple arrays with a maximum number of items per array.
         /// </summary>
         public static List<T[]> Divide<T>(this ICollection<T> collection, int maxCountItemByList)
         {
@@ -158,26 +160,43 @@ namespace Nglib.DATA.COLLECTIONS
         }
 
         /// <summary>
-        ///     Diviser en un nombre de listes fixe, avec autant éléments dans chaque listes
+        /// Divides the collection into a fixed number of arrays with balanced distribution.
         /// </summary>
-        [Obsolete("Soon",true)]
         public static List<T[]> DivideFixed<T>(this ICollection<T> collection, int countOfPart)
         {
+            if (collection == null || countOfPart <= 0) return new List<T[]>();
+            if (countOfPart == 1) return new List<T[]> { collection.ToArray() };
+            
             var chunks = new List<T[]>();
-            var chunkSize = collection.Count() / countOfPart;
-
-            //for (var i = 0; i < chunkCount; i++)
-            //    chunks.Add(collection.Skip(i * sizeOfPart).Take(sizeOfPart).ToList());
-
+            var totalItems = collection.Count;
+            var itemsPerChunk = totalItems / countOfPart;
+            var remainder = totalItems % countOfPart;
+            
+            var currentIndex = 0;
+            var collectionArray = collection.ToArray();
+            
+            for (var i = 0; i < countOfPart; i++)
+            {
+                var chunkSize = itemsPerChunk + (i < remainder ? 1 : 0);
+                if (chunkSize > 0 && currentIndex < totalItems)
+                {
+                    var chunk = new T[chunkSize];
+                    Array.Copy(collectionArray, currentIndex, chunk, 0, chunkSize);
+                    chunks.Add(chunk);
+                    currentIndex += chunkSize;
+                }
+                else
+                {
+                    chunks.Add(new T[0]);
+                }
+            }
+            
             return chunks;
         }
 
         /// <summary>
-        /// ForEach Utilisable sur les dictionnaires (simple, comme linq)
+        /// ForEach extension usable on dictionaries (simple, like LINQ).
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source"></param>
-        /// <param name="action"></param>
         public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
             foreach (var item in source)
@@ -185,7 +204,7 @@ namespace Nglib.DATA.COLLECTIONS
         }
 
         /// <summary>
-        ///     Basculer le premier objet en dernier
+        /// Moves the first item to the last position.
         /// </summary>
         public static void MoveFirstToLast(this IList list)
         {
@@ -199,7 +218,7 @@ namespace Nglib.DATA.COLLECTIONS
 
 
         /// <summary>
-        /// Permet de clonner une liste, en utilisant ICloneable si possible
+        /// Clones a list using ICloneable if available.
         /// </summary>
         public static List<TValue> Clone<TValue>(this IList<TValue> list)
         {
@@ -209,9 +228,9 @@ namespace Nglib.DATA.COLLECTIONS
 
 
         /// <summary>
-        /// Obtenir une valeur  (No CaseSensitive), safe retourne null si non trouvé
+        /// Gets a value (case-insensitive), safe mode returns null if not found.
         /// </summary>
-        public static string GetString(this IDictionary<string, string> dic, string key)
+        public static string GetSafeString(this IDictionary<string, string> dic, string key)
         {
             if (string.IsNullOrEmpty(key) || dic == null) return null;
             var val = dic.FirstOrDefault(d => key.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
@@ -219,30 +238,31 @@ namespace Nglib.DATA.COLLECTIONS
         }
 
         /// <summary>
-        /// Obtenir une valeur  (No CaseSensitive), safe retourne null si non trouvé
+        /// Gets a value (case-insensitive), safe mode returns empty string if not found.
         /// </summary>
-        public static string GetString(this IDictionary<string, object> dic, string key)
+        public static string GetSafeString(this IDictionary<string, object> dic, string key)
         {
-            var obj = GetObject(dic, key);
+            var obj = GetSafeObject(dic, key);
             if (obj == null || obj == DBNull.Value) return "";
             return Convert.ToString(obj);
         }
 
         /// <summary>
-        /// Obtenir une valeur (No CaseSensitive), safe retourne null si non trouvé
+        /// Gets an object value (case-insensitive), safe mode returns null if not found.
         /// </summary>
-        public static object GetObject(this IDictionary<string, object> dic, string key)
+        public static object GetSafeObject(this IDictionary<string, object> dic, string key)
         {
             if (string.IsNullOrEmpty(key) || dic == null) return null;
-            var val = dic.FirstOrDefault(d => key.Equals(d.Key, StringComparison.OrdinalIgnoreCase));
+            
+            var val = dic.Where(d => key.Equals(d.Key, StringComparison.OrdinalIgnoreCase)).Select(d=>d.Value).FirstOrDefault();
             //if (val.) return null;
-            return val.Value;
+            return val;
         }
 
         /// <summary>
-        /// Obtenir une valeur, safe retourne null si non trouvé
+        /// Gets a value, safe mode returns default(TValue) if not found.
         /// </summary>
-        public static TValue GetSafe<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key)
+        public static TValue GetSafeValue<TKey, TValue>(this IDictionary<TKey, TValue> dic, TKey key)
         {
             if (key ==null|| dic == null) return default(TValue);
             if(dic.ContainsKey(key)) return dic[key];

@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace Nglib.FORMAT
 {
+    /// <summary>
+    /// Base conversion utilities (hex, base36, etc.). Marked as BETA/Obsolete.
+    /// Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_format"/>
+    /// </summary>
     [Obsolete("BETA")]
     public static class ObjectBaseTools
     {
@@ -34,8 +38,12 @@ namespace Nglib.FORMAT
 
 
         /// <summary>
-        /// Conversion en base 10,16,...
+        /// Converts number from one base to another (base 10, 16, 36, etc.)
         /// </summary>
+        /// <param name="number">Number as string</param>
+        /// <param name="fromBase">Source base</param>
+        /// <param name="toBase">Target base</param>
+        /// <returns>Converted number as string</returns>
         private static string BaseConvertGeneric(string number, int fromBase, int toBase)
         {
             var digits = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -83,6 +91,8 @@ namespace Nglib.FORMAT
         /// Convert string to base64 string.
         /// </summary>
         /// <param name="input"></param>
+        /// <param name="fromBase">Base de départ</param>
+        /// <param name="toBase">Base de destination</param>
         /// <returns></returns>
         public static string RebaseString(this string input, int fromBase, int toBase)
         {
@@ -199,21 +209,7 @@ namespace Nglib.FORMAT
 
 
 
-        public static string EncryptCeasar(string str, int cryptoNumber)
-        {
-            return string.Join("", str.Select(chr => {
-                int x = chr - 65;
-                return (char)((65) + ((x + cryptoNumber) % 26));
-            }));
-        }
 
-        public static string DecryptCeasar(string str, int cryptoNumber)
-        {
-            return string.Join("", str.Select(chr => {
-                int x = chr - 65;
-                return (char)((65) + ((x - cryptoNumber) % 26));
-            }));
-        }
 
 
     }

@@ -17,7 +17,7 @@ namespace Nglib.DATA.CONNECTOR
 
         public override string ToString()
         {
-            string msg = string.Format("[{0}]{1} (SQL:{2})", queryContext.QueryTry, this.Message, queryContext.sqlQuery);
+            string msg = string.Format("{0} (SQL:{1})", this.Message, queryContext.SqlQuery);
             return msg;
         }
 

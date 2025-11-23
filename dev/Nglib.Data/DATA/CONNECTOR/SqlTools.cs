@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using Nglib.DATA.COLLECTIONS;
+﻿using Nglib.DATA.COLLECTIONS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +28,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// création de ('value1','value2','valueN')
         /// </summary>
-        /// <param name="chaine">séparateur ;</param>
+        /// <param name="chainecsv">chaîne CSV avec séparateur ;</param>
         /// <returns></returns>
         public static string ConvertToinsql(string chainecsv)
         {
@@ -45,7 +39,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// création de ('value1','value2','valueN')
         /// </summary>
-        /// <param name="chaine"></param>
+        /// <param name="elements">Liste d'éléments à convertir</param>
         /// <returns></returns>
         public static string ConvertToinsql(List<string> elements)
         {
@@ -64,7 +58,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// création de (value1,value2,valueN)
         /// </summary>
-        /// <param name="chaine"></param>
+        /// <param name="elements">Liste d'entiers à convertir</param>
         /// <returns></returns>
         public static string ConvertToinsql(List<int> elements)
         {
@@ -83,7 +77,7 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// création de (value1,value2,valueN)
         /// </summary>
-        /// <param name="chaine"></param>
+        /// <param name="elements">Liste de longs à convertir</param>
         /// <returns></returns>
         public static string ConvertToinsql(List<long> elements)
         {
@@ -198,7 +192,7 @@ namespace Nglib.DATA.CONNECTOR
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 
@@ -422,8 +416,8 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// Permet de générer un code SQL d'INSERT multilignes
         /// </summary>
-        /// <param name="datas"></param>
-        /// <param name="tablename"></param>
+        /// <param name="retSrc">Table source de données</param>
+        /// <param name="removeColumn">Colonnes à exclure</param>
         /// <returns></returns>
         public static Tuple<string, Dictionary<string, object>> GenerateSqlMultiInsert(System.Data.DataTable retSrc, List<string> removeColumn = null)
         {

@@ -4,14 +4,6 @@ using System.Text;
 
 namespace Nglib.DATA.CONNECTOR
 {
-    public enum SqlCommandTypeEnum
-    {
-        SELECT,
-        UPDATE,
-        DELETE,
-        INSERT
-    }
-
     public static class ConnectorConstants
     {
 

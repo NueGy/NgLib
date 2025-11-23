@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -52,7 +46,8 @@ namespace Nglib.FORMAT
         /// <summary>
         /// Permet de valider et corriger un numero en numéro international  (+33)
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="input">Numéro de téléphone</param>
+        /// <param name="defaultCountryPrefix">Préfixe pays par défaut</param>
         /// <returns></returns>
         [Obsolete("soon")]
         public static string ValidatePhoneNumber(string input, int defaultCountryPrefix = 33)

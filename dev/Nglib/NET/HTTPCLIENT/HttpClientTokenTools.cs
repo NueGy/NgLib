@@ -8,28 +8,28 @@ using System.Threading.Tasks;
 namespace Nglib.NET.HTTPCLIENT
 {
     /// <summary>
-    /// Permet de manipuler un contexte de client http IHttpClientContext
+    /// Tools for managing HTTP client token context (IHttpClientContext)
     /// </summary>
     public static class HttpClientTokenTools
     {
         /// <summary>
-        /// Si le token à expiré
+        /// Checks if the token has expired
         /// </summary>
         public static bool IsTokenExpired(this HttpClientTokenHandler httpClientContext)
         {
             if (httpClientContext == null) return false;
-            if (string.IsNullOrEmpty(httpClientContext.LastToken)) return true; // si pas de token alors forcé de le renouveller
+            if (string.IsNullOrEmpty(httpClientContext.LastToken)) return true; // if no token, must renew
             if (httpClientContext.LastToken == " ") return false;//??
             if (!httpClientContext.LastTokenDate.HasValue || httpClientContext.LastTokenDate.Value.Year < 2000)
                 return true;
-            if (httpClientContext.LastTokenExpireSeconds < 1) return true; // non géré
+            if (httpClientContext.LastTokenExpireSeconds < 1) return true; // not managed
             if (httpClientContext.LastTokenDate.Value.AddSeconds(httpClientContext.LastTokenExpireSeconds) <
-                DateTime.Now) return true; // le token est expiré
+                DateTime.Now) return true; // token is expired
             return false;
         }
 
         /// <summary>
-        /// Mettre à jour le token dans le handler
+        /// Updates the token in the handler
         /// </summary>
         /// <param name="httpClientContext"></param>
         /// <param name="token"></param>
@@ -44,7 +44,7 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Génération d'un token HMAC HS256
+        /// Generates an HMAC HS256 token
         /// </summary>
         /// <param name="httpClientContext"></param>
         /// <returns></returns>
@@ -61,14 +61,14 @@ namespace Nglib.NET.HTTPCLIENT
 
 
         /// <summary>
-        /// Obtenir un nouveau token via un appel http
+        /// Obtains a new token via an HTTP call
         /// </summary>
         public static async Task<bool> RefreshTokenOAuth2Async(this HttpClientTokenHandler httpClientContext)
         {
             if (httpClientContext?.Config == null) return false;
             try
             {
-                // obtenir une nouveau token via un appel http
+                // Obtain a new token via an HTTP call
                 //if (string.IsNullOrEmpty(httpClientContext.TokenConfig.ClientId)) throw new Exception("ClientId is required");
                 //if (string.IsNullOrEmpty(httpClientContext.TokenConfig.ClientSecret)) throw new Exception("ClientSecret is required");
                 if (string.IsNullOrEmpty(httpClientContext.Config.TokenEndpointUrl)) throw new Exception("TokenEndpointurl is required");

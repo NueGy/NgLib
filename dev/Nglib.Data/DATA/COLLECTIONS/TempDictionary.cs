@@ -14,19 +14,27 @@ namespace Nglib.DATA.COLLECTIONS
     /// Un dictionaire de données avec gestion de la durée de rétention 
     /// Use ConcurrentDictionary (Safe Thread et Safe nullable)
     /// </summary>
-    /// <typeparam name="Tkey"></typeparam>
-    /// <typeparam name="TValue"></typeparam>
+    /// <typeparam name="TKey">Type de clé</typeparam>
+    /// <typeparam name="TValue">Type de valeur</typeparam>
     public class TempDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>, IEnumerable
     {
         private readonly ConcurrentDictionary<TKey, TValue> keyValues = new ConcurrentDictionary<TKey, TValue>(); //données
         private readonly ConcurrentDictionary<TKey, DateTime> expireAts = new ConcurrentDictionary<TKey, DateTime>();
         private int _defaultExpiration;
         //private int _maximumStack;
+        
+        /// <summary>
+        /// Constructeur par défaut
+        /// </summary>
         public TempDictionary()
         {
             _defaultExpiration = 30;
            // _maximumStack = 0; // illimité
         }
+        
+        /// <summary>
+        /// Constructeur avec expiration par défaut
+        /// </summary>
         public TempDictionary(int defaultExpiration)
         {
             _defaultExpiration = defaultExpiration;
@@ -36,7 +44,14 @@ namespace Nglib.DATA.COLLECTIONS
 
 
 
+        /// <summary>
+        /// Accès par clé
+        /// </summary>
         public TValue this[TKey key] { get => this.Get(key); set => this.Set(key,value); }
+        
+        /// <summary>
+        /// Nombre d'éléments
+        /// </summary>
         public int Count => keyValues.Count;
 
 
@@ -45,7 +60,6 @@ namespace Nglib.DATA.COLLECTIONS
         /// </summary>
         /// <param name="key">clef</param>
         /// <param name="ignoreCacheRules">activer ou non la suppression de l'objet si obsolete</param>
-        /// <param name="SafeNullable">ne retournera pas d'erreur su existe pas</param>
         /// <returns></returns>
         public TValue Get(TKey key, bool ignoreCacheRules=false)
         {
@@ -66,9 +80,9 @@ namespace Nglib.DATA.COLLECTIONS
         /// <summary>
         /// Définir une valeur
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <param name="keepTime"></param>
+        /// <param name="key">Clé du dictionnaire</param>
+        /// <param name="value">Valeur à stocker</param>
+        /// <param name="ExpireAt">Date d'expiration</param>
         public void Set(TKey key, TValue value, DateTime ExpireAt)
         { 
             keyValues[key] = value;
@@ -86,22 +100,31 @@ namespace Nglib.DATA.COLLECTIONS
         /// <summary>
         /// Définir une valeur
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <param name="keepTimeSecond"></param>
+        /// <param name="key">Clé du dictionnaire</param>
+        /// <param name="value">Valeur à stocker</param>
+        /// <param name="keepTimeSecond">Durée de conservation en secondes</param>
         public void Set(TKey key, TValue value, int? keepTimeSecond=null)
         {
             var expireat = new DateTime().AddSeconds(keepTimeSecond.HasValue ? keepTimeSecond.Value : this._defaultExpiration);
             this.Set(key, value, expireat);
         }
 
+        /// <summary>
+        /// Clés du dictionnaire
+        /// </summary>
         public ICollection<TKey> Keys => keyValues.Keys;
 
+        /// <summary>
+        /// Valeurs du dictionnaire
+        /// </summary>
         public ICollection<TValue> Values => keyValues.Values;
 
 
         
 
+        /// <summary>
+        /// Vide le dictionnaire
+        /// </summary>
         public void Clear()
         {
             keyValues.Clear();
@@ -109,11 +132,17 @@ namespace Nglib.DATA.COLLECTIONS
 
 
 
+        /// <summary>
+        /// Vérifie si la clé existe
+        /// </summary>
         public bool ContainsKey(TKey key)
         {
             return keyValues.ContainsKey(key);
         }
 
+        /// <summary>
+        /// Supprime une clé
+        /// </summary>
         public bool Remove(TKey key)
         {
             TValue val;
@@ -122,6 +151,9 @@ namespace Nglib.DATA.COLLECTIONS
             return expireAts.TryRemove(key, out vald);
         }
 
+        /// <summary>
+        /// Énumérateur
+        /// </summary>
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
             return keyValues.GetEnumerator();

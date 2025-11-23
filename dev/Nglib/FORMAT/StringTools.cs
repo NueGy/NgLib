@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,31 +7,56 @@ using System.Text;
 namespace Nglib.FORMAT
 {
     /// <summary>
-    ///     Outils pour manipulation des string
+    /// Utility class for string manipulation and formatting.
+    /// Documentation: <see href="https://github.com/NueGy/NgLibComponents/wiki/wiki_components_format"/>
     /// </summary>
     public static class StringTools
     {
-        public const string removeChars = "?&^$#@!<>’\'*�";// inclus les problèmes d'encodage
-        public const string AllCharsConst = "azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN0123456789";
+        internal const string AlphaNumCharsConst = "azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN0123456789";
+        internal static readonly HashSet<char> removeCharsSet = new HashSet<char>
+        {
+            '?', '&', '^', '$', '#', '@', '!', '<', '>', '\'', '"', '*',
+            // Control and problematic characters
+            '\uFFFD', // Unicode Replacement Character 
+            '\u00A0', // Non-breaking space
+            '\u200B', // Zero-width space
+            '\u200C', // Zero-width non-joiner
+            '\u200D', // Zero-width joiner
+            '\uFEFF'  // Byte order mark
+        };
 
-        private static int lastseed = 25;
-        private static readonly Random random = new();
+        internal static readonly Dictionary<char, char> DiacriticsMap = new()
+        {
+            {'à', 'a'}, {'á', 'a'}, {'ä', 'a'}, {'â', 'a'}, {'ã', 'a'}, {'å', 'a'},
+            {'é', 'e'}, {'è', 'e'}, {'ê', 'e'}, {'ë', 'e'},
+            {'ì', 'i'}, {'í', 'i'}, {'ï', 'i'}, {'î', 'i'},
+            {'ò', 'o'}, {'ó', 'o'}, {'ô', 'o'}, {'ö', 'o'},
+            {'û', 'u'}, {'ü', 'u'}, {'ù', 'u'}, {'ú', 'u'},
+            {'ý', 'y'}, {'ÿ', 'y'}, {'ç', 'c'}, {'ñ', 'n'}
+        };
+
+
+        private static readonly System.Threading.ThreadLocal<Random> threadSafeRandom 
+            =  new(() => new Random(Guid.NewGuid().GetHashCode()));
 
 
         /// <summary>
-        ///     Génération d'une chaine aléatoire
+        /// Generates a random string of specified length
         /// </summary>
-        public static string GenerateString(int length, string chars = "abcdefghijklmnopqrstuvwxyz123456789")
+        /// <param name="length">Length of the string</param>
+        /// <param name="chars">Character set to use</param>
+        /// <returns>Random string</returns>
+        public static string RandomString(int length, string chars = "abcdefghijklmnopqrstuvwxyz123456789")
         {
             return new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+                .Select(s => s[threadSafeRandom.Value.Next(s.Length)]).ToArray());
         }
 
         /// <summary>
-        ///     Génération d'une chaine aléatoire
+        /// Generates a time-based GUID as a 32-character string (no hyphens)
         /// </summary>
-        /// <returns></returns>
-        public static string GenerateGuid32()
+        /// <returns>32-character GUID string</returns>
+        public static string RandomGuid32()
         {
             try
             {
@@ -63,14 +82,209 @@ namespace Nglib.FORMAT
         }
 
 
+
         /// <summary>
-        ///     Permet de séparer des chaines de caractères
-        ///     exemple "aaaa{bbbbb}ccccc" => "{bbbbb}"
+        /// Checks if string contains only letters and numbers
         /// </summary>
-        /// <param name="chaine"></param>
-        /// <param name="startSeparator"></param>
-        /// <param name="endSeparator"></param>
-        /// <returns></returns>
+        /// <param name="input">String to check</param>
+        /// <returns>True if alphanumeric only</returns>
+        public static bool IsAlphaNumeric(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return false;
+            ReadOnlySpan<char> span = input.AsSpan();
+            for (int i = 0; i < span.Length; i++)
+                if (!char.IsLetterOrDigit(span[i])) return false;
+            return true;
+        }
+
+
+
+
+
+
+        /// <summary>
+        /// Filters a string to keep only specified characters
+        /// </summary>
+        /// <param name="original">Original string</param>
+        /// <param name="characters">Allowed characters</param>
+        /// <returns>Filtered string</returns>
+        public static string FilterCharacters(string original, string characters = AlphaNumCharsConst)
+        {
+            if (original == null) return null;
+            var retour = new StringBuilder();
+            foreach (var item in original)
+                if (characters.Contains(item))
+                    retour.Append(item);
+            return retour.ToString();
+        }
+
+
+        /// <summary>
+        /// Limits string length and removes carriage returns. Handles cases where string is shorter than limit.
+        /// </summary>
+        /// <param name="original">Original string</param>
+        /// <param name="num">Maximum length</param>
+        /// <returns>Limited string</returns>
+        public static string Limit(string original, int num)
+        {
+            if (original == null) return null;
+            var nb = original.Length;
+            if (nb > num) nb = num;
+            original = original.Substring(0, nb);
+            return original;
+        }
+
+
+        /// <summary>
+        /// Safely extracts substring from a position with out-of-range handling
+        /// </summary>
+        /// <param name="original">Original string</param>
+        /// <param name="Position">Start position</param>
+        /// <returns>Substring or empty string</returns>
+        public static string SubstringSafe(string original, int Position)
+        {
+            if (original == null) return string.Empty; 
+            var originalLength = original.Length;
+            if (originalLength < Position) return string.Empty; // too far
+            original = original.Substring(Position);
+            return original;
+        }
+
+        /// <summary>
+        /// Safely extracts substring with position and length, handles out-of-range cases
+        /// </summary>
+        /// <param name="original">Original string</param>
+        /// <param name="Position">Start position</param>
+        /// <param name="lenght">Length to extract</param>
+        /// <returns>Substring or empty string</returns>
+        public static string SubstringSafe(string original, int Position, int lenght)
+        {
+            if (original == null) return string.Empty; 
+            var originalLength = original.Length;
+            if (originalLength < Position) return string.Empty; // too far
+            if (originalLength < lenght + Position) lenght = originalLength - Position; // not enough characters
+            original = original.Substring(Position, lenght);
+            return original;
+        }
+
+
+        /// <summary>
+        /// Replaces diacritics (accented characters) with their base equivalents (à=>a, é=>e, etc.)
+        /// </summary>
+        /// <param name="inputString">Input string with diacritics</param>
+        /// <returns>String without diacritics</returns>
+        public static string ReplaceDiacritics(string inputString)
+        {
+            if (string.IsNullOrEmpty(inputString)) return inputString;
+            
+            var sb = new StringBuilder(inputString.Length);
+            foreach (char c in inputString)
+            {
+                sb.Append(DiacriticsMap.TryGetValue(c, out char replacement) ? replacement : c);
+            }
+            return sb.ToString();
+        }
+
+
+
+
+        /// <summary>
+        /// Sanitizes a string by removing problematic characters (XML, line breaks, etc.) and normalizing whitespace
+        /// </summary>
+        /// <param name="orgnStr">Original string</param>
+        /// <returns>Cleaned string</returns>
+        public static string CleanString(string orgnStr)
+        {
+            if (orgnStr == null) return null;
+            if (string.IsNullOrWhiteSpace(orgnStr)) return string.Empty;
+            var sb = new StringBuilder(orgnStr.Length);
+            bool lastWasSpace = false;
+            
+            foreach (char c in orgnStr)
+            {
+                if (c == '\r' || c == '\n' || c == '\t' || removeCharsSet.Contains(c))
+                {
+                    // Replace with space, but avoid consecutive spaces
+                    if (!lastWasSpace)
+                    {
+                        sb.Append(' ');
+                        lastWasSpace = true;
+                    }
+                }
+                else if (char.IsWhiteSpace(c))
+                {
+                    // Keep normal spaces but avoid consecutive spaces
+                    if (!lastWasSpace)
+                    {
+                        sb.Append(' ');
+                        lastWasSpace = true;
+                    }
+                }
+                else
+                {
+                    sb.Append(c);
+                    lastWasSpace = false;
+                }
+            }
+            
+            return sb.ToString().Trim();
+        }
+
+
+
+
+
+        /// <summary>
+        /// Replaces a character at a specific position in the string, pads with spaces if position exceeds length
+        /// </summary>
+        /// <param name="orgn">Original string</param>
+        /// <param name="pos">Position to replace</param>
+        /// <param name="c">Character to insert</param>
+        /// <returns>Modified string</returns>
+        public static string ReplaceChar(this string orgn, int pos, char c)
+        {
+            var sb = new StringBuilder(orgn);
+            while (sb.Length < pos + 1) sb.Append(' ');
+            sb[pos] = c;
+            return sb.ToString();
+        }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Splits tag values with CSV separator ';'. Filters empty values and sanitizes keys. Used for tag management.
+        /// </summary>
+        /// <param name="valuesstr">Tag string separated by ;</param>
+        /// <param name="toUpper">Convert to uppercase</param>
+        /// <param name="neverNull">Return empty array instead of null</param>
+        /// <returns>Array of sanitized tags</returns>
+        public static string[] SplitTag(string valuesstr, bool toUpper = true, bool neverNull=false)
+        {
+            if (valuesstr == null) return (neverNull) ? new string[0]:null;
+            if (string.IsNullOrWhiteSpace(valuesstr)) return new string[0];
+            string[] retour = valuesstr.Split(';', StringSplitOptions.None).ToArray();
+            retour = retour.Select(x => KeyTools.SanitizeKey(x,toUpper)).ToArray();
+            return retour;
+        }
+
+
+
+
+
+
+
+        /// <summary>
+        /// Extracts encapsulated substrings between start and end separators. Example: "aaaa{bbbbb}ccccc" => "{bbbbb}"
+        /// </summary>
+        /// <param name="chaine">Source string</param>
+        /// <param name="startSeparator">Start delimiter</param>
+        /// <param name="endSeparator">End delimiter</param>
+        /// <returns>Array of encapsulated strings</returns>
         public static string[] SplitEncapsuled(string chaine, string startSeparator, string endSeparator)
         {
             var retour = new List<string>();
@@ -82,13 +296,13 @@ namespace Nglib.FORMAT
             var positionchaine = 0;
             for (var iteration = 0;
                  iteration < 999;
-                 iteration++) //on limite à 999 éléments dynamiques pour éviter les boucles folles
+                 iteration++) // limit to 999 dynamic elements to avoid infinite loops
             {
                 var positiondynstart = chaine.IndexOf(startSeparator, positionchaine, StringComparison.Ordinal);
-                if (positiondynstart < 0) break; // rien trouvé
+                if (positiondynstart < 0) break; // nothing found
                 var positiondynstop = chaine.IndexOf(endSeparator, positiondynstart, StringComparison.Ordinal) +
                     endSeparator.Length - 1;
-                positionchaine = positiondynstop; // permet de passer à la suite
+                positionchaine = positiondynstop; // move to next
                 if (positiondynstop < positiondynstart) continue; // throw new Exception("erreur dans les découpes");
                 var positiondyncount = positiondynstop - positiondynstart;
                 if (positiondyncount < 2 || positiondyncount > 99)
@@ -103,213 +317,6 @@ namespace Nglib.FORMAT
 
             return retour.ToArray();
         }
-
-
-
-        /// <summary>
-        ///     Contient que des lettres et des nombres
-        /// </summary>
-        public static bool IsAlphaNumeric(string input)
-        {
-            //Verify input
-            if (string.IsNullOrEmpty(input)) return false;
-
-            for (var i = 0; i < input.Length; i++)
-                if (!char.IsLetter(input[i]) && !char.IsNumber(input[i]))
-                    return false;
-            return true;
-        }
-
-
-        /// <summary>
-        ///     Permet de filtrer certain caractères uniquements
-        /// </summary>
-        /// <param name="original"></param>
-        /// <param name="characters"></param>
-        /// <returns></returns>
-        public static string FilterCharacters(string original, string characters = AllCharsConst)
-        {
-            var retour = new StringBuilder();
-            foreach (var item in original)
-                if (characters.Contains(item))
-                    retour.Append(item);
-            return retour.ToString();
-        }
-
-
-        /// <summary>
-        ///     Limiter la taille d'une chaine string + supprimer les retour chariot, ...
-        ///     Gere meme si la taille de la chaine est plus petite que la limite
-        /// </summary>
-        public static string Limit(string original, int num)
-        {
-            if (original == null) return null;
-            var nb = original.Length;
-            if (nb > num) nb = num;
-            original = original.Substring(0, nb);
-            return original;
-        }
-
-
-        /// <summary>
-        ///     Permet de découper une chaine avec gestion du outRange
-        /// </summary>
-        public static string SubstringSafe(string original, int Position)
-        {
-            var originalLength = original.Length;
-            if (originalLength < Position) return string.Empty; // trop loin
-            original = original.Substring(Position);
-            return original;
-        }
-
-        /// <summary>
-        ///     Permet de découper une chaine avec gestion du outRange
-        /// </summary>
-        public static string SubstringSafe(string original, int Position, int lenght)
-        {
-            var originalLength = original.Length;
-            if (originalLength < Position) return string.Empty; // trop loin
-            if (originalLength < lenght + Position) lenght = originalLength - Position; // pas assez de caractere
-            original = original.Substring(Position, lenght);
-            return original;
-        }
-
-
-        /// <summary>
-        ///     PadLeft pour les nombres
-        /// </summary>
-        /// <param name="value">valeur</param>
-        /// <param name="totalWith">nombre de caracteres sur le champs</param>
-        public static string PadNumeric(string value, int totalWith)
-        {
-            if (value == null) value = ""; // jamais null
-            value = value.Replace(" ", ""); // on supprime aussi les espaces (gardera les , et .)
-            if (value.Length > totalWith)
-                return Limit(value, totalWith);
-            
-            value = value.PadLeft(totalWith, '0'); // on ajoute les zero sur la gauche
-            return value;
-        }
-
-
-        /// <summary>
-        ///     Permet de remplacer les accents  à=>a
-        /// </summary>
-        /// <param name="inputString"></param>
-        /// <returns></returns>
-        public static string ReplaceDiacritics(string inputString)
-        {
-            var result = inputString;
-            result = result.Replace('à', 'a');
-            result = result.Replace('á', 'a');
-            result = result.Replace('ä', 'a');
-            result = result.Replace('â', 'a');
-            result = result.Replace('ã', 'a');
-            result = result.Replace('å', 'a');
-            result = result.Replace('é', 'e');
-            result = result.Replace('è', 'e');
-            result = result.Replace('ê', 'e');
-            result = result.Replace('ë', 'e');
-            result = result.Replace('ì', 'i');
-            result = result.Replace('í', 'i');
-            result = result.Replace('ï', 'i');
-            result = result.Replace('î', 'i');
-            result = result.Replace('ò', 'o');
-            result = result.Replace('ó', 'o');
-            result = result.Replace('ô', 'o');
-            result = result.Replace('ö', 'o');
-            result = result.Replace('û', 'u');
-            result = result.Replace('ü', 'u');
-            result = result.Replace('ù', 'u');
-            result = result.Replace('ú', 'u');
-            result = result.Replace('ý', 'y');
-            result = result.Replace('ÿ', 'y');
-            result = result.Replace('ç', 'c');
-            result = result.Replace('ñ', 'n');
-            return result;
-        }
-
-
-
-        /// <summary>
-        ///     Supprime tous les caractères (xml,html, saut de ligne, ...)
-        /// </summary>
-        /// <param name="orgnStr"></param>
-        /// <returns></returns>
-        public static string CleanString(string orgnStr)
-        {
-            if(orgnStr==null) return null;
-            if (string.IsNullOrWhiteSpace(orgnStr)) return string.Empty;
-            orgnStr = orgnStr.Trim().Replace("\r", " ").Replace("\n", "").Replace("\t", "");
-            
-            foreach (char c in removeChars)
-                orgnStr = orgnStr.Replace(c.ToString(), string.Empty);
-
-            // Améliorer en utilisant un regex ou  autre pour les perf
-            //https://stackoverflow.com/questions/11395775/clean-the-string-is-there-any-better-way-of-doing-it
-            return orgnStr.Trim();
-        }
-
-
-        /// <summary>
-        ///     Remplacer un caractere dans la chaine, gestion si vide
-        /// </summary>
-        public static string ReplaceChar(this string orgn, int pos, char c)
-        {
-            var sb = new StringBuilder(orgn);
-            if (sb.Length < pos + 1) sb.Append(' ');
-            sb[pos] = c;
-            return sb.ToString();
-        }
-
-
-
-        /// <summary>
-        /// Ajouter une valeur à une position dans un StringBuilder
-        /// </summary>
-        public static void StringSetValuePosition(StringBuilder builder, int position, string value, int lenght=0)
-        {
-            if (builder == null) throw new ArgumentNullException("builder");
-            if (position < 1 || value == null) return; // ignore
-            if (lenght==0) lenght = value.Length; // on prend la taille de la valeur (si non spécifié)
-
-            position = position - 1; //Real position is 1 based
-            value = Limit(value, lenght);
-            value = value?.PadRight(lenght, ' ');
-
-            if (position >= builder.Length)
-            {
-                builder.Append(value);
-            }
-            else
-            {
-                builder.Remove(position, value.Length);
-                builder.Insert(position, value);
-            }
-        }
-
-
-
-
-
-        /// <summary>
-        /// Permet de découper des valeurs: Separateur csv ';';
-        /// Pour la gestion des tags, vides interdit
-        /// </summary>
-        public static string[] SplitTag(string valuesstr, bool toUpper = true, bool neverNull=false)
-        {
-            if (valuesstr == null) return (neverNull) ? new string[0]:null;
-            if (string.IsNullOrWhiteSpace(valuesstr)) return new string[0];
-            string[] retour = valuesstr.Split(';', StringSplitOptions.None).ToArray();
-            retour = retour.Select(x => CleanString(x)).ToArray();
-            if(toUpper) retour = retour.Select(x => x.ToUpperInvariant()).ToArray();
-            return retour;
-        }
-
-
-
-
-
 
     }
 }

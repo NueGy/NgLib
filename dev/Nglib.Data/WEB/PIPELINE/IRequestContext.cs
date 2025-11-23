@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Nglib.SOLUTIONS.IDENTITY.TENANTS;
+using Nglib.SECURITY.TENANTS;
 
 namespace Nglib.WEB.PIPELINE
 {

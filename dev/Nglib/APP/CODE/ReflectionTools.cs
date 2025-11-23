@@ -5,15 +5,16 @@ using System.IO;
 namespace Nglib.APP.CODE
 {
     /// <summary>
-    ///     Outils de reflexions types...
+    /// Tools for type reflection and instance creation.
+    /// <para>Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_appcode"/></para>
     /// </summary>
     public static class ReflectionTools
     {
         /// <summary>
-        ///    Obtient un type, IgnoreCase
+        /// Gets a type by its fully qualified name (case-insensitive).
         /// </summary>
-        /// <param name="MyFullyQualifiedTypeName"></param>
-        /// <returns></returns>
+        /// <param name="MyFullyQualifiedTypeName">The fully qualified type name</param>
+        /// <returns>The Type object or null if not found</returns>
         public static Type GetType(string MyFullyQualifiedTypeName)
         {
             Type retour = null;
@@ -22,8 +23,12 @@ namespace Nglib.APP.CODE
         }
 
         /// <summary>
-        /// Create Instance of new object
+        /// Creates a new instance of the specified type with optional constructor arguments.
         /// </summary>
+        /// <typeparam name="T">The type to create</typeparam>
+        /// <param name="exactType">The exact type to instantiate (if different from T)</param>
+        /// <param name="constructorArgs">Constructor arguments</param>
+        /// <returns>A new instance of type T</returns>
         public static T CreateInstance<T>(Type exactType=null, params object[] constructorArgs)
         {
             try
@@ -40,8 +45,11 @@ namespace Nglib.APP.CODE
         }
 
         /// <summary>
-        /// Create Instance of new object
+        /// Creates a new instance of the specified type with optional constructor arguments.
         /// </summary>
+        /// <param name="type">The type to instantiate</param>
+        /// <param name="constructorArgs">Constructor arguments</param>
+        /// <returns>A new instance of the specified type</returns>
         public static object CreateInstance(Type type, params object[] constructorArgs)
         {
             try
@@ -56,22 +64,21 @@ namespace Nglib.APP.CODE
             }
         }
 
-
-//        public static long GetSizeOfObject(object obj)
-//        {
-//#pragma warning disable SYSLIB0011
-//            long size = 0;
-//            var o = new object();
-//            // voir aussi : https://social.msdn.microsoft.com/Forums/vstudio/en-US/96747ab7-7d89-4846-9e83-46f71b8ccc66/how-to-determine-size-of-the-c-object?forum=clr
-//            using (Stream s = new MemoryStream())
-//            {
-//                var formatter = new BinaryFormatter();
-//                formatter.Serialize(s, o);
-//                size = s.Length;
-//            }
-
-//            return size;
-//#pragma warning restore SYSLIB0011
-//        }
+        /// <summary>
+        /// Gets the version of the specified assembly.
+        /// </summary>
+        /// <param name="assembly">The assembly to get the version from</param>
+        /// <param name="fullVersion">If true, returns the full version (e.g., "1.0.0.0"), otherwise returns the major and minor version (e.g., "1.0")</param>
+        public static string GetVersion(System.Reflection.Assembly assembly, bool fullVersion = false)
+        {
+            if (assembly == null) return null;
+            string version = assembly.GetName().Version.ToString();
+            string[] parts = version.Split('.');
+            if (!fullVersion && parts.Length > 2)
+            {
+                return $"{parts[0]}.{parts[1]}";
+            }
+            return version;
+        }
     }
 }

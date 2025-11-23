@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 namespace Nglib.NET.HTTPCLIENT
 {
     /// <summary>
-    /// Models Oauth2 pour sérialiation
+    /// OAuth2 models for serialization
     /// </summary>
+    [Obsolete]
     public static class OAuthModels
     {
         //https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/

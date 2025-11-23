@@ -3,7 +3,7 @@
 namespace Nglib.DATA.BASICS
 {
     /// <summary>
-    ///     Moteur
+    /// Moteur
     /// </summary>
     public interface IEngine : IDisposable
     {

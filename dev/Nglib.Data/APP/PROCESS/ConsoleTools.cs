@@ -206,5 +206,28 @@ namespace Nglib.APP.CONSOLE
 
 
 
+
+        /// <summary>
+        /// Writeline avec une couleur (Reset à la fin)
+        /// </summary>
+        public static void WriteLineColor(string text, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(text);
+            Console.ResetColor();
+        }
+
+
+        /// <summary>
+        /// Ecrire un titre dans un fond bleu
+        /// </summary>
+        /// <param name="text"></param>
+        public static void WriteSubTitle(string text)
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.WriteLine(text);
+            Console.ResetColor();
+        }
     }
 }

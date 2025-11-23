@@ -3,31 +3,37 @@
 namespace Nglib.DATA.ACCESSORS
 {
     /// <summary>
-    ///     Permet de gérer le chiffrement/déchiffrement des objets dataPO
+    /// Manages encryption/decryption of DataPO objects.
+    /// <para>Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_accessors"/></para>
     /// </summary>
     public interface IDataAccessorCryptoContext
     {
         /// <summary>
-        ///     Option de cryptage si disponible
+        /// Encryption option if available.
         /// </summary>
         ICryptoOption OptionForEncrypt { get; set; }
 
         /// <summary>
-        ///     Option de décryptage si disponible
+        /// Decryption option if available.
         /// </summary>
         ICryptoOption OptionForDecrypt { get; set; }
 
         /// <summary>
-        ///     Obtenir le vecteur d'initialisation
+        /// Gets the initialization vector.
         /// </summary>
-        /// <param name="datapo"></param>
-        /// <returns></returns>
+        /// <param name="obj">Data accessor</param>
+        /// <returns>Initialization vector string</returns>
         string GetIV(IDataAccessor obj);
 
-
+        /// <summary>
+        /// Encrypts an object value before storage.
+        /// </summary>
         object EncryptObjectValue(IDataAccessor dataAccessor, string nameValue, object value,
             DataAccessorOptionEnum options);
 
+        /// <summary>
+        /// Decrypts an object value after retrieval.
+        /// </summary>
         object DecryptObjectValue(IDataAccessor dataAccessor, string nameValue, object valuecc,
             DataAccessorOptionEnum options);
     }

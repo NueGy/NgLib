@@ -3,68 +3,87 @@
 namespace Nglib.DATA.ACCESSORS
 {
     /// <summary>
-    ///     Type de flux disponibles
+    /// Available flow types for data serialization in DataPO
     /// </summary>
     public enum FlowTypeEnum
     {
+        /// <summary>Automatic detection based on content</summary>
         AUTO,
+        /// <summary>XML format</summary>
         XML,
+        /// <summary>JSON format</summary>
         JSON,
+        /// <summary>CSV format</summary>
         CSV,
+        /// <summary>Plain text format</summary>
         TXT
     }
 
 
+    /// <summary>
+    /// Flags enum controlling data accessor behavior and options.
+    /// <para>Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_accessors"/></para>
+    /// </summary>
     [Flags]
     public enum DataAccessorOptionEnum
     {
         /// <summary>
-        ///     Aucunes opération spécial (default)
+        /// No special operations (default).
         /// </summary>
-        None = 0x00,
+        None = 0,
 
         /// <summary>
-        ///     Permet de rendre une valeur null
+        /// The value is REQUIRED (cannot be null, DBNull, empty string or 0).
+        /// If the value is null/empty, an exception will be thrown (even in Safe mode).
+        /// Use this flag for critical fields that must always have a value.
         /// </summary>
-        Nullable = 0x01,
+        Required = 1,
 
         /// <summary>
-        ///     Ne provoquera pas d'erreur
+        /// Will not cause errors (safe mode).
         /// </summary>
-        Safe = 0x02,
+        Safe = 2,
 
         /// <summary>
-        ///     Interdit le remplacement d'une valeur si elle existe déja
+        /// Prevents replacing a value if it already exists.
         /// </summary>
-        NotReplace = 0x04,
+        NotReplace = 4,
 
         /// <summary>
-        ///     Créer la colonne si elle existe pas
+        /// Does not create the column if it doesn't exist.
         /// </summary>
-        NotCreateColumn = 0x08,
+        NotCreateColumn = 8,
 
         /// <summary>
-        ///     La donnée est cryptée (Use with IDataAccessorEncrypted)
+        /// Defines the data without marking it as changed (datapo/datarow).
         /// </summary>
-        [Obsolete("DevSoon")] Encrypted = 0x16,
+        IgnoreChange = 16,
 
         /// <summary>
-        ///     Défini la donnée sans indiquer qu'elle à été changée (datapo/datarow)
+        /// The data is encrypted (Use with IDataAccessorEncrypted).
         /// </summary>
-        IgnoreChange = 0x32,
+        [Obsolete("SOON")] Encrypted = 32,
 
         /// <summary>
-        ///     Permet l'utilisation d'un cache en lecture
+        /// Allows the use of cache for reading.
+        /// Useful for operations requiring JSON deserialization.
         /// </summary>
-        UseCache = 0x64,
+        [Obsolete("SOON")] UseCache = 64,
 
         /// <summary>
-        ///     permet de convertir la données avec des convertisseur amélioré (get only)
+        /// Allows converting data with advanced converters (get only). See FORMAT.ConvertTools.
         /// </summary>
-        [Obsolete("DevSoon")] AdvancedConverter = 0x128,
+        AdvancedConverter = 128,
 
         /// <summary>
-        /// Default Parameter = NONE
+        /// Uses current culture (CurrentCulture) instead of InvariantCulture.
+        /// Useful for UI/user conversions (ex: "123,45" in French).
+        /// By default, InvariantCulture is used for data portability.
+        /// </summary>
+        CurrentCulture = 256,
+
+        /// <summary>
+        /// Default Parameter = NONE.
         /// </summary>
         Default = None,
 

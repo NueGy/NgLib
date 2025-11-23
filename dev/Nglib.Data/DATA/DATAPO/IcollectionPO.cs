@@ -15,6 +15,8 @@ namespace Nglib.DATA.DATAPO
         Type GetPOType();
 
 
+        System.Data.DataTable GetOriginalTable();
+
 
         List<DataPO> GetPOList();
 

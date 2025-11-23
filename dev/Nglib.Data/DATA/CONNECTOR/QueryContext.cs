@@ -16,54 +16,34 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// Context SQL
         /// </summary>
-        public QueryContext() { this.parameters = new Dictionary<string, object>(); }
+        public QueryContext()
+        {
+            this.Parameters = new Dictionary<string, object>();
+        }
 
         /// <summary>
         /// COntext SQL
         /// </summary>
         /// <param name="sqlQuery"></param>
         /// <param name="parameters"></param>
-        public QueryContext(string sqlQuery, Dictionary<string, object> parameters)
+        public QueryContext(string sqlQuery, Dictionary<string, object> parameters=null)
         {
-            this.sqlQuery = sqlQuery;
-            this.parameters = parameters;
-            if (this.parameters == null) this.parameters = new Dictionary<string, object>();
+            if (string.IsNullOrWhiteSpace(sqlQuery)) 
+                throw new ArgumentNullException(nameof(sqlQuery), "La requête SQL ne peut pas être vide");
+            this.SqlQuery = sqlQuery;
+            this.Parameters = parameters ?? new Dictionary<string, object>();
         }
 
-        ///// <summary>
-        ///// Context SQl
-        ///// </summary>
-        ///// <param name="sqlQuery">Requette SQL</param>
-        ///// <param name="parampx">parametres @p1, @p2, @px</param>
-        //public QueryContext(string sqlQuery, params object[] parampx)
-        //{
-        //    Dictionary<string, object> parameters = new Dictionary<string, object>();
-        //    int ii = 1;
-        //    if (parampx != null)
-        //        foreach (var item in parampx)
-        //        {
-        //            parameters.Add("p" + ii, item);
-        //            ii++;
-        //        }
-
-        //    this.sqlQuery = sqlQuery;
-        //    this.parameters = parameters;
-        //}
-
-        /// <summary>
-        /// Nombre de tentatives
-        /// </summary>
-        public int QueryTry { get; set; }
 
         /// <summary>
         /// Temps de chargement de la requette (Hors Open/Close)
         /// </summary>
-        public System.Diagnostics.Stopwatch watchExecute = new System.Diagnostics.Stopwatch();
+        public System.Diagnostics.Stopwatch watchExecute { get; }  = new System.Diagnostics.Stopwatch();
 
         /// <summary>
         /// Temp total incluant le OPEN/Close
         /// </summary>
-        public System.Diagnostics.Stopwatch watchAll = new System.Diagnostics.Stopwatch();
+        public System.Diagnostics.Stopwatch watchAll { get; }  = new System.Diagnostics.Stopwatch();
 
         /// <summary>
         /// Date d'initialisation de la requette
@@ -78,23 +58,23 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// Requette SQl complete
         /// </summary>
-        public string sqlQuery { get; set; }
+        public string SqlQuery { get; set; }
 
         /// <summary>
         /// Parametres
         /// </summary>
-        public Dictionary<string, object> parameters { get; set; }
+        public Dictionary<string, object> Parameters { get; set; }
 
         /// <summary>
         /// Erreur retour eventuel
         /// </summary>
-        public string error { get; set; }
+        public string Error { get; set; }
 
 
 
         public void Validate()
         {
-            if (string.IsNullOrWhiteSpace(sqlQuery)) throw new Exception("sqlQuery is empty");
+            if (string.IsNullOrWhiteSpace(SqlQuery)) throw new Exception("sqlQuery is empty");
         }
 
 
@@ -103,10 +83,10 @@ namespace Nglib.DATA.CONNECTOR
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(error))
-                    return string.Format("[{2}--error] {1}", "", this.sqlQuery, InitDate.ToString("HH:mm:ss:ff"));
+                if (!string.IsNullOrWhiteSpace(Error))
+                    return string.Format("[{2}--error] {1}", "", this.SqlQuery, InitDate.ToString("HH:mm:ss:ff"));
                 else
-                    return string.Format("[{2}--{0}/{3}ms] {1}", this.watchExecute.ElapsedMilliseconds, this.sqlQuery, InitDate.ToString("HH:mm:ss:ff"), this.watchAll.ElapsedMilliseconds);
+                    return string.Format("[{2}--{0}/{3}ms] {1}", this.watchExecute.ElapsedMilliseconds, this.SqlQuery, InitDate.ToString("HH:mm:ss:ff"), this.watchAll.ElapsedMilliseconds);
             }
             catch (Exception)
             {

@@ -86,5 +86,15 @@ namespace Nglib.FILES.SERIAL
         }
 
 
+
+
+
+        public static bool IsJson(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            text = text.Trim();
+            return (text.StartsWith("{") && text.EndsWith("}")) || (text.StartsWith("[") && text.EndsWith("]"));
+        }
+
     }
 }

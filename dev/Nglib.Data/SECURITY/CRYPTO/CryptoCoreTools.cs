@@ -13,6 +13,7 @@ namespace Nglib.SECURITY.CRYPTO
 
         /// <summary>
         /// Utilisé pour le Rfc2898DeriveBytes GetDerived
+        /// TODO : à personnaliser par application, prendre une valeur dans la config
         /// </summary>
         public static byte[] DefaultDerivedSaltBytes = new byte[] { 7, 1, 8, 2, 2, 2, 6, 9 };
 
@@ -71,7 +72,8 @@ namespace Nglib.SECURITY.CRYPTO
         /// <summary>
         /// Dérivation - salt
         /// </summary>
-        /// <param name="passwordBytes"></param>
+        /// <param name="passwordBytes">Mot de passe en bytes</param>
+        /// <param name="countderivation">Nombre d'itérations</param>
         /// <returns></returns>
         public static Rfc2898DeriveBytes GetDerived(byte[] passwordBytes, int countderivation = 1000)
         {
@@ -89,12 +91,13 @@ namespace Nglib.SECURITY.CRYPTO
 
 
 
-        public static byte[] RemoveBeginSalt(byte[] orgnValue, int saltsize = 8)
+        public static byte[] RemoveBeginSalt(byte[] orgnValue, int saltsize = 32)
         {
             try
             {
+                if (orgnValue.Length <= saltsize) throw new ArgumentException("Array too short for salt removal");
                 byte[] RealdecryptedBytes = new byte[orgnValue.Length - saltsize];
-                Buffer.BlockCopy(orgnValue, 32, RealdecryptedBytes, 0, orgnValue.Length - saltsize);
+                Buffer.BlockCopy(orgnValue, saltsize, RealdecryptedBytes, 0, orgnValue.Length - saltsize);
                 return RealdecryptedBytes;
             }
             catch (Exception ex)

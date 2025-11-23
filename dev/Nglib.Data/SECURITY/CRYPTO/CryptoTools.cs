@@ -32,6 +32,7 @@ namespace Nglib.SECURITY.CRYPTO
                 System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
                 if (encryptedstream == null) encryptedstream = new MemoryStream();
 
+                // TODO : Migrer vers Aes.Create() car Rijndael est obsolète après .NET 6
                 using (RijndaelManaged AES = new RijndaelManaged())
                 {
                     //AES.KeySize = 256;
@@ -50,7 +51,7 @@ namespace Nglib.SECURITY.CRYPTO
                         await cs.CopyToAsync(encryptedstream);
                         encryptedstream.Seek(0, SeekOrigin.Begin);
                         //cs.Write(bytesToBeEncrypted, 0, bytesToBeEncrypted.Length);
-                        ///cs.Close();
+                        //cs.Close();
 
                     }
 
@@ -96,8 +97,7 @@ namespace Nglib.SECURITY.CRYPTO
         ///  Encryptage binaire AES
         /// </summary>
         /// <param name="bytesToBeEncrypted">data</param>
-        /// <param name="passwordBytes">password</param>
-        /// <param name="WithBeforeSalt">Ajoutera un bloc 16byte aléatoire au début</param>
+        /// <param name="cryptoInformation">Options de cryptage</param>
         /// <returns></returns>
         public static byte[] Encrypt(byte[] bytesToBeEncrypted, ICryptoOption cryptoInformation)
         {

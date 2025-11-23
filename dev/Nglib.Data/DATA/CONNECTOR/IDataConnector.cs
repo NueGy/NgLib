@@ -1,10 +1,4 @@
-﻿// ----------------------------------------------------------------
-// Open Source Code on the MIT License (MIT)
-// Copyright (c) 2015 NUEGY SARL
-// https://github.com/NueGy/NgLib
-// ----------------------------------------------------------------
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -23,12 +17,7 @@ namespace Nglib.DATA.CONNECTOR
     {
 
         /// <summary>
-        /// Nom du connecteur
-        /// </summary>
-        string ConnectorName { get; }
-
-        /// <summary>
-        /// Le connecteur peut être utilisé en lecture seulement
+        /// Le connecteur peut être utilisé en lecture seulement les requetes d'écriture seront bloquées
         /// </summary>
         bool ReadOnly { get; }
 
@@ -61,7 +50,8 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// Définir la chaine de connection
         /// </summary>
-        /// <param name="str"></param>
+        /// <param name="connectionString">COnnection string</param>
+        /// <param name="defaultEngine">Facultatif si défini dans un connecteur personalisé</param>
         void SetConnectionString(string connectionString, string defaultEngine);
 
 
@@ -81,14 +71,14 @@ namespace Nglib.DATA.CONNECTOR
         /// <summary>
         /// Ouvrir une transaction SQL
         /// </summary>
-        /// <param name="transactionName"></param>
+        /// <param name="transactionName">Nom de la transaction</param>
         /// <returns></returns>
-        bool BeginTransaction(string transactionName = null);
+        bool BeginTransaction();
 
         /// <summary>
         /// ROLLBACK transaction SQL
         /// </summary>
-        /// <param name="transactionName"></param>
+        /// <param name="safe">Mode sécurisé</param>
         /// <returns></returns>
         bool RollBackTransaction(bool safe = false);
 
@@ -105,20 +95,23 @@ namespace Nglib.DATA.CONNECTOR
         /// <returns></returns>
         System.Data.IDbConnection GetDbConnection();
 
+        /// <summary>
+        /// Obient un objet QueryBuilder spécifique au moteur pour générer une requete SQL
+        /// </summary>
+        QUERYBUILDER.IQueryBuilder CreateQueryBuilder();
+
 
         /// <summary>
         /// Execution d'une requete classique, qui retourne un Dataset
         /// </summary>
-        /// <param name="sqlQuery"></param>
-        /// <param name="parameters"></param>
+        /// <param name="queryContext">Contexte de la requête</param>
         /// <returns></returns>
         Task<System.Data.DataSet> QueryDataSetAsync(QueryContext queryContext);
 
         /// <summary>
         /// Execution d'une requete scalar simple
         /// </summary>
-        /// <param name="sqlQuery"></param>
-        /// <param name="parameters"></param>
+        /// <param name="queryContext">Contexte de la requête</param>
         /// <returns></returns>
         Task<object> QueryScalarAsync(QueryContext queryContext);
 
