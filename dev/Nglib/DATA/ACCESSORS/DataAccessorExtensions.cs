@@ -71,10 +71,6 @@ namespace Nglib.DATA.ACCESSORS
                 var objType = obj.GetType();
                 var culture = DataAccessorTools.GetCulture(option);
 
-                // Tentative de conversion rapide avec les fast paths
-                if (DataAccessorTools.TryFastPathConversion<T>(obj, targetType, objType, culture, option, out var result))
-                    return result;
-
                 // Gestion des types nullables
                 if (DataAccessorTools.TryNullableConversion<T>(obj, ref targetType, objType, out var nullableResult))
                     return nullableResult;
@@ -88,7 +84,7 @@ namespace Nglib.DATA.ACCESSORS
                     return complexResult;
 
                 // Conversion standard finale
-                return DataAccessorTools.PerformFinalConversion<T>(obj, targetType, culture, option);
+                return (T)ConvertTools.ChangeType(obj, targetType, culture);
             }
             catch (Exception ex)
             {

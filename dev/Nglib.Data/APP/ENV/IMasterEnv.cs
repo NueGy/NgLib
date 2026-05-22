@@ -10,24 +10,21 @@ namespace Nglib.APP.ENV
     /// </summary>
     public interface IMasterEnv : IEnv
     {
-
-
         /// <summary>
-        /// Une liste de connecteurs SGBD
+        /// Connecteur de base de données principal
         /// </summary>
-        DATA.CONNECTOR.ConnectorCollection Connectors { get; set; }
-
-
-
-
+        DATA.CONNECTOR.IDataConnector ConnectorDatabase { get; }
 
         /// <summary>
         /// Configuration
         /// </summary>
         IConfiguration Configuration { get; }
 
-
-
-
+        /// <summary>
+        /// Convertit un chemin relatif en chemin absolu basé sur le répertoire de l'environnement
+        /// </summary>
+        /// <param name="path">Chemin relatif ou absolu</param>
+        /// <returns>Chemin absolu</returns>
+        string GetAbsolutePath(string path);
     }
 }

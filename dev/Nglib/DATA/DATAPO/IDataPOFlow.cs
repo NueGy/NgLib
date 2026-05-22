@@ -4,9 +4,10 @@ namespace Nglib.DATA.DATAPO
 {
     /// <summary>
     /// Interface for NoSQL data flows (XML or JSON) stored in database fields.
+    /// Inherits IDataAccessor for standardized data access.
     /// Documentation: <see href="https://github.com/NueGy/NgLib/docs/wiki_components_datapo"/>
     /// </summary>
-    public interface IDataPOFlow
+    public interface IDataPOFlow : IDataAccessor
     {
         /// <summary>
         /// Gets the field name to modify in the database

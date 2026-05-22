@@ -1,23 +1,14 @@
-﻿using Microsoft.Extensions.Configuration;
-using Nglib.SECURITY.TENANTS;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nglib.APP.ENV
 {
     /// <summary>
-    /// Environnement d'execution
+    /// Environnement d'execution global (obsolète, utiliser IMasterEnv)
     /// </summary>
-    public interface IGlobalEnv : IMasterEnv, IRepositoryEnv, IEnv
+    [Obsolete("Use IMasterEnv instead")]
+    public interface IGlobalEnv : IMasterEnv
     {
-
-       Task<ITenant2> GetITenantAsync(int tenantId, bool fullLoad = false);
-
-
- 
-
-
+        // Interface conservée pour compatibilité ascendante
+        // Toutes les fonctionnalités sont désormais dans IMasterEnv
     }
 }

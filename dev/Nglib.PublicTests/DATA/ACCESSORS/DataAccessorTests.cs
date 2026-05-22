@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Nglib.DATA.ACCESSORS;
 using System;
 using System.Collections.Generic;
@@ -18,9 +18,9 @@ namespace Nglib.DATA.ACCESSORS
         {
             var demo = new Nglib.DATA.COLLECTIONS.DictionaryData();
             demo.SetData("test", "test", DataAccessorOptionEnum.Default); //Ajout d'une valeur standard
-            demo.SetObject("test2", 123); //Ajout simplifié d'une valeur (méthode d'extension)
-            demo.SetObject("testdate", "20/04/2024");  // Format français dd/MM/yyyy
-            demo.SetObject("testbool", true);  
+            demo.SetValue("test2", 123); //Ajout simplifié d'une valeur (méthode d'extension)
+            demo.SetValue("testdate", "20/04/2024");  // Format français dd/MM/yyyy
+            demo.SetValue("testbool", true);  
 
             Assert.AreEqual(demo.GetData("test", DataAccessorOptionEnum.Default), "test"); //Obtention de la valeur standard
             Assert.AreEqual(demo.GetString("test"), "test");//Obtention simplifié de la valeur (méthode d'extension)
@@ -37,8 +37,8 @@ namespace Nglib.DATA.ACCESSORS
         public void DataAccessorToolsCopyToTest()
         {
             var demo1 = new Nglib.DATA.COLLECTIONS.DictionaryData();
-            demo1.SetObject("test2", 123);
-            demo1.SetObject("testdate", "2024-04-20"); // Format ISO universel
+            demo1.SetValue("test2", 123);
+            demo1.SetValue("testdate", "2024-04-20"); // Format ISO universel
 
             var demo2 = new Nglib.DATA.COLLECTIONS.DictionaryData();
             DataAccessorTools.CopyTo(demo1, demo2);
@@ -73,9 +73,9 @@ namespace Nglib.DATA.ACCESSORS
             
             // === Tests types de base ===
             // String
-            data.SetObject("testString", "Hello World");
-            data.SetObject("testStringNull", null);
-            data.SetObject("testStringEmpty", "");
+            data.SetValue("testString", "Hello World");
+            data.SetValue("testStringNull", null);
+            data.SetValue("testStringEmpty", "");
             Assert.AreEqual("Hello World", data.GetString("testString"));
             Assert.AreEqual("", data.GetString("testStringNull")); // Safe mode, jamais null
             Assert.AreEqual("", data.GetString("testStringEmpty"));
@@ -83,31 +83,31 @@ namespace Nglib.DATA.ACCESSORS
             Assert.IsNull(data.GetValue<string>("testStringNull"));
             
             // Int
-            data.SetObject("testInt", 123);
-            data.SetObject("testIntString", "456");
-            data.SetObject("testIntNull", null);
+            data.SetValue("testInt", 123);
+            data.SetValue("testIntString", "456");
+            data.SetValue("testIntNull", null);
             Assert.AreEqual(123, data.GetInt("testInt"));
             Assert.AreEqual(0, data.GetInt("testIntNull")); // Default value
             Assert.AreEqual(999, data.GetValue<int>("testIntMissing", 999, DataAccessorOptionEnum.Safe)); // Custom default
             Assert.IsNull(data.GetValue<int?>("testIntNull"));
             
             // Long
-            data.SetObject("testLong", 123456789L);
+            data.SetValue("testLong", 123456789L);
             Assert.AreEqual(123456789L, data.GetValue<long>("testLong"));
             Assert.AreEqual(0L, data.GetValue<long>("testLongNull"));
             
             // Double
-            data.SetObject("testDouble", 123.45);
-            data.SetObject("testDoubleString", "123.45"); // InvariantCulture utilise le point comme séparateur décimal
+            data.SetValue("testDouble", 123.45);
+            data.SetValue("testDoubleString", "123.45"); // InvariantCulture utilise le point comme séparateur décimal
             Assert.AreEqual(123.45, data.GetDouble("testDouble"), 0.01);
             Assert.AreEqual(123.45, data.GetDouble("testDoubleString"), 0.01);
             Assert.AreEqual(0.0, data.GetDouble("testDoubleNull"), 0.01);
             
             // Boolean
-            data.SetObject("testBoolTrue", true);
-            data.SetObject("testBoolFalse", false);
-            data.SetObject("testBoolString", "true");
-            data.SetObject("testBoolString2", "false");
+            data.SetValue("testBoolTrue", true);
+            data.SetValue("testBoolFalse", false);
+            data.SetValue("testBoolString", "true");
+            data.SetValue("testBoolString2", "false");
             Assert.AreEqual(true, data.GetBoolean("testBoolTrue"));
             Assert.AreEqual(false, data.GetBoolean("testBoolFalse"));
             Assert.AreEqual(true, data.GetBoolean("testBoolString"));
@@ -116,27 +116,27 @@ namespace Nglib.DATA.ACCESSORS
             
             // DateTime
             var testDate = new DateTime(2024, 4, 20, 15, 30, 45);
-            data.SetObject("testDateTime", testDate);
-            data.SetObject("testDateTimeString", "2024-04-20 15:30:45");
+            data.SetValue("testDateTime", testDate);
+            data.SetValue("testDateTimeString", "2024-04-20 15:30:45");
             Assert.AreEqual(testDate, data.GetDateTime("testDateTime"));
             Assert.AreEqual(new DateTime(2024, 4, 20, 15, 30, 45), data.GetDateTime("testDateTimeString"));
             Assert.AreEqual(new DateTime(), data.GetDateTime("testDateTimeNull"));
             
             // Enum
-            data.SetObject("testEnum", DataAccessorOptionEnum.Safe);
-            data.SetObject("testEnumString", "Required"); // CORRECTION: Required au lieu de Nullable
-            data.SetObject("testEnumInt", 2); // Safe = 2
+            data.SetValue("testEnum", DataAccessorOptionEnum.Safe);
+            data.SetValue("testEnumString", "Required"); // CORRECTION: Required au lieu de Nullable
+            data.SetValue("testEnumInt", 2); // Safe = 2
             Assert.AreEqual(DataAccessorOptionEnum.Safe, data.GetEnum<DataAccessorOptionEnum>("testEnum", DataAccessorOptionEnum.None));
             Assert.AreEqual(DataAccessorOptionEnum.Required, data.GetEnum<DataAccessorOptionEnum>("testEnumString", DataAccessorOptionEnum.None));
             Assert.AreEqual(DataAccessorOptionEnum.Safe, data.GetEnum<DataAccessorOptionEnum>("testEnumInt", DataAccessorOptionEnum.None));
             Assert.AreEqual(DataAccessorOptionEnum.None, data.GetEnum<DataAccessorOptionEnum>("testEnumNull", DataAccessorOptionEnum.None));
             
             // === Tests arrays ===
-            data.SetObject("testStringArray", new string[] { "a", "b", "c" });
-            data.SetObject("testIntArray", new int[] { 1, 2, 3 });
-            data.SetObject("testLongArray", new long[] { 100L, 200L, 300L });
-            data.SetObject("testDoubleArray", new double[] { 1.1, 2.2, 3.3 });
-            data.SetObject("testBoolArray", new bool[] { true, false, true });
+            data.SetValue("testStringArray", new string[] { "a", "b", "c" });
+            data.SetValue("testIntArray", new int[] { 1, 2, 3 });
+            data.SetValue("testLongArray", new long[] { 100L, 200L, 300L });
+            data.SetValue("testDoubleArray", new double[] { 1.1, 2.2, 3.3 });
+            data.SetValue("testBoolArray", new bool[] { true, false, true });
             
             var stringArray = data.GetValue<string[]>("testStringArray");
             var intArray = data.GetValue<int[]>("testIntArray");
@@ -162,7 +162,7 @@ namespace Nglib.DATA.ACCESSORS
  
             
             // Test NotReplace - Maintenant corrigé dans DictionaryData
-            data.SetObject("testNotReplace", "original");
+            data.SetValue("testNotReplace", "original");
             data.SetData("testNotReplace", "modified", DataAccessorOptionEnum.NotReplace);
             Assert.AreEqual("original", data.GetString("testNotReplace")); // Pas modifié grâce à NotReplace
             
@@ -186,7 +186,7 @@ namespace Nglib.DATA.ACCESSORS
             Assert.AreEqual(true, objData.GetBoolean("Active"));
             
             // === Tests case-insensitive ===
-            data.SetObject("CaseSensitive", "test");
+            data.SetValue("CaseSensitive", "test");
             Assert.AreEqual("test", data.GetString("casesensitive"));
             Assert.AreEqual("test", data.GetString("CASESENSITIVE"));
             Assert.AreEqual("test", data.GetString("CaseSensitive"));
@@ -205,11 +205,11 @@ namespace Nglib.DATA.ACCESSORS
             var targetData = new Nglib.DATA.COLLECTIONS.DictionaryData();
             
             // === Tests DataAccessorTools.CopyTo ===
-            sourceData.SetObject("field1", "value1");
-            sourceData.SetObject("field2", 123);
-            sourceData.SetObject("field3", true);
-            sourceData.SetObject("field4", new DateTime(2024, 1, 1));
-            sourceData.SetObject("field5", DataAccessorOptionEnum.Safe);
+            sourceData.SetValue("field1", "value1");
+            sourceData.SetValue("field2", 123);
+            sourceData.SetValue("field3", true);
+            sourceData.SetValue("field4", new DateTime(2024, 1, 1));
+            sourceData.SetValue("field5", DataAccessorOptionEnum.Safe);
             
             DataAccessorTools.CopyTo(sourceData, targetData);
             
@@ -260,32 +260,32 @@ namespace Nglib.DATA.ACCESSORS
             Assert.AreEqual(99.9, dict.GetDouble("priceMax"), 0.01);
             
             // Test ContainsKey case-insensitive
-            dict.SetObject("TestKey", "value");
+            dict.SetValue("TestKey", "value");
             Assert.IsTrue(dict.ContainsKey("testkey"));
             Assert.IsTrue(dict.ContainsKey("TESTKEY"));
             Assert.IsTrue(dict.ContainsKey("TestKey"));
             Assert.IsFalse(dict.ContainsKey("nonexistent"));
             
             // Test Remove case-insensitive
-            dict.SetObject("ToRemove", "value");
+            dict.SetValue("ToRemove", "value");
             Assert.IsTrue(dict.ContainsKey("ToRemove"));
             Assert.IsTrue(dict.Remove("toremove"));
             Assert.IsFalse(dict.ContainsKey("ToRemove"));
             
             // Test IsEmpty
-            dict.SetObject("emptyString", "");
-            dict.SetObject("nullValue", null);
-            dict.SetObject("normalValue", "test");
+            dict.SetValue("emptyString", "");
+            dict.SetValue("nullValue", null);
+            dict.SetValue("normalValue", "test");
             Assert.IsTrue(dict.IsEmpty("emptyString"));
             Assert.IsTrue(dict.IsEmpty("nullValue"));
             Assert.IsFalse(dict.IsEmpty("normalValue"));
             Assert.IsTrue(dict.IsEmpty("nonexistent"));
             
             // Test Clone
-            dict.SetObject("cloneTest", "original");
+            dict.SetValue("cloneTest", "original");
             var cloned = dict.Clone();
             Assert.AreEqual("original", cloned.GetString("cloneTest"));
-            cloned.SetObject("cloneTest", "modified");
+            cloned.SetValue("cloneTest", "modified");
             Assert.AreEqual("original", dict.GetString("cloneTest")); // Original inchangé
             Assert.AreEqual("modified", cloned.GetString("cloneTest"));
             
@@ -312,20 +312,20 @@ namespace Nglib.DATA.ACCESSORS
             
             // === Tests edge cases ===
             // Test avec valeurs DBNull
-            dict.SetObject("dbNullValue", DBNull.Value);
+            dict.SetValue("dbNullValue", DBNull.Value);
             Assert.AreEqual("", dict.GetString("dbNullValue"));
             Assert.AreEqual(0, dict.GetInt("dbNullValue"));
             Assert.AreEqual(false, dict.GetBoolean("dbNullValue"));
             
             // Test conversion types complexes
-            dict.SetObject("complexConversion", 123.45f); // float vers double
+            dict.SetValue("complexConversion", 123.45f); // float vers double
             Assert.AreEqual(123.45, dict.GetDouble("complexConversion"), 0.01);
             
             // Test ListFieldsKeys complet
             dict.Clear();
-            dict.SetObject("key1", "value1");
-            dict.SetObject("key2", "value2");
-            dict.SetObject("KEY3", "value3"); // Test case
+            dict.SetValue("key1", "value1");
+            dict.SetValue("key2", "value2");
+            dict.SetValue("KEY3", "value3"); // Test case
             var allKeys = dict.ListFieldsKeys();
             Assert.AreEqual(3, allKeys.Length);
             Assert.IsTrue(allKeys.Contains("key1"));
@@ -338,8 +338,8 @@ namespace Nglib.DATA.ACCESSORS
         {
             // Benchmark: Comparer GetString/GetInt VS GetValue<string>/GetValue<int>
             var data = new Nglib.DATA.COLLECTIONS.DictionaryData();
-            data.SetObject("testString", "Hello World");
-            data.SetObject("testInt", 42);
+            data.SetValue("testString", "Hello World");
+            data.SetValue("testInt", 42);
             
             const int iterations = 100000; // 100K iterations pour des résultats significatifs
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -376,7 +376,7 @@ namespace Nglib.DATA.ACCESSORS
             
             // === Test int[] ===
             var intArray = new int[] { 1, 2, 3, 4, 5 };
-            data.SetObject("intArray", intArray);
+            data.SetValue("intArray", intArray);
             
             // GetValue<int[]> devrait fonctionner avec le pattern matching "is T"
             var retrievedIntArray = data.GetValue<int[]>("intArray");
@@ -387,7 +387,7 @@ namespace Nglib.DATA.ACCESSORS
             
             // === Test string[] ===
             var stringArray = new string[] { "a", "b", "c" };
-            data.SetObject("stringArray", stringArray);
+            data.SetValue("stringArray", stringArray);
             
             var retrievedStringArray = data.GetValue<string[]>("stringArray");
             Assert.IsNotNull(retrievedStringArray);
@@ -397,7 +397,7 @@ namespace Nglib.DATA.ACCESSORS
             
             // === Test double[] ===
             var doubleArray = new double[] { 1.1, 2.2, 3.3 };
-            data.SetObject("doubleArray", doubleArray);
+            data.SetValue("doubleArray", doubleArray);
             
             var retrievedDoubleArray = data.GetValue<double[]>("doubleArray");
             Assert.IsNotNull(retrievedDoubleArray);
@@ -406,7 +406,7 @@ namespace Nglib.DATA.ACCESSORS
             
             // === Test bool[] ===
             var boolArray = new bool[] { true, false, true };
-            data.SetObject("boolArray", boolArray);
+            data.SetValue("boolArray", boolArray);
             
             var retrievedBoolArray = data.GetValue<bool[]>("boolArray");
             Assert.IsNotNull(retrievedBoolArray);
@@ -423,7 +423,7 @@ namespace Nglib.DATA.ACCESSORS
             data = new Nglib.DATA.COLLECTIONS.DictionaryData();
 
             // Test désérialisation JSON array int[]
-            data.SetObject("jsonIntArray", "[1,2,3,4,5]");
+            data.SetValue("jsonIntArray", "[1,2,3,4,5]");
             intArray = data.GetValue<int[]>("jsonIntArray");
             Assert.IsNotNull(intArray);
             Assert.AreEqual(5, intArray.Length);
@@ -431,7 +431,7 @@ namespace Nglib.DATA.ACCESSORS
             Assert.AreEqual(5, intArray[4]);
 
             // Test désérialisation JSON array string[]
-            data.SetObject("jsonStringArray", "[\"hello\",\"world\",\"test\"]");
+            data.SetValue("jsonStringArray", "[\"hello\",\"world\",\"test\"]");
             stringArray = data.GetValue<string[]>("jsonStringArray");
             Assert.IsNotNull(stringArray);
             Assert.AreEqual(3, stringArray.Length);
@@ -439,7 +439,7 @@ namespace Nglib.DATA.ACCESSORS
             Assert.AreEqual("test", stringArray[2]);
 
             // Test désérialisation JSON array double[]
-            data.SetObject("jsonDoubleArray", "[1.5, 2.7, 3.9]");
+            data.SetValue("jsonDoubleArray", "[1.5, 2.7, 3.9]");
             doubleArray = data.GetValue<double[]>("jsonDoubleArray");
             Assert.IsNotNull(doubleArray);
             Assert.AreEqual(3, doubleArray.Length);
@@ -447,7 +447,7 @@ namespace Nglib.DATA.ACCESSORS
             Assert.AreEqual(3.9, doubleArray[2]);
 
             // Test désérialisation JSON array bool[]
-            data.SetObject("jsonBoolArray", "[true, false, true]");
+            data.SetValue("jsonBoolArray", "[true, false, true]");
             boolArray = data.GetValue<bool[]>("jsonBoolArray");
             Assert.IsNotNull(boolArray);
             Assert.AreEqual(3, boolArray.Length);
@@ -455,20 +455,20 @@ namespace Nglib.DATA.ACCESSORS
             Assert.IsFalse(boolArray[1]);
 
             // Test désérialisation JSON objet
-            data.SetObject("jsonObject", "{\"Name\":\"John\",\"Age\":30}");
+            data.SetValue("jsonObject", "{\"Name\":\"John\",\"Age\":30}");
             var obj = data.GetValue<TestJsonObject>("jsonObject");
             Assert.IsNotNull(obj);
             Assert.AreEqual("John", obj.Name);
             Assert.AreEqual(30, obj.Age);
 
             // Test JSON array vide
-            data.SetObject("emptyArray", "[]");
+            data.SetValue("emptyArray", "[]");
             var emptyArray = data.GetValue<int[]>("emptyArray");
             Assert.IsNotNull(emptyArray);
             Assert.AreEqual(0, emptyArray.Length);
 
             // Test fallback si le JSON est invalide
-            data.SetObject("invalidJson", "[1,2,invalid]");
+            data.SetValue("invalidJson", "[1,2,invalid]");
             var fallbackResult = data.GetValue<string>("invalidJson");
             Assert.AreEqual("[1,2,invalid]", fallbackResult); // Retourne la string originale
 
@@ -495,15 +495,15 @@ namespace Nglib.DATA.ACCESSORS
 
             foreach (var (key, value, expectedMsg) in invalidCases)
             {
-                data.SetObject(key, value);
+                data.SetValue(key, value);
                 Assert.ThrowsException<DataAccessorException>(() => 
                     data.GetValue<string>(key, default, opt), 
                     $"Required should reject {key}");
             }
 
             // Valeurs valides = OK
-            data.SetObject("str", "Hello");
-            data.SetObject("num", 42);
+            data.SetValue("str", "Hello");
+            data.SetValue("num", 42);
             Assert.AreEqual("Hello", data.GetValue<string>("str", default, opt));
             Assert.AreEqual(42, data.GetValue<int>("num", default, opt));
             Console.WriteLine("✅ Required validation (6 invalid + 2 valid cases)");
@@ -537,7 +537,7 @@ namespace Nglib.DATA.ACCESSORS
             var opt = DataAccessorOptionEnum.NotReplace;
 
             // Existant: pas remplacé
-            data.SetObject("existing", "original");
+            data.SetValue("existing", "original");
             Assert.IsTrue(data.SetValue("existing", "new", opt));
             Assert.AreEqual("original", data.GetString("existing"));
 
@@ -546,7 +546,7 @@ namespace Nglib.DATA.ACCESSORS
             Assert.AreEqual("created", data.GetString("newField"));
 
             // Case-insensitive
-            data.SetObject("CaseSensitive", "orig");
+            data.SetValue("CaseSensitive", "orig");
             data.SetValue("casesensitive", "mod", opt);
             Assert.AreEqual("orig", data.GetString("CaseSensitive"));
             Console.WriteLine("✅ NotReplace (no replace + create + case-insensitive)");
@@ -564,12 +564,12 @@ namespace Nglib.DATA.ACCESSORS
                 data.SetValue("nonExistent", "value", opt));
 
             // Existant: modifié
-            data.SetObject("existing", "original");
+            data.SetValue("existing", "original");
             Assert.IsTrue(data.SetValue("existing", "modified", opt));
             Assert.AreEqual("modified", data.GetString("existing"));
 
             // Case-insensitive
-            data.SetObject("CaseField", "orig");
+            data.SetValue("CaseField", "orig");
             Assert.IsTrue(data.SetValue("casefield", "mod", opt));
             Assert.AreEqual("mod", data.GetString("CaseField"));
             Console.WriteLine("✅ NotCreateColumn (no create + update + case-insensitive)");
@@ -582,7 +582,7 @@ namespace Nglib.DATA.ACCESSORS
             var data = new Nglib.DATA.COLLECTIONS.DictionaryData();
 
             // NotReplace + Required: NotReplace empêche le remplacement AVANT validation Required
-            data.SetObject("field1", "original");
+            data.SetValue("field1", "original");
             // NotReplace retourne true car la valeur existe déjà (pas de remplacement)
             Assert.IsTrue(data.SetValue("field1", null, DataAccessorOptionEnum.NotReplace | DataAccessorOptionEnum.Required));
             Assert.AreEqual("original", data.GetString("field1")); // Valeur préservée
@@ -592,7 +592,7 @@ namespace Nglib.DATA.ACCESSORS
                 data.SetValue("newField", "val", DataAccessorOptionEnum.NotCreateColumn | DataAccessorOptionEnum.Required));
 
             // NotReplace + NotCreateColumn: pas de modification sur champ existant
-            data.SetObject("field2", "original");
+            data.SetValue("field2", "original");
             Assert.IsTrue(data.SetValue("field2", "new", DataAccessorOptionEnum.NotReplace | DataAccessorOptionEnum.NotCreateColumn));
             Assert.AreEqual("original", data.GetString("field2"));
             Console.WriteLine("✅ Combined flags (3 scenarios)");
@@ -611,6 +611,51 @@ namespace Nglib.DATA.ACCESSORS
 
          
 
+        [TestMethod()]
+        public void DateConversionCultureBugTest()
+        {
+            // === Isolation: ConvertTools.ToDateTime directement ===
+            var direct1 = Nglib.FORMAT.ConvertTools.ToDateTime("06/11/2023");
+            var direct2 = Nglib.FORMAT.ConvertTools.ToDateTime("12/05/2023");
+            Console.WriteLine($"ConvertTools direct: 06/11/2023 => {direct1:yyyy-MM-dd} (attendu: 2023-11-06)");
+            Console.WriteLine($"ConvertTools direct: 12/05/2023 => {direct2:yyyy-MM-dd} (attendu: 2023-05-12)");
+
+            // === Via Accessor (PerformFinalConversion) ===
+            // BUG: Conversion dates françaises vs américaines - format ambigu dd/MM/yyyy vs MM/dd/yyyy
+            var data = new Nglib.DATA.COLLECTIONS.DictionaryData();
+            
+            // === Test cas ambigu: 06/11/2023 ===
+            // Format français attendu: 6 novembre 2023
+            // Format américain (bug actuel): 11 juin 2023
+            data.SetValue("dateFR1", "06/11/2023");
+            var result1 = data.GetDateTime("dateFR1");
+            
+            // BUG REPRODUCED: Actuellement interprété comme 11 juin (format US) au lieu de 6 novembre (format FR)
+            Console.WriteLine($"06/11/2023 => {result1:yyyy-MM-dd} (Attendu: 2023-11-06, Actuel bug possible: 2023-06-11)");
+            
+            // === Test autre cas ambigu: 12/05/2023 ===
+            data.SetValue("dateFR2", "12/05/2023");
+            var result2 = data.GetDateTime("dateFR2");
+            Console.WriteLine($"12/05/2023 => {result2:yyyy-MM-dd} (Attendu: 2023-05-12, Actuel bug possible: 2023-12-05)");
+            
+            // === Test date non ambiguë: 25/12/2023 ===
+            // 25 ne peut pas être un mois, donc forcément dd/MM/yyyy
+            data.SetValue("dateFR3", "25/12/2023");
+            var result3 = data.GetDateTime("dateFR3");
+            Assert.AreEqual(new DateTime(2023, 12, 25), result3, "Date non ambiguë 25/12/2023 doit être correcte");
+            Console.WriteLine($"25/12/2023 => {result3:yyyy-MM-dd} (OK: non ambigu)");
+            
+            // === Test format ISO non ambigu: 2023-11-06 ===
+            data.SetValue("dateISO", "2023-11-06");
+            var result4 = data.GetDateTime("dateISO");
+            Assert.AreEqual(new DateTime(2023, 11, 6), result4, "Format ISO doit être correct");
+            Console.WriteLine($"2023-11-06 => {result4:yyyy-MM-dd} (OK: format ISO)");
+            
+            // Assertions strictes - bug corrigé
+            Assert.AreEqual(new DateTime(2023, 11, 6), result1, "06/11/2023 doit être interprété comme 6 novembre (format FR dd/MM/yyyy)");
+            Assert.AreEqual(new DateTime(2023, 5, 12), result2, "12/05/2023 doit être interprété comme 12 mai (format FR dd/MM/yyyy)");
+        }
+ 
         // Classe test pour JSON object
         public class TestJsonObject
         {

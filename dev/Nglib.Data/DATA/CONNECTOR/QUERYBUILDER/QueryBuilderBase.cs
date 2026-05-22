@@ -286,9 +286,10 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
         /// <summary>
         /// Définit la table source
         /// </summary>
-        public virtual IQueryBuilder From(string tableName)
+        public virtual IQueryBuilder From(string tableName, string alias = null)
         {
             TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
+            context.TableAlias = alias ?? "";
             return this;
         }
 
@@ -374,6 +375,31 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
 
             return this;
         }
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur = (égalité)
+        /// </summary>
+        public virtual IQueryBuilder WhereEqual(string column, object value) => Where(column, "=", value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur != (différent)
+        /// </summary>
+        public virtual IQueryBuilder WhereNotEqual(string column, object value) => Where(column, "!=", value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur > (supérieur)
+        /// </summary>
+        public virtual IQueryBuilder WhereGreater(string column, object value) => Where(column, ">", value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur < (inférieur)
+        /// </summary>
+        public virtual IQueryBuilder WhereLess(string column, object value) => Where(column, "<", value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur LIKE
+        /// </summary>
+        public virtual IQueryBuilder WhereLike(string column, string pattern) => Where(column, "LIKE", pattern);
 
         /// <summary>
         /// Condition WHERE BETWEEN

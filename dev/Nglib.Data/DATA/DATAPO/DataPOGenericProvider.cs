@@ -28,11 +28,11 @@ namespace Nglib.DATA.DATAPO
         }
 
         /// <summary>
-        /// Initialise le provider générique avec l'environnement global
+        /// Initialise le provider générique avec l'environnement
         /// </summary>
-        public DataPOGenericProvider(APP.ENV.IGlobalEnv env)
+        public DataPOGenericProvider(APP.ENV.IMasterEnv env)
         {
-            this.Connector = env?.Connectors?.GetDefaultConnector();
+            this.Connector = env?.ConnectorDatabase;
             if (this.Connector == null)
                 throw new ArgumentException("Impossible d'obtenir un connecteur depuis l'environnement", nameof(env));
         }

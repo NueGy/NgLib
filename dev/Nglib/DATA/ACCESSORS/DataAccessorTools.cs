@@ -99,70 +99,6 @@ namespace Nglib.DATA.ACCESSORS
         }
 
         /// <summary>
-        /// Tentative de conversion rapide pour types primitifs (String, Int, Bool, Enum)
-        /// </summary>
-        internal static bool TryFastPathConversion<T>(object obj, Type targetType, Type objType, CultureInfo culture, DataAccessorOptionEnum options, out T result)
-        {
-            result = default(T);
-
-            // AMÉLIORATION #2: Spécialisation pour types primitifs (si pas AdvancedConverter)
-            if (!options.HasFlag(DataAccessorOptionEnum.AdvancedConverter))
-            {
-                // Fast path: String
-                if (targetType == typeof(string))
-                {
-                    if (objType.IsArray || IsComplexType(objType))
-                        result = (T)(object)System.Text.Json.JsonSerializer.Serialize(obj);
-                    else
-                        result = (T)(object)obj.ToString();
-                    return true;
-                }
-
-                // Fast path: Int32
-                if (targetType == typeof(int))
-                {
-                    if (obj is string str && string.IsNullOrWhiteSpace(str))
-                        result = (T)(object)0;
-                    else
-                        result = (T)(object)Convert.ToInt32(obj, culture);
-                    return true;
-                }
-
-                // Fast path: Boolean
-                if (targetType == typeof(bool))
-                {
-                    if (obj is string str)
-                    {
-                        str = str.Trim().ToLowerInvariant();
-                        if (str == "1" || str == "true" || str == "yes" || str == "oui" || str == "on")
-                            result = (T)(object)true;
-                        else if (str == "0" || str == "false" || str == "no" || str == "non" || str == "off")
-                            result = (T)(object)false;
-                        else
-                            result = (T)(object)Convert.ToBoolean(obj, culture);
-                    }
-                    else
-                        result = (T)(object)Convert.ToBoolean(obj, culture);
-                    return true;
-                }
-            }
-
-            // AMÉLIORATION #4: Fast path pour Enums
-            if (targetType.IsEnum)
-            {
-                if (obj is string strEnum)
-                    result = (T)Enum.Parse(targetType, strEnum, ignoreCase: true);
-                else if (obj is int || obj is long || obj is byte || obj is short)
-                    result = (T)Enum.ToObject(targetType, obj);
-                else
-                    return false; // Pas de conversion enum possible
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
         /// Valide qu'une valeur n'est pas "vide" pour le flag Required
         /// Vérifie: null, DBNull, string vide, tous types numériques à zéro
         /// </summary>
@@ -283,56 +219,6 @@ namespace Nglib.DATA.ACCESSORS
 
             return false;
         }
-
-        /// <summary>
-        /// Conversion finale avec AdvancedConverter ou Convert.ChangeType standard
-        /// </summary>
-        internal static T PerformFinalConversion<T>(object obj, Type targetType, CultureInfo culture, DataAccessorOptionEnum options)
-        {
-            // Conversion path: use advanced or standard converter
-            if (options.HasFlag(DataAccessorOptionEnum.AdvancedConverter))
-                return (T)ConvertTools.ChangeType(obj, targetType);
-
-            // Si on demande un string et que l'objet est un array ou complexe, sérialiser en JSON
-            if (targetType == typeof(string) && (obj.GetType().IsArray || IsComplexType(obj.GetType())))
-                return (T)(object)System.Text.Json.JsonSerializer.Serialize(obj);
-
-            // Gestion spéciale pour DateTime - Support multi-formats
-            if (targetType == typeof(DateTime) && obj is string dateStr)
-            {
-                // Essayer plusieurs formats de date
-                var formats = new[]
-                {
-                    "yyyy-MM-dd HH:mm:ss",
-                    "yyyy-MM-dd",
-                    "dd/MM/yyyy HH:mm:ss",
-                    "dd/MM/yyyy",
-                    "MM/dd/yyyy",
-                    "yyyy/MM/dd"
-                };
-
-                // Essayer d'abord avec la culture courante
-                if (DateTime.TryParse(dateStr, culture, System.Globalization.DateTimeStyles.None, out DateTime resultCulture))
-                    return (T)(object)resultCulture;
-
-                // Essayer avec InvariantCulture
-                if (DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime resultInvariant))
-                    return (T)(object)resultInvariant;
-
-                // Essayer les formats explicites
-                if (DateTime.TryParseExact(dateStr, formats, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime resultExact))
-                    return (T)(object)resultExact;
-
-                // Si tout échoue, laisser Convert.ChangeType gérer (qui va lever une exception)
-            }
-
-            // Conversion standard
-            object? retour = Convert.ChangeType(obj, targetType, culture);
-            return (T)retour;
-        }
-
-
-
 
         /// <summary>
         /// Détermine si un type nécessite une désérialisation JSON/XML (types complexes non primitifs)

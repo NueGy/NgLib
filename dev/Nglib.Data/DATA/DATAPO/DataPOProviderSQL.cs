@@ -91,18 +91,9 @@ namespace Nglib.DATA.DATAPO
         /// <summary>
         /// manipulation des dataPo en base
         /// </summary>
-        public DataPOProviderSQL(DATA.CONNECTOR.ConnectorCollection connectors)
-        {
-            this.Connector = connectors?.GetDefaultConnector();
-            if (this.Connector == null) throw new Exception("provider.connector Not loaded");
-        }
-
-        /// <summary>
-        /// manipulation des dataPo en base
-        /// </summary>
         public DataPOProviderSQL(APP.ENV.IMasterEnv env)
         {
-            this.Connector = env?.Connectors?.GetDefaultConnector();
+            this.Connector = env?.ConnectorDatabase;
             if (this.Connector == null) throw new Exception("provider.connector Not loaded");
         }
 

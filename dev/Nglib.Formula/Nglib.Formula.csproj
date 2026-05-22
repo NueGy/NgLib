@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
     <!-- PACKAGE VERSION : Independante, a incrementer si projet modifie -->
-    <Version>1.1.7-beta</Version>
+    <Version>1.1.8-beta</Version>
     
     <!-- PACKAGE INFO -->
     <PackageId>Nglib.Formula</PackageId>

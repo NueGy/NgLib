@@ -229,8 +229,12 @@ namespace Nglib.NET.HTTPCLIENT
             if (resp.RequestMessage != null && resp.RequestMessage.RequestUri != null)
                 resqEndUrl = $"{resp.RequestMessage.RequestUri} [{resp.RequestMessage.Method}]";
 
-            throw new Exception(
+            var ex = new HttpRequestException(
                 $"{msgPrefix} HTTP {resqEndUrl} ({(int)resp.StatusCode}) {resp.ReasonPhrase} : {bodymsg}");
+            ex.Data["Response"] = resp;
+            ex.Data["StatusCode"] = (int)resp.StatusCode;
+            ex.Data["ResponseBody"] = bodymsg;
+            throw ex;
         }
 
 

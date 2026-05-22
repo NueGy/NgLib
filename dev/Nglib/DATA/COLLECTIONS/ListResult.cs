@@ -34,7 +34,7 @@ namespace Nglib.DATA.COLLECTIONS
         /// <summary>
         /// Informations sur le résultat
         /// </summary>
-        public ResultMetadataModel info { get; private init; } = new ResultMetadataModel();
+        public ResultMetadataModel Info { get; private init; } = new ResultMetadataModel();
 
 
 
@@ -101,7 +101,7 @@ namespace Nglib.DATA.COLLECTIONS
         public static ListResult<T> PrepareForError(string errorMsg)
         {
             var retour = new ListResult<T>();
-            retour.info.Error = errorMsg;
+            retour.Info.Error = errorMsg;
             return retour;
         }
 

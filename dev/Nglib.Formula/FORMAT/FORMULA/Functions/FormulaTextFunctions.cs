@@ -95,6 +95,14 @@ namespace Nglib.FORMAT.FORMULA
         public static object IsAlphaNumeric(string[] args)
             => Nglib.FORMAT.StringTools.IsAlphaNumeric(args[0]);
 
+        [Formula("OnlyAlphanumeric", 1, "Returns only alphanumeric characters from string")]
+        public static object OnlyAlphanumeric(string[] args)
+            => Nglib.FORMAT.StringTools.FilterCharacters(args[0]);
+
+        [Formula("OnlyNumeric", 1, "Returns only numeric characters from string")]
+        public static object OnlyNumeric(string[] args)
+            => Nglib.FORMAT.StringTools.FilterCharacters(args[0], "0123456789");
+
 
         [Formula("PadNumeric", 2, "Adds zeros. Padnumeric(815,6)=000815")]
         public static object PadNumeric(string[] args)

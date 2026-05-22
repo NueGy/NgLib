@@ -1043,6 +1043,73 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
         }
 
         /// <summary>
+        /// Test des nouvelles méthodes WhereEqual directement dans l'interface et From avec alias
+        /// </summary>
+        [TestMethod]
+        public void NewInterfaceMethodsTest()
+        {
+            Console.WriteLine("\n=== Test des nouvelles méthodes dans IQueryBuilder ===");
+
+            // === Test WhereEqual et méthodes similaires directement dans l'interface ===
+            var query1 = CreateQueryBuilder()
+                .Select("id", "name", "age")
+                .From("users", "u")
+                .WhereEqual("status", "active")
+                .WhereNotEqual("role", "guest")
+                .WhereGreater("age", 18)
+                .WhereLess("score", 100)
+                .WhereLike("email", "%@example.com")
+                .Build();
+
+            Console.WriteLine($"SQL avec méthodes natives: {query1.Item1}");
+            Assert.IsTrue(query1.Item1.Contains("FROM users AS u"), "L'alias de table devrait être présent");
+            Assert.IsTrue(query1.Item1.Contains("WHERE"), "La clause WHERE devrait être présente");
+            Assert.AreEqual(5, query1.Item2.Count, "Devrait avoir 5 paramètres");
+            
+            // === Test From() avec alias dans jointure ===
+            var query2 = CreateQueryBuilder()
+                .Select("u.id", "u.name", "o.amount")
+                .From("users", "u")
+                .InnerJoin("orders o", "o.user_id = u.id")
+                .WhereEqual("u.active", true)
+                .OrderBy("u.name ASC")
+                .Build();
+
+            Console.WriteLine($"SQL avec alias et jointure: {query2.Item1}");
+            Assert.IsTrue(query2.Item1.Contains("FROM users AS u"), "Table principale devrait avoir alias u");
+            Assert.IsTrue(query2.Item1.Contains("INNER JOIN orders o"), "Jointure devrait être présente");
+            Assert.IsTrue(query2.Item1.Contains("u.id"), "Colonne avec alias devrait être présente");
+            
+            // === Test From() sans alias (compatibilité) ===
+            var query3 = CreateQueryBuilder()
+                .Select("id", "name")
+                .From("products")
+                .WhereGreater("price", 100)
+                .Build();
+
+            Console.WriteLine($"SQL sans alias (compatibilité): {query3.Item1}");
+            Assert.IsTrue(query3.Item1.Contains("FROM products"), "Table sans alias devrait fonctionner");
+            Assert.IsFalse(query3.Item1.Contains("AS"), "Ne devrait pas contenir AS sans alias");
+
+            // === Test WhereEqual vs WhereEquals (dictionnaire) ===
+            var query4 = CreateQueryBuilder()
+                .Select()
+                .From("orders", "o")
+                .WhereEqual("status", "pending")  // Méthode unique
+                .WhereEquals(new Dictionary<string, object>  // Méthode dictionnaire
+                {
+                    { "payment_status", "paid" },
+                    { "shipped", false }
+                })
+                .Build();
+
+            Console.WriteLine($"SQL WhereEqual + WhereEquals: {query4.Item1}");
+            Assert.AreEqual(3, query4.Item2.Count, "Devrait avoir 3 paramètres WHERE");
+
+            Console.WriteLine("\n✅ Tests des nouvelles méthodes réussis");
+        }
+
+        /// <summary>
         /// Classe de test implémentant ISearchForm
         /// </summary>
         private class TestSearchForm : DATA.BASICS.ISearchForm

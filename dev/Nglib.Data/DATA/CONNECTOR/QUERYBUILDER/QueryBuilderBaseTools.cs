@@ -247,6 +247,8 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
         {
             var sql = new StringBuilder();
             sql.Append($" FROM {tableName}");
+            if (!string.IsNullOrWhiteSpace(context.TableAlias))
+                sql.Append($" AS {context.TableAlias}");
             sql.Append(QueryBuilderTools.BuildJoinClauses(context.JoinClauses));
             return sql.ToString();
         }

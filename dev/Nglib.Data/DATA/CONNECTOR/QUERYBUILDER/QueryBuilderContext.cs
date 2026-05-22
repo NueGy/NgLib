@@ -16,6 +16,11 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
         public string TableName { get; set; } = "";
 
         /// <summary>
+        /// Alias de la table principale (optionnel)
+        /// </summary>
+        public string TableAlias { get; set; } = "";
+
+        /// <summary>
         /// Paramètres de la requête
         /// </summary>
         public Dictionary<string, object> Parameters { get; set; } = new();

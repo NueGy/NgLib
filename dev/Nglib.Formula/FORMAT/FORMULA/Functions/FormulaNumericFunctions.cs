@@ -15,13 +15,7 @@ namespace Nglib.FORMAT.FORMULA
     /// </summary>
     public static class FormulaNumericFunctions
     {
-
-
-
-        
-       
-      
-
+        private static double D(string s) => Nglib.FORMAT.ConvertTools.ToDouble(s);
 
         [Formula("lt", 2, "If arg1 is less than arg2")]
         public static object Lt(string[] args)
@@ -47,15 +41,22 @@ namespace Nglib.FORMAT.FORMULA
 
         [Formula("IsNumeric", 1, "If the string is numeric")]
         public static object IsNumeric(string[] args)
-            => double.TryParse(args[0], out double d) ? "1" : "0";
+        {
+            var s = Nglib.FORMAT.NumberTools.NormalizeNumericString(args[0]);
+            return double.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out _) ? "1" : "0";
+        }
 
-        [Formula("ToDouble", 1, "Force to Double/Float format if string")]
+        [Formula("ToDouble", 1, "Force to Double format if string")]
         public static object ToDouble(string[] args)
-            => Convert.ToDouble(args[0]);
+            => Nglib.FORMAT.ConvertTools.ToDouble(args[0]);
+
+        [Formula("ToDecimal", 1, "Force to Decimal format if string")]
+        public static object ToDecimal(string[] args)
+            => Nglib.FORMAT.ConvertTools.ToDecimal(args[0]);
 
         [Formula("ToInt", 1, "Force to Int64/long format if string")]
         public static object ToInt(string[] args)
-            => Convert.ToInt64(args[0]);
+            => Nglib.FORMAT.ConvertTools.ToLong(args[0]);
 
         [Formula("add", 2, "Add two numbers")]
         public static object Add(string[] args)
@@ -160,16 +161,14 @@ namespace Nglib.FORMAT.FORMULA
         [Formula("amtf", 1, "Format as string amount. amtf('1586,45'[,isCentimes][,devise])=1 586.45")]
         public static object amtf(string[] args)
         {
-            double num = Convert.ToDouble(args[0]);
+            double num = D(args[0]);
             return num.ToString("0.00");
         }
 
         [Formula("amt", 1, "Convert a string to double amount amt('1586,45')=1 586.45")]
         public static object amt(string[] args)
         {
-            string val = Convert.ToString(args[0]);
-            val = val.Replace(" ", "").Replace(".", ",");
-            double num = Convert.ToDouble(val);
+            double num = D(args[0]);
             return Convert.ToDouble(num.ToString("0.00"));
         }
 
@@ -177,13 +176,8 @@ namespace Nglib.FORMAT.FORMULA
         [Formula("amtct", 1, "Convert a string to numeric cent amount int string. amtct('1 586.45')=158645")]
         public static object amtct(string[] args)
         {
-            string val = Convert.ToString(args[0]);
-            val = val.Replace(" ", "").Replace(".", ",");
-            // todo!!! supprimer les devises
-            // Todo!!! gérer des centimes sur 1 caractères. padleft
-            val = val.Replace(",", "");
-            long num = Convert.ToInt64(args[0]);
-            return num;
+            double d = Nglib.FORMAT.ConvertTools.ToDouble(args[0]);
+            return (long)Math.Round(d * 100);
         }
 
 

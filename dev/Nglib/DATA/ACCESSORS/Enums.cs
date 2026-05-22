@@ -72,6 +72,7 @@ namespace Nglib.DATA.ACCESSORS
 
         /// <summary>
         /// Allows converting data with advanced converters (get only). See FORMAT.ConvertTools.
+        /// Obsolete to delete in next version
         /// </summary>
         AdvancedConverter = 128,
 

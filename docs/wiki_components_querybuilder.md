@@ -4,157 +4,110 @@
 
 **Namespace**: `Nglib.DATA.CONNECTOR.QUERYBUILDER`
 
-## Description
+Fluent API for building multi-DBMS SQL queries with automatic parameter management and SQL injection prevention.
 
-QueryBuilder is a Fluent API for building multi-DBMS SQL queries. It allows building SELECT, INSERT, UPDATE and DELETE queries in a typed and secure manner, with support for subqueries, joins and advanced clauses.
+## Supported Databases
 
-**Main Features:**
-- Fluent SQL query construction with continuous validation
-- Multi-DBMS support (PostgreSQL, SQL Server, SQLite)
-- Automatic and prefixed parameter management to prevent SQL injection
-- Advanced clauses: subqueries, EXISTS/NOT EXISTS, BETWEEN, IN/NOT IN
-- Safe cloning for query reuse
-- Strict operator validation (`=`, `<>`, `LIKE`, `IN`, …)
-- Paginated limitation via `Limit(int count, int? offset = null)`
+PostgreSQL, SQL Server (MSSQL), SQLite
 
-## Main Classes
+## Available Methods
 
-- **IQueryBuilder**: Main interface defining construction methods
-- **BaseQueryBuilder**: Base abstract implementation with common logic
-- **PostgresqlQueryBuilder**: PostgreSQL specialized implementation
+| Category | Method | Description |
+|----------|--------|-------------|
+| **Query Type** | `Select(params string[] columns)` | SELECT columns (empty = *) |
+| | `SelectDistinct(params string[] columns)` | SELECT DISTINCT |
+| | `SelectRaw(string rawSql)` | Raw SQL expression in SELECT |
+| | `Insert(Dictionary values)` | INSERT values |
+| | `Update(Dictionary values)` | UPDATE values |
+| | `Delete()` | DELETE command |
+| **Table** | `From(string table, string alias = null)` | Set main table with optional alias |
+| | `Into(string table)` | Target table for INSERT |
+| **Joins** | `Join(string table, string condition, JoinType)` | Custom join |
+| | `InnerJoin(string table, string condition)` | INNER JOIN |
+| | `LeftJoin(string table, string condition)` | LEFT JOIN |
+| | `RightJoin(string table, string condition)` | RIGHT JOIN |
+| | `JoinRaw(string rawJoin, Dictionary params)` | Raw JOIN clause |
+| **WHERE** | `Where(string column, string operator, object value)` | WHERE with operator |
+| | `WhereEqual(string column, object value)` | WHERE column = value |
+| | `WhereNotEqual(string column, object value)` | WHERE column != value |
+| | `WhereGreater(string column, object value)` | WHERE column > value |
+| | `WhereLess(string column, object value)` | WHERE column < value |
+| | `WhereLike(string column, string pattern)` | WHERE column LIKE pattern |
+| | `WhereEquals(Dictionary values)` | Multiple WHERE column = value |
+| | `WhereBetween(string column, object min, max)` | WHERE BETWEEN min AND max |
+| | `WhereIn(string column, IEnumerable values)` | WHERE IN (...) |
+| | `WhereNotIn(string column, IEnumerable values)` | WHERE NOT IN (...) |
+| | `WhereNull(string column, bool isNot = false)` | WHERE IS [NOT] NULL |
+| | `WhereNotNull(string column)` | WHERE IS NOT NULL |
+| | `WhereRaw(string sqlClause, Dictionary params)` | Raw WHERE clause |
+| | `WhereSubquery(string column, string op, IQueryBuilder)` | WHERE with subquery |
+| | `WhereExists(IQueryBuilder subquery, bool isNot)` | WHERE [NOT] EXISTS |
+| **Sort & Group** | `OrderBy(params string[] columns)` | ORDER BY (use "col ASC/DESC") |
+| | `GroupBy(params string[] columns)` | GROUP BY |
+| | `Having(string condition)` | HAVING condition |
+| **Limit** | `Limit(int count, int? offset = null)` | LIMIT with optional OFFSET |
+| | `Paginate(int page, int pageSize)` | Pagination helper |
+| **Build** | `Build()` | Returns (SQL, Parameters) |
+| **Utility** | `Clone()` | Deep copy for reuse |
+| | `Reset()` | Clear query state |
+| | `ValidateQuery()` | Check query validity |
 
-## Complete Example
+## Quick Examples
 
 ```csharp
 using Nglib.DATA.CONNECTOR.QUERYBUILDER;
 
-// === 1. ADVANCED SELECT QUERY ===
-// Search for active users with their recent orders
-var subQuery = new PostgresqlQueryBuilder()
-    .From("orders")
-    .Select("COUNT(*)")
-    .Where("user_id", "=", "users.id")
-    .Where("created_at", ">=", DateTime.Now.AddMonths(-6));
+// Simple SELECT
+var query = QueryBuilderTools.CreateQueryBuilder("postgresql")
+    .From("users", "u")
+    .Select("u.id", "u.name", "u.email")
+    .WhereEqual("u.active", true)
+    .WhereGreater("u.age", 18)
+    .OrderBy("u.name ASC")
+    .Limit(10);
 
-var usersQuery = new PostgresqlQueryBuilder()
-    .From("users")
-    .Select("id", "name", "email", "created_at")
-    .Where("active", "=", true)
-    .Where("age", ">=", 18)
-    .WhereIn("role", new[] { "customer", "premium" })
-    .WhereSubquery("recent_orders", ">", subQuery)  // Verifies operator is allowed before construction
-    .OrderBy("name ASC")
-    .Limit(50);
+var (sql, parameters) = query.Build();
 
-var (sql, parameters) = usersQuery.Build();
-// Execution
-using var connector = new ConnectorGeneric(connectionString);
-var userData = await connector.QueryDataSetAsync(sql, parameters);
-
-// === 2. CLONING AND REUSE ===
-// Reuse base query for different criteria
-var premiumUsers = usersQuery.Clone()
-    .Where("subscription", "=", "premium");
-
-var recentUsers = usersQuery.Clone()
-    .Where("created_at", ">=", DateTime.Now.AddDays(-30))
-    .Reset() // Reset previous for new criteria
-    .OrderBy("created_at DESC");
-
-// === 3. INSERT ===
+// INSERT
 var newUser = new Dictionary<string, object>
 {
     ["name"] = "John Doe",
     ["email"] = "john@example.com",
-    ["role"] = "customer",
-    ["active"] = true,
-    ["created_at"] = DateTime.Now
+    ["active"] = true
 };
 
-var insertQuery = new PostgresqlQueryBuilder()
+var insertQuery = QueryBuilderTools.CreateQueryBuilder("postgresql")
     .Into("users")
     .Insert(newUser);
 
-await connector.ExecuteNonQueryAsync(insertQuery.Build());
+// UPDATE
+var updates = new Dictionary<string, object> { ["last_login"] = DateTime.Now };
 
-// === 4. UPDATE ===
-var updates = new Dictionary<string, object>
-{
-    ["last_login"] = DateTime.Now,
-    ["login_count"] = 1  // Will be incremented via custom clause
-};
-
-var updateQuery = new PostgresqlQueryBuilder()
+var updateQuery = QueryBuilderTools.CreateQueryBuilder("postgresql")
     .From("users")
     .Update(updates)
-    .WhereClause("login_count = login_count + 1", null)  // Custom SQL clause
-    .Where("id", "=", userId);
+    .WhereEqual("id", userId);
 
-// === 5. DELETE WITH EXISTS ===
-// Delete inactive users without orders
-var hasOrdersQuery = new PostgresqlQueryBuilder()
-    .From("orders")
-    .Select("1")
-    .Where("user_id", "=", "users.id");
-
-var deleteQuery = new PostgresqlQueryBuilder()
+// DELETE
+var deleteQuery = QueryBuilderTools.CreateQueryBuilder("postgresql")
     .From("users")
     .Delete()
-    .Where("active", "=", false)
-    .Where("last_login", "<", DateTime.Now.AddYears(-2))
-    .WhereExists(hasOrdersQuery, isNotCondition: true);  // NOT EXISTS
+    .WhereEqual("active", false)
+    .WhereLess("last_login", DateTime.Now.AddYears(-1));
 
-// === 6. WHERE CLAUSE ONLY RETRIEVAL ===
-// To reuse conditions in other contexts
-var conditionsQuery = new PostgresqlQueryBuilder()
-    .Where("status", "=", "active")
-    .Where("price", "BETWEEN", new[] { 10, 100 });
-
-var (whereClause, whereParams) = conditionsQuery.BuildWhereClause();
-// Result: "WHERE status = @status AND price BETWEEN @price_min AND @price_max"
-
-// === 7. AUTOMATIC VALIDATION ===
-try 
-{
-    var invalidQuery = new PostgresqlQueryBuilder()
-        .From("users")
-        .OrderBy(null);  // Throws ArgumentNullException
-}
-catch (ArgumentNullException ex)
-{
-    // Validation error handling
-}
+// WITH JOINS
+var query = QueryBuilderTools.CreateQueryBuilder("postgresql")
+    .From("users", "u")
+    .Select("u.name", "o.total")
+    .InnerJoin("orders o", "o.user_id = u.id")
+    .WhereEqual("u.status", "active")
+    .WhereGreater("o.total", 100);
 ```
-
-## Simple Usage
-
-```csharp
-// Basic SELECT
-var query = new PostgresqlQueryBuilder()
-    .From("products")
-    .Select("id", "name", "price")
-    .Where("category_id", "=", 5)
-    .OrderBy("price DESC")
-    .Limit(10);
-
-var (sql, parameters) = query.Build();
-```
-
-## Advanced Features
-
-- **Subqueries**: `WhereSubquery()` and `WhereExists()` isolate and prefix secondary parameters
-- **Validation**: `Where()` rejects any non-whitelisted syntax and handles `NULL` via `IS [NOT] NULL`
-- **Pagination**: `Limit(count, offset)` replaces the old pair of overloads
-- **BuildWhereClause()**: Extraction of WHERE clause only (SQL + parameter dictionary)
-- **Multi-DBMS support**: PostgreSQL, SQL Server, SQLite
 
 ## Integration
 
 ```csharp
 // With IDataConnector
 using var connector = new ConnectorGeneric(connectionString);
-var result = await connector.QueryDataSetAsync(queryBuilder.Build());
-
-// Conversion to QueryContext
-var queryContext = queryBuilder.BuildQuery();
+var result = await connector.QueryDataSetAsync(sql, parameters);
 ```

@@ -107,6 +107,13 @@ namespace Nglib.APP.DIAG
         }
 
         /// <summary>
+        /// Implicit conversion to bool for natural usage in conditions
+        /// </summary>
+        /// <param name="model">The validation model</param>
+        /// <returns>True if valid, false otherwise</returns>
+        public static implicit operator bool(ValidateModel model) => model?.IsValid ?? false;
+
+        /// <summary>
         /// Creates a successful validation result.
         /// </summary>
         public static ValidateModel Success => new ValidateModel() { IsValid = true };

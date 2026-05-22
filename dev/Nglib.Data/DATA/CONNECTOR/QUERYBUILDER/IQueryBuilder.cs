@@ -98,7 +98,8 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
         /// Définit la table principale
         /// </summary>
         /// <param name="tableName">Nom de la table</param>
-        IQueryBuilder From(string tableName);
+        /// <param name="alias">Alias optionnel de la table</param>
+        IQueryBuilder From(string tableName, string alias = null);
 
         /// <summary>
         /// Ajoute une clause INTO (SELECT uniquement)
@@ -131,6 +132,41 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
         /// <param name="value">Valeur</param>
         /// <param name="ifNullEmpty">Ignore la condition si la valeur est null ou vide (string) sinon erreur</param>
         IQueryBuilder Where(string column, string whereOperator, object value, IfNullEmptyEnum ifNullEmpty = IfNullEmptyEnum.Nullable);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur = (égalité)
+        /// </summary>
+        /// <param name="column">Colonne</param>
+        /// <param name="value">Valeur</param>
+        IQueryBuilder WhereEqual(string column, object value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur != (différent)
+        /// </summary>
+        /// <param name="column">Colonne</param>
+        /// <param name="value">Valeur</param>
+        IQueryBuilder WhereNotEqual(string column, object value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur &gt; (supérieur)
+        /// </summary>
+        /// <param name="column">Colonne</param>
+        /// <param name="value">Valeur</param>
+        IQueryBuilder WhereGreater(string column, object value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur &lt; (inférieur)
+        /// </summary>
+        /// <param name="column">Colonne</param>
+        /// <param name="value">Valeur</param>
+        IQueryBuilder WhereLess(string column, object value);
+
+        /// <summary>
+        /// Ajoute une condition WHERE avec l'opérateur LIKE
+        /// </summary>
+        /// <param name="column">Colonne</param>
+        /// <param name="pattern">Motif de recherche</param>
+        IQueryBuilder WhereLike(string column, string pattern);
 
         /// <summary>
         /// Ajoute plusieurs conditions WHERE avec l'opérateur = (égalité)

@@ -22,9 +22,9 @@ namespace Nglib.DATA.DATAPO
         where TModel : class, new()
     {
         /// <summary>
-        /// Initialise le fournisseur CRUD avec l'environnement global
+        /// Initialise le fournisseur CRUD avec l'environnement
         /// </summary>
-        public DataPOProvider(APP.ENV.IGlobalEnv env) : base(env) { }
+        public DataPOProvider(APP.ENV.IMasterEnv env) : base(env) { }
         
         /// <summary>
         /// Initialise le fournisseur CRUD avec un connecteur de données spécifique
@@ -56,9 +56,9 @@ namespace Nglib.DATA.DATAPO
         public bool DefaultMappingByReflexion { get; set; } = false;
 
         /// <summary>
-        /// Initialise le fournisseur CRUD avec l'environnement global
+        /// Initialise le fournisseur CRUD avec l'environnement
         /// </summary>
-        public DataPOProvider(APP.ENV.IGlobalEnv env) : base(env) { }
+        public DataPOProvider(APP.ENV.IMasterEnv env) : base(env) { }
         
         /// <summary>
         /// Initialise le fournisseur CRUD avec un connecteur de données spécifique

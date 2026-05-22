@@ -95,20 +95,7 @@ namespace Nglib.FORMAT.FORMULA
             return "";
         }
 
-
-
-
-
-        // DEPRECATED: MethodMode.Context n'est plus supporté dans nouveau système
-        // Les paramètres @xxx sont maintenant gérés directement par le parsing (ValParameter)
-        // Cette fonction n'est plus nécessaire
-        [Obsolete("Parameters @xxx are now handled directly by the parser", true)]
-        [Formula("param", 1, "Get a data passed as a parameter param('@MyObject'[,'default'])", MethodMode = MethodModeEnum.Context)]
-        public static object Param(FormulaContext ctx)
-        {
-            throw new NotSupportedException("param() function is deprecated. Use @paramName directly instead.");
-        }
-
+ 
         // DEPRECATED: MethodMode.Context n'est plus supporté
         [Obsolete("Not implemented in new segment system", true)]
         [Formula("Safe", 1, "Will not cause an error, Returns NULL safe(xxxx) (SOON ...)", MethodMode = MethodModeEnum.Context)]

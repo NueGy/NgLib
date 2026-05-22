@@ -114,12 +114,12 @@ namespace Nglib.FORMAT.FORMULA
             string[] parts = fullPath.Split('.');
             string paramName = parts[0];
 
-            if (context.Parameters == null || !context.Parameters.ContainsKey(paramName))
+            if (!context.HasParameter(paramName))
             {
                 throw new FormulaException(segment.Text, $"Parameter not found: {paramName}({segment.Text})");
             }
 
-            object value = context.Parameters[paramName];
+            object value = context.GetParameterValue(paramName);
 
             // Accès aux propriétés imbriquées (ex: @MonPo.Nom)
             for (int i = 1; i < parts.Length; i++)

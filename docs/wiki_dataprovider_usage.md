@@ -16,6 +16,16 @@ Le système `DataPOProvider` propose deux approches complémentaires pour manipu
 - **Type-Safety** : Garantie au niveau du compilateur
 - **Cohérence** : Un provider = Un type de PO
 
+### Constructeurs
+
+```csharp
+// Option 1: Avec IDataConnector directement
+var userProvider = new DataPOProviderSQL<UserPO>(connector);
+
+// Option 2: Avec IMasterEnv (utilise automatiquement ConnectorDatabase)
+var userProvider = new DataPOProviderSQL<UserPO>(env);
+```
+
 ### Exemple
 
 ```csharp
@@ -78,6 +88,16 @@ public class UserRepository
 - **Scripts de migration** : Manipulation de plusieurs tables
 - **Outils génériques** : Import/Export, synchronisation
 - **Prototypes rapides** : Tests, démonstrations
+
+### Constructeurs
+
+```csharp
+// Option 1: Avec IDataConnector directement
+var provider = new DataPOProviderSQL(connector);
+
+// Option 2: Avec IMasterEnv (utilise automatiquement ConnectorDatabase)
+var provider = new DataPOProviderSQL(env);
+```
 
 ### Exemple
 

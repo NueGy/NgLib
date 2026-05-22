@@ -122,5 +122,27 @@ namespace Nglib.FORMAT
             if (obj is double) return true;
             return false;
         }
+
+        /// <summary>
+        /// Normalizes a numeric string: removes spaces, normalizes decimal separator.
+        /// Handles formats like "1 234,56", "1.234,56", "1,234.56"
+        /// </summary>
+        public static string NormalizeNumericString(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return s;
+            s = s.Trim();
+            int lastDot   = s.LastIndexOf('.');
+            int lastComma = s.LastIndexOf(',');
+            if (lastDot >= 0 && lastComma >= 0)
+            {
+                if (lastComma > lastDot)
+                    s = s.Replace(".", "").Replace(',', '.');
+                else
+                    s = s.Replace(",", "");
+            }
+            else if (lastComma >= 0)
+                s = s.Replace(',', '.');
+            return s.Replace(" ", "");
+        }
     }
 }

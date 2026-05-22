@@ -18,7 +18,7 @@ namespace Nglib.APP.PROCESS
         /// <summary>
         /// Environnement d'execution
         /// </summary>
-        public APP.ENV.IGlobalEnv appEnv { get; set; }
+        public APP.ENV.IMasterEnv appEnv { get; set; }
 
 
         public AppProcess()

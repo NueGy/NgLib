@@ -91,6 +91,28 @@ namespace Nglib.PublicTests.FORMAT
             var date8 = ConvertTools.ToDateTime(objstr8chars);
             var dateSep = ConvertTools.ToDateTime(objstrSeparators);
             Assert.AreEqual(date8, dateSep, "ToDateTime: Les deux formats donnent la même date");
+
+            // Tests date format français dd/MM/yyyy (06/11/2023 = 6 novembre 2023)
+            Assert.AreEqual(new DateTime(2023, 11, 6), ConvertTools.ToDateTime("06/11/2023"), "ToDateTime: date française 06/11/2023 → 6 novembre 2023");
+            Assert.AreEqual(new DateTime(2023, 11, 6), ConvertTools.ToDateTime("20231106"), "ToDateTime: 8-char 20231106 → 6 novembre 2023");
+            Assert.AreEqual(new DateTime(2023, 11, 6), ConvertTools.ToDateTime("2023-11-06"), "ToDateTime: ISO 2023-11-06 → 6 novembre 2023");
+
+            // Tests dates limites via ChangeType
+            Assert.AreEqual(new DateTime(2023, 11, 6), ConvertTools.ChangeType("06/11/2023", typeof(DateTime)), "ChangeType: 06/11/2023 → DateTime");
+            Assert.AreEqual(new DateTime(2023, 11, 6), ConvertTools.ChangeType("20231106", typeof(DateTime)), "ChangeType: 20231106 → DateTime");
+            Assert.AreEqual(new DateTime(2023, 11, 6), ConvertTools.ChangeType("2023-11-06", typeof(DateTime)), "ChangeType: ISO → DateTime");
+
+            // Tests safe mode DateTime
+            Assert.AreEqual(DateTime.MinValue, ConvertTools.ToDateTime("not-a-date", true), "ToDateTime safe: valeur invalide → DateTime.MinValue");
+            try
+            {
+                ConvertTools.ToDateTime("not-a-date");
+                Assert.Fail("ToDateTime: Exception attendue pour valeur invalide");
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("ToDateTime"), "ToDateTime: Message d'erreur avec nom méthode");
+            }
             
             // === ToInt Tests ===
             
@@ -183,6 +205,57 @@ namespace Nglib.PublicTests.FORMAT
             Assert.IsNull(ConvertTools.ParseType("   "), "ParseType: string espaces");
             Assert.IsNull(ConvertTools.ParseType("invalidtype"), "ParseType: type non supporté");
             Assert.IsNull(ConvertTools.ParseType("object"), "ParseType: type non supporté object");
+        }
+
+        /// <summary>
+        /// Performance benchmark for ChangeType - measures execution time across common conversion scenarios.
+        /// Run before and after optimizations to compare results.
+        /// </summary>
+        [TestMethod]
+        public void ConvertTools_ChangeType_PerformanceTest()
+        {
+            const int iterations = 100_000;
+            var sw = new System.Diagnostics.Stopwatch();
+
+            // === string → int ===
+            sw.Restart();
+            for (int i = 0; i < iterations; i++) ConvertTools.ChangeType("42", typeof(int));
+            sw.Stop();
+            Console.WriteLine($"string → int       : {sw.ElapsedMilliseconds} ms ({iterations} iterations)");
+
+            // === string → bool (extended values) ===
+            sw.Restart();
+            for (int i = 0; i < iterations; i++) ConvertTools.ChangeType("yes", typeof(bool));
+            sw.Stop();
+            Console.WriteLine($"string → bool      : {sw.ElapsedMilliseconds} ms ({iterations} iterations)");
+
+            // === string → DateTime ===
+            sw.Restart();
+            for (int i = 0; i < iterations; i++) ConvertTools.ChangeType("2023-10-15", typeof(DateTime));
+            sw.Stop();
+            Console.WriteLine($"string → DateTime  : {sw.ElapsedMilliseconds} ms ({iterations} iterations)");
+
+            // === already correct type (fast path) ===
+            sw.Restart();
+            for (int i = 0; i < iterations; i++) ConvertTools.ChangeType(42, typeof(int));
+            sw.Stop();
+            Console.WriteLine($"int → int (same)   : {sw.ElapsedMilliseconds} ms ({iterations} iterations)");
+
+            // === string → string (same type) ===
+            sw.Restart();
+            for (int i = 0; i < iterations; i++) ConvertTools.ChangeType("hello", typeof(string));
+            sw.Stop();
+            Console.WriteLine($"string → string    : {sw.ElapsedMilliseconds} ms ({iterations} iterations)");
+
+            // === array → JSON (advancedConverter) ===
+            var arr = new[] { 1, 2, 3 };
+            sw.Restart();
+            for (int i = 0; i < iterations; i++) ConvertTools.ChangeType(arr, typeof(string), System.Globalization.CultureInfo.CurrentCulture);
+            sw.Stop();
+            Console.WriteLine($"array → JSON       : {sw.ElapsedMilliseconds} ms ({iterations} iterations)");
+
+            // No hard assertion on timing - output is used for manual comparison before/after optimization
+            Assert.IsTrue(true, "Performance test completed - check output for timing results");
         }
     }
 }

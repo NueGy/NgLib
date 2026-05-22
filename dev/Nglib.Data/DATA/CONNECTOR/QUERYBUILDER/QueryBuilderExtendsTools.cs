@@ -7,6 +7,9 @@ using static Nglib.DATA.CONNECTOR.QUERYBUILDER.QueryBuilderModels;
 
 namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
 {
+    /// <summary>
+    /// Extensions utility methods for QueryBuilder
+    /// </summary>
     public static class QueryBuilderExtendsTools
     {
         public static IQueryBuilder SelectAll(this IQueryBuilder builder) => builder.Select();
@@ -16,16 +19,6 @@ namespace Nglib.DATA.CONNECTOR.QUERYBUILDER
         public static IQueryBuilder LeftJoin(this IQueryBuilder builder, string table, string condition) => builder.Join(table, condition, JoinTypeEnum.Left);
 
         public static IQueryBuilder RightJoin(this IQueryBuilder builder, string table, string condition) => builder.Join(table, condition, JoinTypeEnum.Right);
-
-        public static IQueryBuilder WhereEqual(this IQueryBuilder builder, string column, object value) => builder.Where(column, "=", value);
-
-        public static IQueryBuilder WhereNotEqual(this IQueryBuilder builder, string column, object value) => builder.Where(column, "!=", value);
-
-        public static IQueryBuilder WhereGreater(this IQueryBuilder builder, string column, object value) => builder.Where(column, ">", value);
-
-        public static IQueryBuilder WhereLess(this IQueryBuilder builder, string column, object value) => builder.Where(column, "<", value);
-
-        public static IQueryBuilder WhereLike(this IQueryBuilder builder, string column, string pattern) => builder.Where(column, "LIKE", pattern);
 
         public static IQueryBuilder WhereNotIn(this IQueryBuilder builder, string column, IEnumerable<object> values) => builder.WhereIn(column, values, true);
 

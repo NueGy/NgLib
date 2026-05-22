@@ -1,4 +1,4 @@
-﻿using Nglib.SECURITY.TENANTS;
+using Nglib.SECURITY.TENANTS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
