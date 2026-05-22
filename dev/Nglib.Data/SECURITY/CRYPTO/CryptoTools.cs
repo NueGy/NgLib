@@ -32,8 +32,7 @@ namespace Nglib.SECURITY.CRYPTO
                 System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
                 if (encryptedstream == null) encryptedstream = new MemoryStream();
 
-                // TODO : Migrer vers Aes.Create() car Rijndael est obsolète après .NET 6
-                using (RijndaelManaged AES = new RijndaelManaged())
+                using (System.Security.Cryptography.Aes AES = System.Security.Cryptography.Aes.Create())
                 {
                     //AES.KeySize = 256;
                     //AES.BlockSize = 128;
@@ -74,7 +73,7 @@ namespace Nglib.SECURITY.CRYPTO
         {
             if (cryptoInformation == null) throw new ArgumentNullException("cryptoInformation");
             if (streamToBeDecrypted == null) return null;
-            using (RijndaelManaged AES = new RijndaelManaged())
+            using (System.Security.Cryptography.Aes AES = System.Security.Cryptography.Aes.Create())
             {
                 AES.KeySize = 256;
                 AES.BlockSize = 128;
@@ -108,7 +107,7 @@ namespace Nglib.SECURITY.CRYPTO
 
             using (MemoryStream ms = new MemoryStream())
             {
-                using (RijndaelManaged AES = new RijndaelManaged())
+                using (System.Security.Cryptography.Aes AES = System.Security.Cryptography.Aes.Create())
                 {
                     //AES.KeySize = 256;
                     //AES.BlockSize = 128;
@@ -141,7 +140,7 @@ namespace Nglib.SECURITY.CRYPTO
             byte[] decryptedBytes = null;
             using (MemoryStream ms = new MemoryStream())
             {
-                using (RijndaelManaged AES = new RijndaelManaged())
+                using (System.Security.Cryptography.Aes AES = System.Security.Cryptography.Aes.Create())
                 {
                     AES.KeySize = 256;
                     AES.BlockSize = 128;

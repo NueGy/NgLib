@@ -33,13 +33,13 @@ namespace Nglib.FORMAT
                 byte[] inputBytes = Encoding.UTF8.GetBytes(origine);
                 byte[] hashedBytes = null;
                 if(mode== HashModeEnum.SHA256)
-                    hasher = (new System.Security.Cryptography.SHA256CryptoServiceProvider());
+                    hasher = System.Security.Cryptography.SHA256.Create();
                 else if (mode == HashModeEnum.SHA1)
-                    hasher = (new System.Security.Cryptography.SHA1CryptoServiceProvider());
+                    hasher = System.Security.Cryptography.SHA1.Create();
                 else if (mode == HashModeEnum.SHA512)
-                    hasher = (new System.Security.Cryptography.SHA512CryptoServiceProvider());
+                    hasher = System.Security.Cryptography.SHA512.Create();
                 else if (mode == HashModeEnum.MD5)
-                    hasher = (new System.Security.Cryptography.MD5CryptoServiceProvider());
+                    hasher = System.Security.Cryptography.MD5.Create();
 
                 hashedBytes= hasher.ComputeHash(inputBytes);
                 return BitConverter.ToString(hashedBytes).Replace("-", string.Empty).ToLower();

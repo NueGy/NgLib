@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -267,7 +267,7 @@ namespace Nglib.DATA.PARAMVALUES
 
                 return retour;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -371,7 +371,7 @@ namespace Nglib.DATA.PARAMVALUES
                 //if (bufliste.value != null && bufliste.value is string && bufliste.value.ToString().Contains("{!"));
 
                 // Affectation de la données
-                bufliste.SetObject(null,xChild.Value);
+                bufliste.SetValue(null,xChild.Value);
 
             }
             catch (Exception)
@@ -391,3 +391,7 @@ namespace Nglib.DATA.PARAMVALUES
 
     }
 }
+
+
+
+

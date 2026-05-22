@@ -145,6 +145,8 @@ namespace Nglib.DATA.DATAPO
             DataPOProviderTools.ValidateQuery(query, "ExecuteQueryAsync");
             DataPOProviderTools.ValidateConnector(this.Connector, typeof(TPo));
             
+            this.OnBeforeQuery(query);
+            
             var dataserresult = await this.Connector.QueryDataSetAsync(query);
             
             if (dataserresult.Tables.Count == 0)
@@ -713,7 +715,7 @@ namespace Nglib.DATA.DATAPO
                         throw new InvalidOperationException($"InsertPOAsync: Erreur d'incrémentation. {valsincrement.Count} IDs retournés pour {items.Count()} objets.");
                     
                     for (int i = 0; i < valsincrement.Count; i++)
-                        items[i].SetObject(colautoincrement, valsincrement[i]);
+                        items[i].SetValue(colautoincrement, valsincrement[i]);
                 }
 
                 // Déclarer les objets insérés avec AcceptChanges
@@ -782,9 +784,17 @@ namespace Nglib.DATA.DATAPO
 
 
         /// <summary>
-        /// Lancé avant chaque lecture de données (surchargeable)
+        /// Called before each write operation (overridable)
         /// </summary>
+        /// <param name="items">DataPO items to write</param>
+        /// <param name="mode">Operation mode: INSERT, UPDATE, DELETE, SAVE</param>
         protected virtual void OnBeforeWrite(TPo[] items, string mode) { }
+
+        /// <summary>
+        /// Called before each query execution (overridable)
+        /// </summary>
+        /// <param name="query">Query context containing SQL and parameters</param>
+        protected virtual void OnBeforeQuery(QueryContext query) { }
 
 
 
@@ -816,3 +826,5 @@ namespace Nglib.DATA.DATAPO
 
     }
 }
+
+

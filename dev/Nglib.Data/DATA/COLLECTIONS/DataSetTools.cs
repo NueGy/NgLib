@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -632,7 +632,7 @@ namespace Nglib.DATA.COLLECTIONS
                 table.PrimaryKey = colsPrimKeys.ToArray();
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -1052,3 +1052,7 @@ namespace Nglib.DATA.COLLECTIONS
 
     }
 }
+
+
+
+

@@ -1,4 +1,4 @@
-﻿using Nglib.DATA.ACCESSORS;
+using Nglib.DATA.ACCESSORS;
 using Nglib.SECURITY.CRYPTO;
 using System;
 using System.Collections.Generic;
@@ -67,11 +67,11 @@ namespace Nglib.DATA.PARAMVALUES
         {
             get
             {
-                return this.GetObject(nameValue, DataAccessorOptionEnum.None);
+                return this.GetValue<object>(nameValue, DataAccessorOptionEnum.None);
             }
             set
             {
-                this.SetObject(nameValue, value);
+                this.SetValue(nameValue, value);
             }
         }
 
@@ -207,7 +207,7 @@ namespace Nglib.DATA.PARAMVALUES
             {
                 //if (!AccesOptions.HasFlag(BASICS.DataAccessorOptionEnum.NotReplace)) this.DelData(nameValue);
                 // mutex déja pris
-                object orgnobj = this.GetObject(nameValue, DataAccessorOptionEnum.None);
+                object orgnobj = this.GetValue<object>(nameValue, DataAccessorOptionEnum.None);
                 if ((orgnobj == null || (orgnobj is string && string.IsNullOrEmpty(orgnobj.ToString()))) && (obj == null || (obj is string && string.IsNullOrEmpty(obj.ToString()))))
                     return false;
                 if (obj != null && orgnobj!=null && obj.Equals(orgnobj)) return false; // inutile si pas modifié
@@ -219,12 +219,12 @@ namespace Nglib.DATA.PARAMVALUES
                     retour = new ParamValuesNode(nameValue);
                     Add(retour);
                 }
-                retour.SetObject(null,obj);
+                retour.SetValue(null,obj);
 
 
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -578,3 +578,7 @@ namespace Nglib.DATA.PARAMVALUES
 
     }
 }
+
+
+
+

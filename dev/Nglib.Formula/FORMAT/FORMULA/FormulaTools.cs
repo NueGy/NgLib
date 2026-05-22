@@ -1,4 +1,4 @@
-﻿//Copyright Nglib 2020 - MIT
+//Copyright Nglib 2020 - MIT
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,7 +75,7 @@ namespace Nglib.FORMAT.FORMULA
                     string formuleStr = item.Value;
                     string result = null;
                     try { result = Eval(formuleStr, globalParameters); }
-                    catch (Exception ex) { if (safe) result = "{}"; else throw; }
+                    catch (Exception) { if (safe) result = "{}"; else throw; }
                     retour = retour.Replace("{=" + formuleStr + "}", result);
                 }
                 return retour;
@@ -218,3 +218,7 @@ namespace Nglib.FORMAT.FORMULA
 
     }
 }
+
+
+
+

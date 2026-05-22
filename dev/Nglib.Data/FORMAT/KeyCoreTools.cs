@@ -1,4 +1,4 @@
-﻿using Nglib.SECURITY.CRYPTO;
+using Nglib.SECURITY.CRYPTO;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -41,7 +41,7 @@ namespace Nglib.FORMAT
 
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
@@ -61,3 +61,5 @@ namespace Nglib.FORMAT
 
     }
 }
+
+

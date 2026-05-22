@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -362,7 +362,7 @@ namespace Nglib.DATA.ACCESSORS
         {
             var retour = new Dictionary<string, object>();
             foreach (var item in dataAccessor.ListFieldsKeys())
-                retour.Add(item, dataAccessor.GetObject(item, AccesOptions));
+                retour.Add(item, dataAccessor.GetValue<object>(item, AccesOptions));
             return retour;
         }
 
@@ -451,7 +451,7 @@ namespace Nglib.DATA.ACCESSORS
             try
             {
                 var vals = PropertiesTools.GetValues(objetSource);
-                vals.Keys.ToList().ForEach(k => dataAccessor.SetObject(k, vals[k]));
+                vals.Keys.ToList().ForEach(k => dataAccessor.SetValue(k, vals[k]));
                 return (vals.Count>0)?true:false;
             }
             catch (Exception ex)
@@ -671,3 +671,4 @@ namespace Nglib.DATA.ACCESSORS
 
     }
 }
+

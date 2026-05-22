@@ -1,4 +1,4 @@
-﻿using Nglib.APP.CODE;
+using Nglib.APP.CODE;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,7 +91,7 @@ namespace Nglib.FILES.SERIAL
 
                 return dataTable;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -212,3 +212,7 @@ namespace Nglib.FILES.SERIAL
 
     }
 }
+
+
+
+

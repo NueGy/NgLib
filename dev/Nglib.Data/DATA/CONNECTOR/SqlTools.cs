@@ -1,4 +1,4 @@
-﻿using Nglib.DATA.COLLECTIONS;
+using Nglib.DATA.COLLECTIONS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -190,7 +190,7 @@ namespace Nglib.DATA.CONNECTOR
                 return sql;
 
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -402,7 +402,7 @@ namespace Nglib.DATA.CONNECTOR
         //        if (!string.IsNullOrWhiteSpace(DateMax))
         //            iDateMax = FORMAT.ConvertPlus.ToDateTime(DateMax);
         //    }
-        //    catch (Exception ex)
+        //    catch (Exception)
         //    {
         //        if (!DateSafe) throw new Exception("Date format invalide " + ex.Message);
         //    }
@@ -482,3 +482,5 @@ namespace Nglib.DATA.CONNECTOR
 
     }
 }
+
+

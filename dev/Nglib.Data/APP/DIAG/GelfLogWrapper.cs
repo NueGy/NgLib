@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -81,7 +81,7 @@ namespace Nglib.APP.DIAG
                 if (ret > 0) return true;
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
@@ -116,3 +116,5 @@ namespace Nglib.APP.DIAG
     }
 
 }
+
+

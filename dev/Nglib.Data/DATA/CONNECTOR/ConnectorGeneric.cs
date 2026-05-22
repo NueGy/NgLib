@@ -1,4 +1,4 @@
-﻿using Nglib.DATA.COLLECTIONS;
+using Nglib.DATA.COLLECTIONS;
 using Nglib.DATA.CONNECTOR.QUERYBUILDER;
 using System;
 using System.Collections.Concurrent;
@@ -560,3 +560,7 @@ namespace Nglib.DATA.CONNECTOR
 
     }
 }
+
+
+
+

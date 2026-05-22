@@ -1,4 +1,4 @@
-﻿using Nglib.DATA.ACCESSORS;
+using Nglib.DATA.ACCESSORS;
 using Nglib.FORMAT;
 using System;
 using System.Collections.Generic;
@@ -64,8 +64,8 @@ namespace Nglib.DATA.COLLECTIONS
         {
             if (string.IsNullOrWhiteSpace(fieldName)) return false;
             bool retour = true;
-            retour = this.SetObject(fieldName + "Min", valMin);
-            retour = this.SetObject(fieldName + "Max", valMax);
+            retour = this.SetValue(fieldName + "Min", valMin);
+            retour = this.SetValue(fieldName + "Max", valMax);
             return retour;
         }
 
@@ -113,7 +113,7 @@ namespace Nglib.DATA.COLLECTIONS
         /// <returns>Value found or null if not found</returns>
         public object GetData(string nameValue, DataAccessorOptionEnum AccesOptions)
         {
-            //=> Nglib.DATA.COLLECTIONS.CollectionsTools.GetObject(this, nameValue);
+            //=> Nglib.DATA.COLLECTIONS.CollectionsTools.GetValue<object>(this, nameValue);
             if (string.IsNullOrEmpty(nameValue)) return null;
             var val = this.Where(d => nameValue.Equals(d.Key, StringComparison.OrdinalIgnoreCase)).Select(d => d.Value).FirstOrDefault();
             return val;
@@ -192,3 +192,5 @@ namespace Nglib.DATA.COLLECTIONS
 
     }
 }
+
+

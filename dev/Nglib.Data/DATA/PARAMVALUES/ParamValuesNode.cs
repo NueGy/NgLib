@@ -1,4 +1,4 @@
-﻿using Nglib.DATA.ACCESSORS;
+using Nglib.DATA.ACCESSORS;
 using Nglib.SECURITY.CRYPTO;
 using System;
 using System.Collections.Generic;
@@ -91,8 +91,8 @@ namespace Nglib.DATA.PARAMVALUES
         /// </summary>
         public object Value
         {
-            get { return this.GetObject(null, DataAccessorOptionEnum.None); }
-            set { this.SetObject(null,value); }
+            get { return this.GetValue<object>(null, DataAccessorOptionEnum.None); }
+            set { this.SetValue(null,value); }
         }
 
 
@@ -107,7 +107,7 @@ namespace Nglib.DATA.PARAMVALUES
         public string this[string nameattribut]
         {
             get { return this.GetString(nameattribut); }
-            set { this.SetObject(nameattribut, value); }
+            set { this.SetValue(nameattribut, value); }
         }
 
 
@@ -130,7 +130,7 @@ namespace Nglib.DATA.PARAMVALUES
             }
             foreach (var itemd in dataext.Attributs)
             {
-                if (ecraser || this[itemd.Key] == "") this.SetObject(itemd.Key, itemd.Value);
+                if (ecraser || this[itemd.Key] == "") this.SetValue(itemd.Key, itemd.Value);
             }
         }
 
@@ -324,3 +324,5 @@ namespace Nglib.DATA.PARAMVALUES
 
 
 }
+
+

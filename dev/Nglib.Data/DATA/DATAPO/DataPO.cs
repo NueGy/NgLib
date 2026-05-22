@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -378,7 +378,7 @@ namespace Nglib.DATA.DATAPO
 
             // If it's a DataPO, delegate access
             if (linkedObj is DataPO dataPO)
-                return dataPO.GetObject(fieldsPO[1], AccesOptions);
+                return dataPO.GetValue<object>(fieldsPO[1], AccesOptions);
 
             // If it's a standard object, access via reflection
             if (pi.PropertyType.IsClass)
@@ -406,7 +406,7 @@ namespace Nglib.DATA.DATAPO
 
             // If the flow implements IDataAccessor, delegate full access
             if (flow is IDataAccessor flowAccessor)
-                return flowAccessor.GetObject(nameValue, AccesOptions);
+                return flowAccessor.GetValue<object>(nameValue, AccesOptions);
 
             // Otherwise, return the flow itself if it's the only path element
             return pathParts.Length == 1 ? flow : null;
@@ -443,7 +443,7 @@ namespace Nglib.DATA.DATAPO
             // If the flow implements IDataAccessor, delegate modification
             if (flow is IDataAccessor flowAccessor)
             {
-                bool isSet = flowAccessor.SetObject(nameValue, obj);
+                bool isSet = flowAccessor.SetValue(nameValue, obj);
                 if (isSet && this.localRow != null)
                     this.localRow.SetModified(); // Mark DataRow as modified
                 return isSet;
@@ -629,3 +629,5 @@ namespace Nglib.DATA.DATAPO
 
     }
 }
+
+

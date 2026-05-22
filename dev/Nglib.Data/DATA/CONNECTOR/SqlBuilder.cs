@@ -1,4 +1,4 @@
-﻿using Nglib.DATA.COLLECTIONS;
+using Nglib.DATA.COLLECTIONS;
 using Nglib.DATA.CONNECTOR;
 using System;
 using System.Collections.Generic;
@@ -367,7 +367,7 @@ namespace Nglib.DATA.CONNECTOR
             {
                 return ComposeSQL(this);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return "";
             }
@@ -508,3 +508,7 @@ namespace Nglib.DATA.CONNECTOR
 
     }
 }
+
+
+
+

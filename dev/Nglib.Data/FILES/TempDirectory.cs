@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -84,7 +84,7 @@ namespace Nglib.FILES
             {
                 this.Delete();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return;//safe
             }
@@ -96,3 +96,7 @@ namespace Nglib.FILES
 
     }
 }
+
+
+
+

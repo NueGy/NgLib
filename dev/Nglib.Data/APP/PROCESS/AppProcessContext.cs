@@ -1,4 +1,4 @@
-﻿using Nglib.DATA.PARAMVALUES;
+using Nglib.DATA.PARAMVALUES;
 using Nglib.DATA.ACCESSORS;
 using System;
 using System.Collections.Generic;
@@ -151,9 +151,9 @@ namespace Nglib.APP.PROCESS
             ParamValuesNode FluxConfigProcessLoop = FluxConfig.Get("/param/process/loop", false);
             if(FluxConfigProcessLoop!=null)
             {
-                if(FluxConfigProcessLoop.GetObject("iteration", DataAccessorOptionEnum.None)!=null)
+                if(FluxConfigProcessLoop.GetValue<object>("iteration", DataAccessorOptionEnum.None)!=null)
                     this.ConfigLoopIterations = FluxConfigProcessLoop.GetInt("iterations");
-                if (FluxConfigProcessLoop.GetObject("sleep", DataAccessorOptionEnum.None) != null)
+                if (FluxConfigProcessLoop.GetValue<object>("sleep", DataAccessorOptionEnum.None) != null)
                     this.ConfigLoopSleep = FluxConfigProcessLoop.GetInt("sleep");
             }
 
@@ -165,3 +165,5 @@ namespace Nglib.APP.PROCESS
 
     }
 }
+
+

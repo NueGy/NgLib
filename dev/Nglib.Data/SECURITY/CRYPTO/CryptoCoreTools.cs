@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -113,7 +113,7 @@ namespace Nglib.SECURITY.CRYPTO
                 // !!!
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -137,12 +137,12 @@ namespace Nglib.SECURITY.CRYPTO
                 randBytes = new byte[1];
             }
 
-            // Create a new RNGCryptoServiceProvider.
-            System.Security.Cryptography.RNGCryptoServiceProvider rand =
-                 new System.Security.Cryptography.RNGCryptoServiceProvider();
-
-            // Fill the buffer with random bytes.
-            rand.GetBytes(randBytes);
+            // Create a new RandomNumberGenerator.
+            using (System.Security.Cryptography.RandomNumberGenerator rand = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                // Fill the buffer with random bytes.
+                rand.GetBytes(randBytes);
+            }
 
             // return the bytes.
             return randBytes;
@@ -151,3 +151,7 @@ namespace Nglib.SECURITY.CRYPTO
 
     }
 }
+
+
+
+

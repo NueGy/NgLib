@@ -166,7 +166,7 @@ namespace Nglib.NET.HTTPCLIENT
                 }
                 else // Standard serialization
                 {
-                    var jsonSerializerOptions = new JsonSerializerOptions { IgnoreNullValues = true };
+                    var jsonSerializerOptions = new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
                     var bodyjsoncontent = JsonSerializer.Serialize(formToSerialize, formToSerialize.GetType(), jsonSerializerOptions);
                     httpContent= new StringContent(bodyjsoncontent, Encoding.UTF8, "application/json");
                 }
@@ -188,7 +188,7 @@ namespace Nglib.NET.HTTPCLIENT
             if (formToSerialize == null) return null;
             try
             {
-                var jsonSerializerOptions = new JsonSerializerOptions { IgnoreNullValues = true };
+                var jsonSerializerOptions = new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
                 var bodyjsoncontent = JsonSerializer.Serialize(formToSerialize, formToSerialize.GetType(), jsonSerializerOptions);
                 return new StringContent(bodyjsoncontent, Encoding.UTF8, "application/json");
             }
@@ -248,7 +248,7 @@ namespace Nglib.NET.HTTPCLIENT
                 if (resp.StatusCode == HttpStatusCode.NoContent) return default; // return null si vide
                 var txtContent = await resp.Content.ReadAsStringAsync();
                 var options = new JsonSerializerOptions();
-                options.IgnoreNullValues = true;
+                options.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
                 options.PropertyNameCaseInsensitive = true;
                 var retour = JsonSerializer.Deserialize<TResponseModel>(txtContent, options);
                 return retour;

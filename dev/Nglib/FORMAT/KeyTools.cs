@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -174,7 +174,7 @@ namespace Nglib.FORMAT
 
                 return retourk;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new KeyB36();
             }
@@ -308,3 +308,4 @@ namespace Nglib.FORMAT
         }
     }
 }
+
